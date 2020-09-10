@@ -51,7 +51,7 @@ impl Interpreter {
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
             NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
 

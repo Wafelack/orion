@@ -437,6 +437,20 @@ mod test {
                     interpreter.eval()?;
                     Ok(())
                 }
+
+                #[test]
+                fn range() -> crate::Result<()> {
+
+                    let code = "(define a (math:range 2 8))(print a)(assert (= a (list 2 3 4 5 6 7)))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
             }
         }
     }
