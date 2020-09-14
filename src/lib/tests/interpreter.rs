@@ -398,6 +398,19 @@ mod test {
                     interpreter.eval()?;
                     Ok(())
                 }
+                #[test]
+                fn min() -> crate::Result<()> {
+
+                    let code = "(assert (= (math:min 4. 5.) 4.))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
             }
         }
     }
