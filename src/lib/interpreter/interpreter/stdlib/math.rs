@@ -103,7 +103,7 @@ impl Interpreter {
             }
         } else {
             Err(
-                error!("Invalid argument, expected float or int, found", (&args[0].get_type()))
+                error!("Invalid argument, expected float, found", (&args[0].get_type()))
             )
         }
     }
@@ -128,7 +128,7 @@ impl Interpreter {
             }
         } else {
             Err(
-                error!("Invalid argument, expected float or int, found", (&args[0].get_type()))
+                error!("Invalid argument, expected float, found", (&args[0].get_type()))
             )
         }
     }
