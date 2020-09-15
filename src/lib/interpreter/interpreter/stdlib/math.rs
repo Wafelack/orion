@@ -46,7 +46,7 @@ impl Interpreter {
     pub fn pow(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 2 {
             return Err(
-                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
