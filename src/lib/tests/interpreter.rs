@@ -330,6 +330,18 @@ mod test {
                     interpreter.eval()?;
                     Ok(())
                 }
+                #[test]
+                fn tan() -> crate::Result<()> {
+                    let code = "(define a (math:tan 45.))(assert (> a 1.00))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
             }
         }
     }
