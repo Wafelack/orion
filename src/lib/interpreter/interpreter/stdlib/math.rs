@@ -17,7 +17,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                (0.0174533 * f.to_radians()).cos()
+                f.to_radians().cos()
             ))
         } else {
             Err(
