@@ -197,6 +197,7 @@ impl Interpreter {
                     "math:min" => self.min(&valued),
                     "math:sqrt" => self.sqrt(&valued),
                     "math:range" => self.range(&valued),
+                    "math:clamp" => self.clamp(&valued),
 
 
                     // sys

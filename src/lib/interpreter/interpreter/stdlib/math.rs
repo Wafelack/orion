@@ -133,6 +133,47 @@ impl Interpreter {
         }
     }
 
+    pub fn clamp(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 3 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 3, found", (args.len()))
+            );
+        }
+
+
+        if let Value::Float(n) = &args[0] {
+            if let Value::Float(start) = &args[1] {
+                if let Value::Float(end) = &args[2] {
+                    if *n < *start {
+                        Ok(
+                            Value::Float(*start)
+                        )
+                    } else if *n > *end {
+                        Ok(
+                            Value::Float(*end)
+                        )
+                    } else {
+                        Ok(
+                            Value::Float(*n)
+                        )
+                    }
+                } else {
+                    Err(
+                        error!("Invalid argument, expected float, found", (&args[2].get_type()))
+                    )
+                }
+            } else {
+                Err(
+                    error!("Invalid argument, expected float, found", (&args[1].get_type()))
+                )
+            }
+        } else {
+            Err(
+                error!("Invalid argument, expected float, found", (&args[0].get_type()))
+            )
+        }
+    }
+
     pub fn range(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 2 {
             return Err(
