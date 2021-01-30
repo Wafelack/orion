@@ -59,6 +59,12 @@ impl Lexer {
                 }
             ' ' | '\t' | '\r' => {},
             '\n' => self.line += 1,
+            '-' => if self.peek().is_digit(10) {
+                self.advance();
+                self.number();
+            } else {
+                self.identifier();
+            }
             x => if x.is_digit(10) {
                 self.number();
             } else {

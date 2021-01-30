@@ -1,0 +1,205 @@
+use std::collections::BTreeMap;
+use crate::interpreter::value::Value;
+use crate::parser::node::{Node, NodeType};
+
+pub struct Interpreter {
+    pub scopes: Vec<BTreeMap<String, (Value, bool)>>,
+    pub ast: Node,
+}
+
+impl Interpreter {
+    pub fn new(ast: Node) -> Self {
+        Self {
+            scopes: vec![],
+            ast,
+        }
+    }
+    pub fn get_ast(&mut self) -> Node {
+        self.ast.clone()
+    }
+    pub fn eval(&mut self) -> crate::Result<()> {
+        let ast = &self.get_ast();
+        self.eval_scope(ast)?;
+        Ok(())
+    }
+    pub fn eval_scope(&mut self, scope: &Node) -> crate::Result<Value> {
+        self.scopes.push(BTreeMap::new());
+        let toret = self.eval_calls(&scope.children)?;
+        self.scopes.pop();
+
+        Ok(toret)
+    }
+
+    pub fn to_value(&mut self, node: &Node) -> crate::Result<Value> {
+
+        Ok(match &node.ntype {
+            NodeType::Bool(b) => Value::Bool(*b),
+            NodeType::Scope => self.eval_scope(node)?,
+            NodeType::Int(i) => Value::Int(*i),
+            NodeType::Float(f) => Value::Float(*f),
+            NodeType::Nil => Value::Nil,
+            NodeType::String(s) => Value::String(s.to_owned()),
+            NodeType::FunctionCall(f) => self.eval_call(&f, &node.children)?,
+            NodeType::Identifier(id) => self.identifier(&id)?,
+        })
+    }
+
+    pub fn identifier(&mut self, id: &str) -> crate::Result<Value> {
+
+        for i in (0..self.scopes.len()).rev() {
+            if self.scopes[i].contains_key(id) {
+                return Ok(self.scopes[i][id].0.clone())
+            }
+        }
+
+        Err(
+            error!("Cannot find", id, "in this scope.")
+        )
+    }
+
+    pub fn eval_calls(&mut self, children: &Vec<Node>) -> crate::Result<Value> {
+
+        for i in 0..children.len() {
+            let child = &children[i];
+
+            if let NodeType::FunctionCall(s) = &child.ntype {
+
+               if i == children.len() - 1  {
+                   return self.eval_call(s, &child.children);
+               } else if s == "return" {
+                    return self.eval_call(s, &child.children);
+               } else {
+                    self.eval_call(s, &child.children)?;
+               }
+
+            } else {
+                return Err(
+                    error!("This should not be called, please open an issue.", "Error code: ERR_INVALID_FUNCTION_CALL")
+                );
+            }
+        }
+
+        Ok(Value::Nil) // Should not be hit but rust requires it ¯\_(ツ)_/¯
+    }
+
+    pub fn eval_call(&mut self, name: &str, args: &Vec<Node>) -> crate::Result<Value> {
+        match name {
+
+            // variables
+            "define" => {
+                self.eval_def(&args, false)?;
+                Ok(Value::Nil)
+            },
+            "var" =>{
+                self.eval_def(&args, true)?;
+                Ok(Value::Nil)
+            }
+            "set" => {
+                self.eval_set(&args)?;
+                Ok(Value::Nil)
+            }
+
+            // return
+
+            "return" => if args.len() < 1 {
+                Ok(Value::Nil)
+            } else {
+                Ok(self.to_value(&args[0])?)
+            }
+
+            // conditions
+
+            "if" => self.eval_condition(&args),
+
+            // loops 
+
+            "while" => self.eval_loop(&args),
+
+            "lambda" => self.eval_lambda(&args),
+
+            // arithmetic
+
+            "+" => self.eval_plus(&args),           
+            "*" => self.eval_times(&args),      
+            "/" => self.eval_div(&args),     
+            "%" => self.eval_modulo(&args),     
+            "-" => self.eval_minus(&args),     
+
+            // boolean algebra
+
+            "=" => self.eval_eq(&args),
+            "!" => self.eval_neq(&args),
+            "<" => self.eval_le(&args),
+            ">" => self.eval_ge(&args),
+            "<=" => self.eval_leq(&args),
+            ">=" => self.eval_geq(&args),
+            "|" => self.eval_or(&args),
+            "&" => self.eval_and(&args),
+
+            // std
+            _ => {
+                let mut valued = vec![];
+
+                for arg in args {
+                    valued.push(self.to_value(arg)?);
+                }
+
+                match name {
+                    "print" => self.print(&valued),
+                    "assert" => self.assert(&valued),
+                    _ => self.scope_function(name, &valued),
+                }
+            }
+        }
+    }
+    fn scope_function(&mut self,name: &str, valued: &Vec<Value>) -> crate::Result<Value> {
+
+        if let Value::Function(args, body) = self.identifier(name)? {
+            if valued.len() != args.len() {
+                return Err(
+                    error!("Invalid number of arguments, expected", (args.len()), ", found", (valued.len()))
+                )
+            }
+
+            self.scopes.push(BTreeMap::new());
+
+            for i in 0..valued.len() {
+                self.scopes.last_mut().unwrap().insert(args[i].to_owned(), (valued[i].clone(), false));
+            }
+
+            let toret = self.eval_calls(&body.children);
+
+            self.scopes.pop();
+            toret
+
+        } else {
+            return Err(
+                error!("Invalid function call.")
+            )
+        }
+    }
+    fn print(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        for arg in args {
+            print!("{}", arg);
+        }
+        println!();
+        Ok(Value::Nil)
+    }
+    fn assert(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            );
+        }
+
+        if let Value::Bool(b) = &args[0] {
+            if *b {
+                return Ok(Value::Nil);
+            } else {
+                panic!("Assertion failed.")
+            }
+        } else {
+            panic!("Assertion failed.")
+        }
+    }
+}
