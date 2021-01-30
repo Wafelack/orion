@@ -31,6 +31,9 @@ impl Lexer {
     fn peek(&mut self) -> char {
         self.code.chars().nth(self.current).unwrap_or('\0')
     }
+    fn peek_next(&mut self) -> char {
+        self.code.chars().nth(self.current + 1).unwrap_or('\0')
+    }
     fn scan_token(&mut self) {
         let c = self.advance();
 
@@ -43,6 +46,17 @@ impl Lexer {
             '#' => while !self.is_at_end() && self.peek() != '\n' {
                 self.advance();
             }
+            'n' => if self.peek() == 'i' {
+                    if self.peek_next() == 'l' {
+                        self.advance();
+                        self.advance();
+                        self.add_token(Token::Nil);
+                    } else {
+                        self.identifier();
+                    }
+                } else {    
+                    self.identifier();
+                }
             ' ' | '\t' | '\r' => {},
             '\n' => self.line += 1,
             x => if x.is_digit(10) {
@@ -76,11 +90,11 @@ impl Lexer {
 
     }
     fn identifier(&mut self) {
-        let is_whitespace = |c: char| -> bool {
-            c == ' ' || c == '\r' || c == '\n' || c == '\t'
+        let is_whitespace_or_end = |c: char| -> bool {
+            c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == ')' || c == '}'
         };
 
-        while !is_whitespace(self.peek()) && !self.is_at_end() {
+        while !is_whitespace_or_end(self.peek()) && !self.is_at_end() {
             self.advance();
         }
 

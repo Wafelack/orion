@@ -1,6 +1,7 @@
+#[derive(Clone,PartialEq, Debug)]
 pub struct Node {
-    ntype: NodeType,
-    children: Vec<Node>,
+    pub ntype: NodeType,
+    pub children: Vec<Node>,
 }
 
 impl Node {
@@ -14,13 +15,14 @@ impl Node {
         self.children.push(child);
     }
 }
-
-enum NodeType {
-    Block,
+#[derive(Clone, PartialEq, Debug)]
+pub enum NodeType {
     Scope,
     Int(i32),
     Float(f32),
     Bool(bool),
     String(String),
-
+    FunctionCall(String),
+    Identifier(String),
+    Nil,
 }
