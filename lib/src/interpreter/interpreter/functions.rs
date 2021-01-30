@@ -1,6 +1,7 @@
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use crate::interpreter::value::Value;
 use crate::parser::node::{Node, NodeType};
+use std::collections::BTreeMap;
 
 impl Interpreter {
 
@@ -45,4 +46,30 @@ impl Interpreter {
         Ok(Value::Function(s_args, args[1].clone()))
     }
 
+    pub fn scope_function(&mut self,name: &str, valued: &Vec<Value>) -> crate::Result<Value> {
+
+        if let Value::Function(args, body) = self.identifier(name)? {
+            if valued.len() != args.len() {
+                return Err(
+                    error!("Invalid number of arguments, expected", (args.len()), ", found", (valued.len()))
+                )
+            }
+
+            self.scopes.push(BTreeMap::new());
+
+            for i in 0..valued.len() {
+                self.scopes.last_mut().unwrap().insert(args[i].to_owned(), (valued[i].clone(), false));
+            }
+
+            let toret = self.eval_calls(&body.children);
+
+            self.scopes.pop();
+            toret
+
+        } else {
+            return Err(
+                error!("Invalid function call.")
+            )
+        }
+    }
 }

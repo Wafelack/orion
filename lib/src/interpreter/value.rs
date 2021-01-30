@@ -14,6 +14,21 @@ pub enum Value {
     Nil
 }
 
+impl Value {
+    pub fn get_type(&self) -> String {
+        match self {
+            Self::Object(_) => "object",
+            Self::List(_) => "list",
+            Self::Int(_) => "int",
+            Self::Float(_) => "float",
+            Self::String(_) => "string",
+            Self::Bool(_) => "bool",
+            Self::Function(_,_) => "function",
+            Self::Nil => "nil"
+        }.to_owned()
+    }
+}
+
 
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

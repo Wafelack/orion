@@ -321,6 +321,17 @@ mod tests {
 
             Ok(())
         }
+
+        #[test]
+        fn list() -> crate::Result<()> {
+            let mut lexer = Lexer::new("(define a (list 5 6 8))(assert (= (@ a 2) 8))".to_owned());
+            let toks = lexer.scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
+            interpreter.eval()?;
+
+            Ok(())
+        }
     }
 }
 

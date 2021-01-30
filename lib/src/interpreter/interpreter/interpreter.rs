@@ -147,59 +147,13 @@ impl Interpreter {
                 match name {
                     "print" => self.print(&valued),
                     "assert" => self.assert(&valued),
+                    "list" => self.list(&valued),
+                    "@" => self.index(&valued),
                     _ => self.scope_function(name, &valued),
                 }
             }
         }
     }
-    fn scope_function(&mut self,name: &str, valued: &Vec<Value>) -> crate::Result<Value> {
-
-        if let Value::Function(args, body) = self.identifier(name)? {
-            if valued.len() != args.len() {
-                return Err(
-                    error!("Invalid number of arguments, expected", (args.len()), ", found", (valued.len()))
-                )
-            }
-
-            self.scopes.push(BTreeMap::new());
-
-            for i in 0..valued.len() {
-                self.scopes.last_mut().unwrap().insert(args[i].to_owned(), (valued[i].clone(), false));
-            }
-
-            let toret = self.eval_calls(&body.children);
-
-            self.scopes.pop();
-            toret
-
-        } else {
-            return Err(
-                error!("Invalid function call.")
-            )
-        }
-    }
-    fn print(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
-        for arg in args {
-            print!("{}", arg);
-        }
-        println!();
-        Ok(Value::Nil)
-    }
-    fn assert(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
-        if args.len() != 1 {
-            return Err(
-                error!("Invalid number of arguments, expected 1, found", (args.len()))
-            );
-        }
-
-        if let Value::Bool(b) = &args[0] {
-            if *b {
-                return Ok(Value::Nil);
-            } else {
-                panic!("Assertion failed.")
-            }
-        } else {
-            panic!("Assertion failed.")
-        }
-    }
+    
+    
 }
