@@ -2,9 +2,14 @@
 
   Orion
   ---
+  <img width="150px" src="assets/logo.png">
+
   Orion is a lisp inspired statically typed programming language written in Rust
 
 </div>
+
+
+---
 
 ## Install
 
