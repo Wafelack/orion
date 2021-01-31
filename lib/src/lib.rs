@@ -2,9 +2,9 @@ use std::fmt::Formatter;
 
 #[derive(Debug)]
 pub struct OrionError {
-    message: String,
-    line: u32,
-    file: String,
+    pub message: String,
+    pub line: u32,
+    pub file: String,
 }
 
 impl std::fmt::Display for OrionError {

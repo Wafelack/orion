@@ -4,9 +4,25 @@ fn main() -> orion_lib::Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<String>>();
 
     if args.len() < 1 {
-        repl()?;
+        repl()
+    } else {
+        use std::path::Path;
+
+        if Path::new(&args[0]).exists() {
+            let code = std::fs::read_to_string(&args[0]).map_err(|e| error!(e))?;
+            let toks = Lexer::new(code).scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            if args.contains(&"--debug".to_owned()) {
+                println!("{}", ast);
+            }
+            Interpreter::new(ast).eval()?;
+            Ok(())
+        } else {
+            Err(
+                error!("File not found:", (args[0]))
+            )
+        }
     }
-    Ok(())
 }
 
 fn repl() -> orion_lib::Result<()> {
