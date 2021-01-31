@@ -1,6 +1,6 @@
 [package]
-name = "cli"
-version = "0.1.0"
+name = "orion-cli"
+version = "0.1.0-alpha"
 authors = ["Wafelack <wafelack@protonmail.com>"]
 edition = "2018"
 
