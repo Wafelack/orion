@@ -1,0 +1,17 @@
+(var foo 1)
+(while (<= foo 30) {
+       (if (= (% foo 15) 0) {
+         (print "FizzBuzz")
+         } {
+         (if (= (% foo 5) 0) {
+           (print "Buzz")
+           } {
+           (if (= (% foo 3) 0) {
+             (print "Fizz")
+             } {
+             (print foo)
+             })
+           })
+         })
+       (set foo (+ foo 1))
+       })
