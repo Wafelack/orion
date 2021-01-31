@@ -143,11 +143,9 @@ impl Interpreter {
 
     pub fn push(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 2  && args.len() != 3{
-            return Err(
                 return Err(
                     crate::error!("Invalid number of arguments, expected 2|3, found", (args.len()))
                 )
-            )
         }
 
         if let Value::List(mut l) = args[0].clone() {

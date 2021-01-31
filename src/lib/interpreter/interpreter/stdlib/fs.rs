@@ -1,8 +1,6 @@
-use std::collections::BTreeMap;
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use std::path::Path;
-use std::fs;
 
 impl Interpreter {
     pub fn exists(&mut self, args: &Vec<Value>) -> crate::Result<Value> {

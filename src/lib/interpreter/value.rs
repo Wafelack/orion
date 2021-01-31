@@ -88,7 +88,7 @@ fn jsonize(map: &BTreeMap<String, Value>, level: usize) -> String {
 fn get_indents(level: usize) -> String {
     let mut toret = String::new();
 
-    for i in 0..level {
+    for _ in 0..level {
         toret.push_str("\t");
     }
     toret
