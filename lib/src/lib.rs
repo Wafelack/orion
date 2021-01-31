@@ -301,6 +301,18 @@ mod tests {
         }
 
         #[test]
+        fn boolean_algebra() -> crate::Result<()> {
+            let mut lexer = Lexer::new(
+                "(assert (! false))(assert (!= 4 5))(assert (= 3. 3.))".to_owned());
+            let toks = lexer.scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
+            interpreter.eval()?;
+
+            Ok(())
+        }
+
+        #[test]
         fn looop() -> crate::Result<()> {
             let mut lexer = Lexer::new("(var i 0) (while (< i 5) { (set i (+ i 1))})(assert (= i 5))".to_owned());
             let toks = lexer.scan_tokens();
