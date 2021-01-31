@@ -23,6 +23,12 @@ impl Interpreter {
                             );
                         } else {
                             let to_add = self.to_value(&children[1])?;
+                            if std::mem::discriminant(&self.scopes[i][name].0) != std::mem::discriminant(&to_add) {
+                                return Err(
+                                    crate::error!("Attempted to assign value of type", (&to_add.get_type()), "to variable of type", (&self.scopes[i][name].0.get_type()))
+                                );
+                            }
+
                             let val = self.scopes.get_mut(i).unwrap().get_mut(name).unwrap();
                             *val = (to_add, true);
                             return Ok(());
