@@ -6,7 +6,7 @@ impl Interpreter {
     pub fn eval_set(&mut self, children: &Vec<Node>) -> crate::Result<()> {
         if children.len() != 2 {
             return Err(
-                error!("Function `define` takes 2 arguments, but", (children.len()), "arguments were supplied.")
+                crate::error!("Function `define` takes 2 arguments, but", (children.len()), "arguments were supplied.")
             )
         }
 
@@ -19,7 +19,7 @@ impl Interpreter {
                     if self.scopes[i].contains_key(name) {
                         if !self.scopes[i][name].1 {
                             return Err(
-                                error!("Attempted to assign value to a constant variable:", name)
+                                crate::error!("Attempted to assign value to a constant variable:", name)
                             );
                         } else {
                             let to_add = self.to_value(&children[1])?;
@@ -30,18 +30,18 @@ impl Interpreter {
                     }
                 }
                 return Err(
-                    error!("Attempted to assign value to undefined variable:", name)
+                    crate::error!("Attempted to assign value to undefined variable:", name)
                 );
                 
             } else {
                 Err (
-                    error!("No scopes available.")
+                    crate::error!("No scopes available.")
                 )
             }
 
         } else {
             return Err(
-                error!("Invalid arguments. Expected identifier, found",(&children[0].ntype.stringy_type())) 
+                crate::error!("Invalid arguments. Expected identifier, found",(&children[0].ntype.stringy_type())) 
             );
         }
     }
@@ -49,7 +49,7 @@ impl Interpreter {
 
         if children.len() != 2 {
             return Err(
-                error!("Function `define` takes 2 arguments, but", (children.len()), "arguments were supplied.")
+                crate::error!("Function `define` takes 2 arguments, but", (children.len()), "arguments were supplied.")
             )
         }
 
@@ -59,7 +59,7 @@ impl Interpreter {
             if self.scopes.len() >= 1 {
                 if self.scopes.last().unwrap().contains_key(name) {
                     Err(
-                        error!("Attempted to define an existing variable:", name)
+                        crate::error!("Attempted to define an existing variable:", name)
                     )
                 } else {
                     let to_add = self.to_value(&children[1])?;
@@ -70,13 +70,13 @@ impl Interpreter {
                 }
             } else {
                 Err (
-                    error!("No scopes available.")
+                    crate::error!("No scopes available.")
                 )
             }
 
         } else {
             return Err(
-                error!("Invalid arguments. Expected identifier, found",(&children[0].ntype.stringy_type())) 
+                crate::error!("Invalid arguments. Expected identifier, found",(&children[0].ntype.stringy_type())) 
             );
         }
     }

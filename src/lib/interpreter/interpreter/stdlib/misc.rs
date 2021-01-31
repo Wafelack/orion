@@ -5,7 +5,7 @@ impl Interpreter {
     pub fn assert(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 1 {
             return Err(
-                error!("Invalid number of arguments, expected 1, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
             );
         }
 
@@ -23,7 +23,7 @@ impl Interpreter {
     pub fn _typeof(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 1 {
             return Err(
-                error!("Invalid number of arguments, expected 1, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
             );
         }
         Ok(Value::String(args[0].get_type()))
@@ -37,13 +37,13 @@ impl Interpreter {
             if let Value::String(s) = arg {
                 if !Path::new(&s).exists() {
                     return Err(
-                        error!("Cannot find file `", s, "`.")
+                        crate::error!("Cannot find file `", s, "`.")
                     )
                 }
 
                 let content = match std::fs::read_to_string(&s) {
                     Ok(c) => c,
-                    Err(e) => return Err(error!(e)),
+                    Err(e) => return Err(crate::error!(e)),
                 };
 
                 let mut lexer = crate::lexer::lexer::Lexer::new(content);
@@ -53,7 +53,7 @@ impl Interpreter {
                 self.eval_calls(&ast.children)?; // Delete the Scope.
             } else {
                 return Err(
-                    error!("Invalid argument, expected string,  found", (arg.get_type()))
+                    crate::error!("Invalid argument, expected string,  found", (arg.get_type()))
                 )
             }
         }

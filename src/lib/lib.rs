@@ -1,7 +1,5 @@
 use std::fmt::Formatter;
 
-mod tests;
-
 #[derive(Debug)]
 pub struct OrionError {
     pub message: String,
@@ -28,7 +26,7 @@ macro_rules! error {
     };
     ($($msg:tt),*) => {
         {
-            use crate::OrionError;
+            use crate::lib::lib::OrionError;
             let mut message = String::new();
             $(
                 message.push_str(&format!("{} ", $msg));
@@ -43,9 +41,3 @@ macro_rules! error {
     }
 }
 
-pub mod lexer;
-pub mod parser;
-pub mod interpreter;
-pub use interpreter::interpreter::interpreter::Interpreter;
-pub use lexer::lexer::Lexer;
-pub use parser::parser::Parser;

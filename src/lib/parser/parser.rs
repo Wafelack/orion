@@ -33,7 +33,7 @@ impl Parser {
 
         let mut toret = match current {
             Token::Identifier(s) => Node::new(NodeType::FunctionCall(s)),
-            _ => return Err(error!("Unexpected token:", current)),
+            _ => return Err(crate::error!("Unexpected token:", current)),
         };
 
         while !self.is_at_end() && self.peek() != Token::RightParen {
@@ -48,7 +48,7 @@ impl Parser {
                 Token::Nil => toret.add_child(Node::new(NodeType::Nil)),
                 Token::Identifier(i) => toret.add_child(Node::new(NodeType::Identifier(i))),
                 Token::LeftBrace => toret.add_child(self.parse_scope()?),
-                _ => return Err(error!("Unexpected token:", current))
+                _ => return Err(crate::error!("Unexpected token:", current))
             }
         }
 
@@ -77,7 +77,7 @@ impl Parser {
                 Token::LeftParen => toret.add_child(self.parse_block()?),
                 Token::Identifier(i) => toret.add_child(Node::new(NodeType::Identifier(i))),
                 Token::LeftBrace => toret.add_child(self.parse_scope()?),
-                _ => return Err(error!("Unexpected token:", current))
+                _ => return Err(crate::error!("Unexpected token:", current))
             }
         }
         if self.peek() == Token::RightBrace {
@@ -101,7 +101,7 @@ impl Parser {
                 Ok(())
             },
             x => {
-                Err(error!("Unexpected token:", x))
+                Err(crate::error!("Unexpected token:", x))
             },
         }
         

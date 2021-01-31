@@ -57,7 +57,7 @@ impl Interpreter {
         }
 
         Err(
-            error!("Cannot find", id, "in this scope.")
+            crate::error!("Cannot find", id, "in this scope.")
         )
     }
 
@@ -78,7 +78,7 @@ impl Interpreter {
 
             } else {
                 return Err(
-                    error!("This should not be called, please open an issue.", "Error code: ERR_INVALID_FUNCTION_CALL")
+                    crate::error!("This should not be called, please open an issue.", "Error code: ERR_INVALID_FUNCTION_CALL")
                 );
             }
         }

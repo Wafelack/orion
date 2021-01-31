@@ -1,5 +1,13 @@
-[workspace]
-members = [
-    "lib",
-    "cli"
-]
+[package]
+name = "orion-cli"
+version = "0.1.0-alpha"
+authors = ["Wafelack <wafelack@protonmail.com>"]
+edition = "2018"
+readme = "../README.md"
+license = "MPL-2.0"
+description = "A lisp inspired strongly and statically typed programming language"
+repository = "https://github.com/wafelack/orion"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

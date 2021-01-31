@@ -7,14 +7,14 @@ impl Interpreter {
     pub fn eval_loop(&mut self, args: &Vec<Node>) -> crate::Result<Value> {
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             )
         }
 
         if let NodeType::Scope = &args[1].ntype {
         } else {
             return Err(
-                error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
+                crate::error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
             );
         }
 

@@ -1,6 +1,8 @@
-use orion_lib::*;
+mod lib;
 
-fn main() -> orion_lib::Result<()> {
+use lib::*;
+
+fn main() -> lib::Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<String>>();
 
     if args.len() < 1 {
@@ -25,7 +27,7 @@ fn main() -> orion_lib::Result<()> {
     }
 }
 
-fn repl() -> orion_lib::Result<()> {
+fn repl() -> lib::Result<()> {
     let mut interpreter = Interpreter::new(
         Parser::new(
             Lexer::new(

@@ -6,7 +6,7 @@ impl Interpreter {
     pub fn eval_not(&mut self, args: &Vec<Node>) -> crate::Result<Value> {
         if args.len() != 1 {
             return Err(
-                error!("Invalid number of arguments, expected 1, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
             );
         }
 
@@ -30,7 +30,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -98,7 +98,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -166,7 +166,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -214,7 +214,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -262,7 +262,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -310,7 +310,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -358,7 +358,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 
@@ -402,7 +402,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
         }
 

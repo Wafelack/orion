@@ -7,7 +7,7 @@ impl Interpreter {
 
         if args.len() != 2 && args.len() != 3 {
             return Err(
-                error!("Invalid number of arguments, expected 2|3, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2|3, found", (args.len()))
             )
         }
 
@@ -24,7 +24,7 @@ impl Interpreter {
                 self.eval_scope(&args[1])
             } else {
                 Err(
-                    error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
+                    crate::error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
                 )
             }
         } else {
@@ -33,7 +33,7 @@ impl Interpreter {
                     self.eval_scope(&args[2])
                 } else {
                     Err(
-                        error!("Invalid argument, expected scope, found", (&args[2].ntype.stringy_type()))
+                        crate::error!("Invalid argument, expected scope, found", (&args[2].ntype.stringy_type()))
                     )
                 }
             } else {

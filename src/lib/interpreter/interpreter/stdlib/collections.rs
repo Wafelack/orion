@@ -15,7 +15,7 @@ impl Interpreter {
 
             if args[i].get_type() != first {
                 return Err(
-                    error!("Invalid argument, expected", first, "found", (args[i].get_type()))
+                    crate::error!("Invalid argument, expected", first, "found", (args[i].get_type()))
                 )
             }
 
@@ -50,7 +50,7 @@ impl Interpreter {
         
         if args.len() % 2 != 0 {
             return Err(
-                error!("Invalid arguments, expected an even number of arguments, found", (args.len()))
+                crate::error!("Invalid arguments, expected an even number of arguments, found", (args.len()))
             )
         }
 
@@ -67,7 +67,7 @@ impl Interpreter {
                 i += 2;
             } else {
                 return Err(
-                    error!("Invalid argument, expected string, found", (args[i].get_type()))
+                    crate::error!("Invalid argument, expected string, found", (args[i].get_type()))
                 )
             }
         }
@@ -80,7 +80,7 @@ impl Interpreter {
     pub fn index(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             )
         }
 
@@ -89,14 +89,14 @@ impl Interpreter {
                 *i as usize
             } else {                
                 return Err(
-                    error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found", i)
+                    crate::error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found", i)
                 )
             };
 
             let toret = if let Value::String(s) = &args[0] {
                 if index >= s.len() {
                     return Err(
-                        error!("Index out of bounds, the length is", (s.len()), "but the index is", index)
+                        crate::error!("Index out of bounds, the length is", (s.len()), "but the index is", index)
                     )
                 }
                 Value::String(
@@ -105,13 +105,13 @@ impl Interpreter {
             } else if let Value::List(l) = &args[0] {
                 if index >= l.len() {
                     return Err(
-                        error!("Index out of bounds, the length is", (l.len()), "but the index is", index)
+                        crate::error!("Index out of bounds, the length is", (l.len()), "but the index is", index)
                     )
                 }
                 l[index].clone()
             } else {
                 return Err(
-                    error!("Invalid argument, expected string or list, found", (&args[1].get_type()))
+                    crate::error!("Invalid argument, expected string or list, found", (&args[1].get_type()))
                 )
             };
 
@@ -124,19 +124,19 @@ impl Interpreter {
                     map[s].clone()
                 } else {
                     return Err(
-                        error!("Key `", s, "` not found in object `", (&args[0]),"`.")
+                        crate::error!("Key `", s, "` not found in object `", (&args[0]),"`.")
                     )
                 }
             } else {
                 return Err(
-                    error!("Invalid argument, expected object, found", (&args[1].get_type()))
+                    crate::error!("Invalid argument, expected object, found", (&args[1].get_type()))
                 )
             };
 
             Ok(toret)
         } else {
             return Err(
-                error!("Invalid argument, expected integer, found", (&args[1].get_type()))
+                crate::error!("Invalid argument, expected integer, found", (&args[1].get_type()))
             )
         }   
     }
@@ -145,7 +145,7 @@ impl Interpreter {
         if args.len() != 2  && args.len() != 3{
             return Err(
                 return Err(
-                    error!("Invalid number of arguments, expected 2|3, found", (args.len()))
+                    crate::error!("Invalid number of arguments, expected 2|3, found", (args.len()))
                 )
             )
         }
@@ -154,7 +154,7 @@ impl Interpreter {
             if let Some(el) = l.last() {
                 if args[1].get_type() != el.get_type() {
                     Err(
-                        error!("Type error: list is of type", (el.get_type()), "but element is", (args[1].get_type()),".")
+                        crate::error!("Type error: list is of type", (el.get_type()), "but element is", (args[1].get_type()),".")
                     )
                 } else {
                     l.push(args[1].to_owned());
@@ -172,7 +172,7 @@ impl Interpreter {
                 if args.len() != 3 {
                     if map.contains_key(s) {
                         Err(
-                            error!("Key `", s,"` is already present in the targetted object.")
+                            crate::error!("Key `", s,"` is already present in the targetted object.")
                         )
                     } else {
                         map.insert(s.to_owned(), Value::Nil);
@@ -192,12 +192,12 @@ impl Interpreter {
                 }
             } else {
                 Err(
-                    error!("Invalid argument, expected string, found", (&args[1].get_type()))
+                    crate::error!("Invalid argument, expected string, found", (&args[1].get_type()))
                 )
             }
         } else {
             Err(
-                error!("Invalid argument, expected string, list or object, found", (&args[0].get_type()))
+                crate::error!("Invalid argument, expected string, list or object, found", (&args[0].get_type()))
             )
         }
     }

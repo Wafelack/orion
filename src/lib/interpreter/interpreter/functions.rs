@@ -9,7 +9,7 @@ impl Interpreter {
 
         if args.len() != 2 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             )
         }
 
@@ -23,7 +23,7 @@ impl Interpreter {
                     )
                 } else {
                     return Err(
-                        error!("Invalid argument, expected identifier, found", (child.ntype.stringy_type()))
+                        crate::error!("Invalid argument, expected identifier, found", (child.ntype.stringy_type()))
                     )
                 }
             }
@@ -32,14 +32,14 @@ impl Interpreter {
 
         } else {
             return Err(
-                error!("Invalid argument, expected identifier, found", (&args[0].ntype.stringy_type()))
+                crate::error!("Invalid argument, expected identifier, found", (&args[0].ntype.stringy_type()))
             )
         };
 
         if let NodeType::Scope = &args[1].ntype {
         } else {
             return Err(
-                error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
+                crate::error!("Invalid argument, expected scope, found", (&args[1].ntype.stringy_type()))
             )
         }
 
@@ -52,7 +52,7 @@ impl Interpreter {
         if let Value::Function(args, body) = self.identifier(name)? {
             if valued.len() != args.len() {
                 return Err(
-                    error!("Invalid number of arguments, expected", (args.len()), ", found", (valued.len()))
+                    crate::error!("Invalid number of arguments, expected", (args.len()), ", found", (valued.len()))
                 )
             }
 
@@ -69,7 +69,7 @@ impl Interpreter {
 
         } else {
             return Err(
-                error!("Invalid function call.")
+                crate::error!("Invalid function call.")
             )
         }
     }
