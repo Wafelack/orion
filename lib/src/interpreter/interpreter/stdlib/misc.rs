@@ -20,6 +20,15 @@ impl Interpreter {
         }
     }
 
+    pub fn _typeof(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            );
+        }
+        Ok(Value::String(args[0].get_type()))
+    }
+
     pub fn import(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
 
         use std::path::Path;
