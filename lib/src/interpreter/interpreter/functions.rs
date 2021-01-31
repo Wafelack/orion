@@ -47,6 +47,7 @@ impl Interpreter {
     }
 
     pub fn scope_function(&mut self,name: &str, valued: &Vec<Value>) -> crate::Result<Value> {
+        println!("Name: {} ; Args length: {}",name, valued.len());
 
         if let Value::Function(args, body) = self.identifier(name)? {
             if valued.len() != args.len() {

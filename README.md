@@ -13,6 +13,38 @@
 - Download binary from the releases.
 - Run `cargo install orion`
 
+# Examples
+
+## Factorial
+
+```lisp
+(define factorial (lambda (n) {
+    (var toret 1)
+    (var i 2)
+    (while (<= i n) {
+        (set toret (* toret i))
+        (set i (+ i 1))
+    })
+    (return toret)
+}))
+```
+
+## Ackermann function
+
+```lisp
+(define ack (lambda (m n) {
+    (if (= m 0) {
+        (+ n 1)
+    } {
+        (if (= n 0) {
+            (ack (- m 1) 1)
+        } {
+            (ack (- m 1) (ack m (- n 1)))
+        })
+    })
+}))
+```
+
 # Performances
 
 ## Ackermann(3, 3) - 500 runs

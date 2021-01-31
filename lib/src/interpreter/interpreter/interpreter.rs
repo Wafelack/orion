@@ -160,6 +160,7 @@ impl Interpreter {
                     // misc
                     "assert" => self.assert(&valued),
                     "typeof" => self._typeof(&valued),
+                    "import" => self.import(&valued),
 
                     // Collections
                     "list" => self.list(&valued),
