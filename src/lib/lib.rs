@@ -1,10 +1,16 @@
 use std::fmt::Formatter;
 
-#[derive(Debug)]
 pub struct OrionError {
     pub message: String,
     pub line: u32,
     pub file: String,
+}
+
+impl std::fmt::Debug for OrionError {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Error: {}, {}:{}", self.message, self.file, self.line)?;
+        Ok(())
+    }
 }
 
 impl std::fmt::Display for OrionError {
