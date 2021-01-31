@@ -128,13 +128,14 @@ impl Interpreter {
             // boolean algebra
 
             "=" => self.eval_eq(&args),
-            "!" => self.eval_neq(&args),
+            "!=" => self.eval_neq(&args),
             "<" => self.eval_le(&args),
             ">" => self.eval_ge(&args),
             "<=" => self.eval_leq(&args),
             ">=" => self.eval_geq(&args),
             "|" => self.eval_or(&args),
             "&" => self.eval_and(&args),
+            "!" => self.eval_not(&args),
 
             // std
             _ => {
@@ -145,10 +146,25 @@ impl Interpreter {
                 }
 
                 match name {
+                    // io
                     "print" => self.print(&valued),
+                    "puts" => self.puts(&valued),
+                    "eprint" => self.eprint(&valued),
+                    "eputs" => self.eputs(&valued),
+                    "input" => self.input(&valued),
+
+                    // misc
                     "assert" => self.assert(&valued),
+
+                    // Collections
                     "list" => self.list(&valued),
+                    "push" => self.push(&valued),
+                    "object" => self.object(&valued),
                     "@" => self.index(&valued),
+
+                    // fs
+                    "fs:exists?" => self.exists(&valued),
+
                     _ => self.scope_function(name, &valued),
                 }
             }

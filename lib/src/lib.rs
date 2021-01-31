@@ -332,6 +332,73 @@ mod tests {
 
             Ok(())
         }
+        #[test]
+        fn object() -> crate::Result<()> {
+    
+            let code = r#"
+    (define foo (object "a" "b"
+                        "c" 5
+                        "d" false
+                        "e" nil
+                        "f" 5.5))
+    (assert (= (@ foo "f") 5.5))"#;
+    
+            let mut lexer = Lexer::new(code.to_owned());
+            let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
+    
+            interpreter.eval()?;
+            Ok(())
+        }
+
+        mod push {
+            use super::*;
+
+            #[test]
+            fn list() -> crate::Result<()> {
+                let code = "(var a (list 4 5))(set a (push a 4))(assert (= (@ a 2) 4))";
+                
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+        
+                interpreter.eval()?;
+                Ok(())
+            }
+
+            #[test]
+            fn objects() -> crate::Result<()> {
+                let code = "(var a (object \"a\" 5))(set a (push a \"b\" false))(print a)(assert (= (@ a \"b\") false))";
+                
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+        
+                interpreter.eval()?;
+                Ok(())
+            }
+        }
+
+        mod fs{
+            use super::*;
+
+            #[test]
+            fn exists() -> crate::Result<()> {
+                let code = "(assert (fs:exists? \".\"))";
+                
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+        
+                interpreter.eval()?;
+                Ok(())
+            }
+        }
     }
+
+
 }
 

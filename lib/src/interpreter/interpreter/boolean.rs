@@ -3,6 +3,29 @@ use crate::interpreter::value::Value;
 use crate::parser::node::{Node, NodeType};
 
 impl Interpreter {
+    pub fn eval_not(&mut self, args: &Vec<Node>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            );
+        }
+
+        let lhs = match &args[0].ntype {
+            NodeType::Int(i) => Value::Int(*i),
+            NodeType::Float(f) => Value::Float(*f),
+            NodeType::Bool(b) => Value::Bool(*b),
+            NodeType::String(s) => Value::String(s.to_owned()),
+            NodeType::Nil => Value::Nil,
+            NodeType::Scope => self.eval_scope(&args[0])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Identifier(s) => self.identifier(&s)?,
+        };
+
+        Ok(match lhs {
+            Value::Bool(lh) => Value::Bool(!lh),
+            _ => Value::Bool(true),
+        })
+    }
     pub fn eval_eq(&mut self, args: &Vec<Node>) -> crate::Result<Value> {
 
         if args.len() != 2 {
@@ -61,6 +84,10 @@ impl Interpreter {
             }
             Value::Object(lh) => match rhs {
                 Value::Object(rh) => Value::Bool(rh == lh),
+                _ => Value::Bool(false),
+            }
+            Value::Bool(lh) => match rhs {
+                Value::Bool(rh) => Value::Bool(rh == lh),
                 _ => Value::Bool(false),
             }
             _ => Value::Bool(false)
@@ -126,6 +153,10 @@ impl Interpreter {
             Value::Object(lh) => match rhs {
                 Value::Object(rh) => Value::Bool(rh != lh),
                 _ => Value::Nil,
+            }
+            Value::Bool(lh) => match rhs {
+                Value::Bool(rh) => Value::Bool(rh != lh),
+                _ => Value::Bool(false),
             }
             _ => Value::Nil
         })

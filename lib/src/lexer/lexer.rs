@@ -97,7 +97,7 @@ impl Lexer {
     }
     fn identifier(&mut self) {
         let is_whitespace_or_end = |c: char| -> bool {
-            c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == ')' || c == '}'
+            c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == ')' || c == '}' || c == '(' || c == '{'
         };
 
         while !is_whitespace_or_end(self.peek()) && !self.is_at_end() {
