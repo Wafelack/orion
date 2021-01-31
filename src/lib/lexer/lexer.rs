@@ -43,7 +43,7 @@ impl Lexer {
             '{' => self.add_token(Token::LeftBrace),
             '}' => self.add_token(Token::RightBrace),
             '"' => self.string(),
-            '#' => while !self.is_at_end() && self.peek() != '\n' {
+            ';' => while !self.is_at_end() && self.peek() != '\n' {
                 self.advance();
             }
             'n' => if self.peek() == 'i' {
