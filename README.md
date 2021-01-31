@@ -11,7 +11,7 @@
 # Install
 
 - Download binary from the releases.
-- Run `cargo install orion`
+- Run `cargo install orion-cli`
 
 # Examples
 
