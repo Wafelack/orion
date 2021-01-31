@@ -6,14 +6,14 @@
 
 </div>
 
-# Install
+## Install
 
 - Download binary from the releases.
 - Run `cargo install orion-cli`
 
-# Examples
+## Examples
 
-## Factorial
+### Factorial
 
 ```lisp
 (define factorial (lambda (n) {
@@ -27,7 +27,7 @@
 }))
 ```
 
-## Ackermann function
+### Ackermann function
 
 ```lisp
 (define ack (lambda (m n) {
@@ -43,9 +43,15 @@
 }))
 ```
 
-# Performances
+## Documentation
 
-## Ackermann(3, 3) - 500 runs
+The standard library docs are available [on the wiki](https://github.com/Wafelack/orion-lang/wiki)
+
+:construction: The `GETTING_STARTED.md` is currently work in progress.
+
+## Performances
+
+### Ackermann(3, 3) - 500 runs
 
 | Language |  Total  | Average | Median | Amplitude |
 |----------|---------|---------|--------|-----------|
@@ -55,7 +61,7 @@
 
 <br>
 
-## Pushing 1000 numbers to an array - 500 runs
+### Pushing 1000 numbers to an array - 500 runs
 
 | Language |  Total  | Average | Median | Amplitude |
 |----------|---------|---------|--------|-----------|
