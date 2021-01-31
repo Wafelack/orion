@@ -41,7 +41,7 @@ mod tests {
 
         #[test]
         fn comment() {
-            let mut lexer = Lexer::new("# a looooooooooooooooooong comment\n45".to_owned());
+            let mut lexer = Lexer::new("; a looooooooooooooooooong comment\n45".to_owned());
             assert_eq!(lexer.scan_tokens(), vec![Token::Int(45)]);
         }
 
@@ -346,87 +346,32 @@ mod tests {
             }
         }
 
-        mod benches {
-            use super::*;
+        #[test]
+        fn len() -> crate::Result<()> {
+            let code = "(var a (list 4 5))(assert (= (length a) 2))";
 
-            #[test]
-            fn ackermann() -> crate::Result<()> {
-                let code = r#"
-                (define ack (lambda (m n) {
-                    (if (= m 0) {
-                        (+ n 1)
-                    } {
-                        (if (= n 0) {
-                            (ack (- m 1) 1)
-                        } {
-                            (ack (- m 1) (ack m (- n 1)))
-                        })
-                    })
-                }))
-                (ack 3 3)"#;
-                    
-                let mut lexer = Lexer::new(code.to_owned());
-                let toks = lexer.scan_tokens();
-                let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
-        
-                use std::time::Instant;
+            let mut lexer = Lexer::new(code.to_owned());
+            let toks = lexer.scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
 
-                let mut vals = vec![];
-
-                for _ in 0..500 {
-                    let start = Instant::now();
-                    interpreter.eval()?;
-                    let elapsed = start.elapsed();
-                    vals.push(elapsed.as_millis());
-                }
-
-                vals.sort();
-                let total = vals.iter().sum::<u128>();
-                let average = total / vals.len() as u128;
-                let median = vals[vals.len() / 2];
-                let amplitude = vals[vals.len() - 1] - vals[0];
-                println!("Total: {}ms ; Average: {}ms ; Median: {}ms; Amplitude: {}ms", total, average, median, amplitude);
-
-                Ok(())
-            }
-
-            #[test]
-            fn push() -> crate::Result<()> {
-                let code = r#"
-                (var list (list))
-                (var i 0)
-                (while (< i 1000) {
-                    (set list (push list i))
-                    (set i (+ i 1))
-                })"#;
-                    
-                let mut lexer = Lexer::new(code.to_owned());
-                let toks = lexer.scan_tokens();
-                let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
-        
-                use std::time::Instant;
-
-                let mut vals = vec![];
-
-                for _ in 0..500 {
-                    let start = Instant::now();
-                    interpreter.eval()?;
-                    let elapsed = start.elapsed();
-                    vals.push(elapsed.as_millis());
-                }
-
-                vals.sort();
-                let total = vals.iter().sum::<u128>();
-                let average = total / vals.len() as u128;
-                let median = vals[vals.len() / 2];
-                let amplitude = vals[vals.len() - 1] - vals[0];
-                println!("Total: {}ms ; Average: {}ms ; Median: {}ms; Amplitude: {}ms", total, average, median, amplitude);
-
-                Ok(())
-            }
+            interpreter.eval()?;
+            Ok(())
         }
+
+        #[test]
+        fn pop() -> crate::Result<()> {
+            let code = "(var a (list 4 5))(set a (pop a))(assert (= (length a) 1))";
+
+            let mut lexer = Lexer::new(code.to_owned());
+            let toks = lexer.scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
+
+            interpreter.eval()?;
+            Ok(())
+        }
+
 
         mod fs{
             use super::*;

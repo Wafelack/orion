@@ -199,4 +199,44 @@ impl Interpreter {
             )
         }
     }
+    pub fn len(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+
+        if let Value::List(l) = &args[0] {
+            Ok(Value::Int(l.len() as i32))
+        } else if let Value::String(s) = &args[0] {
+            Ok(
+                Value::Int(s.len() as i32)
+            )
+        } else {
+            Err(
+                crate::error!("Invalid argument, expected string or list, found", (&args[0].get_type()))
+            )
+        }
+    }
+    pub fn pop(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+
+        if let Value::List(mut l) = args[0].clone() {
+            l.pop();
+            Ok(Value::List(
+                l.to_owned()
+            ))
+        } else if let Value::String(mut s) = args[0].clone() {
+            s.pop();
+            Ok(Value::String(s.to_owned()))
+        } else {
+            Err(
+                crate::error!("Invalid argument, expected string or list, found", (&args[0].get_type()))
+            )
+        }
+    }
 }

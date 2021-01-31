@@ -166,6 +166,8 @@ impl Interpreter {
                     "list" => self.list(&valued),
                     "push" => self.push(&valued),
                     "object" => self.object(&valued),
+                    "pop" => self.pop(&valued),
+                    "length" => self.len(&valued),
                     "@" => self.index(&valued),
 
                     // fs
