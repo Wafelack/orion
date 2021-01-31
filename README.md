@@ -1,10 +1,8 @@
 <div align="center">
     
-    # Orion
-
-    Orion is a lisp inspired programming language, strongly and statically typed, focused on flexibility.
-
+    Orion
     ---
+    Orion is a lisp inspired programming language, strongly and statically typed, focused on flexibility.
 
 </div>
 
