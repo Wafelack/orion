@@ -41,9 +41,12 @@ macro_rules! error {
     }
 }
 
-mod lexer;
-mod parser;
-mod interpreter;
+pub mod lexer;
+pub mod parser;
+pub mod interpreter;
+pub use interpreter::interpreter::interpreter::Interpreter;
+pub use lexer::lexer::Lexer;
+pub use parser::parser::Parser;
 
 #[cfg(test)]
 mod tests {

@@ -10,9 +10,13 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new(ast: Node) -> Self {
         Self {
-            scopes: vec![],
+            scopes: vec![BTreeMap::new()],
             ast,
         }
+    }
+    pub fn process_ast(&mut self, ast: &Node) -> crate::Result<()> {
+        self.eval_calls(&ast.children)?;
+        Ok(())
     }
     pub fn get_ast(&mut self) -> Node {
         self.ast.clone()
