@@ -28,6 +28,9 @@ fn main() -> lib::Result<()> {
 }
 
 fn repl() -> lib::Result<()> {
+    use rustyline::error::ReadlineError;
+    use rustyline::Editor;
+
     let mut interpreter = Interpreter::new(
         Parser::new(
             Lexer::new(
@@ -37,20 +40,42 @@ fn repl() -> lib::Result<()> {
     );
     interpreter.eval()?;
 
-    use std::io::Write;
-
+    let mut rl = Editor::<()>::new();
     loop {
-        let mut line = String::new();
-        print!("> ");
-        std::io::stdout().flush().unwrap();
-        std::io::stdin().read_line(&mut line).unwrap();
-        if line.trim() == "(quit)" {
-            return Ok(());
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(line.as_str());
+                let mut lexer = Lexer::new(line.trim().to_owned());
+                let toks = lexer.scan_tokens();
+                let mut parser = Parser::new(toks);
+                let ast = match parser.parse_tokens() {
+                    Ok(n) => n,
+                    Err(e) => {
+                        println!("{}", e);
+                        continue;
+                    }
+                };
+                match interpreter.process_ast(&ast) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("{}", e);
+                        continue;
+                    }
+                };
+            },
+            Err(ReadlineError::Interrupted) => {
+                println!("Keyboard Interrupt");
+            },
+            Err(ReadlineError::Eof) => {
+                println!("(quit)");
+                return Ok(())
+            },
+            Err(err) => {
+                return Err(
+                    error!(err)
+                );
+            }
         }
-        let mut lexer = Lexer::new(line.trim().to_owned());
-        let toks = lexer.scan_tokens();
-        let mut parser = Parser::new(toks);
-        let ast = parser.parse_tokens()?;
-        interpreter.process_ast(&ast)?;
     }
 }
