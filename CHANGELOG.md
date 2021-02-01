@@ -78,3 +78,9 @@ All the Orion changes will be written here
 ### Core
 
 - Macros
+
+# 0.1.2-alpha | ?
+
+## Improved
+
+- Improved unmatched closing delimiter error messages.
