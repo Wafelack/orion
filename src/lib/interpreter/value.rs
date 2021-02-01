@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::{fmt, fmt::{Display, Formatter}};
 use crate::parser::node::Node;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Object(BTreeMap<String, Value>),
     List(Vec<Value>),

@@ -14,7 +14,7 @@ mod test {
         fn definition() -> crate::Result<()> {
             let mut lexer = Lexer::new("(define a 4)".to_owned());
             let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -24,7 +24,7 @@ mod test {
         fn redefinition() -> crate::Result<()> {
             let mut lexer = Lexer::new("(var a 4)(set a 5)(assert (= a 5))".to_owned());
             let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -34,7 +34,7 @@ mod test {
         fn adding() -> crate::Result<()> {
             let mut lexer = Lexer::new("(define a (+ \"a\" \"b\"))(define b (+ 4 5))(define c (+ 4. 9))(assert (= a \"ab\"))(assert (= b 9))(assert (= c 13.))".to_owned());
             let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -45,7 +45,7 @@ mod test {
             let mut lexer = Lexer::new("(assert (= (- 4 5) -1))(assert (= (- 4. 5.) -1.))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -56,7 +56,7 @@ mod test {
             let mut lexer = Lexer::new("(assert (= (* 4 5) 20))(assert (= (* 4. 5.) 20.))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -68,7 +68,7 @@ mod test {
             let mut lexer = Lexer::new("(assert (= (/ 4 5) 0 ))(assert (= (/ 4. 5.) 0.8))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -79,7 +79,7 @@ mod test {
             let mut lexer = Lexer::new("(assert (= (% 4 5) 4 ))(assert (= (% 4. 5.) 4.))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -90,7 +90,7 @@ mod test {
             let mut lexer = Lexer::new("(define a 5)(define b (if (= a 6) {(return -6)} {(return a)}))(assert (= b a))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -102,7 +102,7 @@ mod test {
                 "(assert (! false))(assert (!= 4 5))(assert (= 3. 3.))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -113,7 +113,7 @@ mod test {
             let mut lexer = Lexer::new("(var i 0) (while (< i 5) { (set i (+ i 1))})(assert (= i 5))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -124,7 +124,7 @@ mod test {
             let mut lexer = Lexer::new("(define add (lambda (a b) {(+ a b)}))(assert (= (add 5 6) 11))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -135,7 +135,7 @@ mod test {
             let mut lexer = Lexer::new("(define a (list 5 6 8))(assert (= (@ a 2) 8))".to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
             interpreter.eval()?;
 
             Ok(())
@@ -153,7 +153,7 @@ mod test {
 
             let mut lexer = Lexer::new(code.to_owned());
             let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
 
             interpreter.eval()?;
             Ok(())
@@ -169,7 +169,7 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())
@@ -182,7 +182,7 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())
@@ -196,7 +196,7 @@ mod test {
             let mut lexer = Lexer::new(code.to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
 
             interpreter.eval()?;
             Ok(())
@@ -209,7 +209,7 @@ mod test {
             let mut lexer = Lexer::new(code.to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
 
             interpreter.eval()?;
             Ok(())
@@ -228,7 +228,7 @@ mod test {
             let mut lexer = Lexer::new(code.to_owned());
             let toks = lexer.scan_tokens();
             let ast = Parser::new(toks).parse_tokens()?;
-            let mut interpreter = Interpreter::new(ast);
+            let mut interpreter = Interpreter::new(ast, vec![]);
 
             interpreter.eval()?;
             Ok(())
@@ -245,7 +245,7 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())
@@ -258,7 +258,7 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())
@@ -271,7 +271,7 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())
@@ -284,7 +284,20 @@ mod test {
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
-                let mut interpreter = Interpreter::new(ast);
+                let mut interpreter = Interpreter::new(ast, vec![]);
+
+                interpreter.eval()?;
+                Ok(())
+            }
+
+            #[test]
+            fn slice() -> crate::Result<()> {
+                let code = "(define a (list 0 1 2 3))(define expected (list 1 2 3))(assert (= (slice a 1 4) expected))";
+
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast, vec![]);
 
                 interpreter.eval()?;
                 Ok(())

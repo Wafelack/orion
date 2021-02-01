@@ -11,7 +11,8 @@ impl Interpreter {
         let mut toret = vec![];
         for i in 0..args.len() {
             if i == 0 {
-                first = args[i].get_type();
+                first = args[0].get_type();
+                println!("{}: {}",i, first);
             }
 
             if args[i].get_type() != first {
@@ -25,6 +26,89 @@ impl Interpreter {
         }
 
         Ok(Value::List(toret))
+    }
+    pub fn slice(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 3 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 3, found", (args.len()))
+            )
+        }
+
+        if let Value::Int(start) = &args[1]  {
+            if let Value::Int(end) = &args[2] {
+                if let Value::String(s) = &args[0] {
+                    let i_start = if *start >= 0 {
+                        *start as usize
+                    } else {
+                        return Err(
+                            crate::error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found", start)
+                        )
+                    };
+
+                    let i_end = if *end >= 0 {
+                        *end as usize
+                    } else {
+                        return Err(
+                            crate::error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found", end)
+                        )
+                    };
+
+                    if i_start >= s.len() || i_end >= s.len() {
+                        return Err(
+                            crate::error!("Index out of bounds, the length is", (s.len()), "but the index is", (i_start.max(i_end)))
+                        )
+                    } else {
+                        return Ok(
+                            Value::String(
+                                s[i_start..i_end].to_owned()
+                            )
+                        )
+                    }
+
+                } else if let Value::List(l) = &args[0] {
+                    let i_start = if *start >= 0 {
+                        *start as usize
+                    } else {
+                        return Err(
+                            crate::error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found", start)
+                        )
+                    };
+
+                    let i_end = if *end >= 0 {
+                        *end as usize
+                    } else {
+                        return Err(
+                            crate::error!("Invalid argument, expected integer between 0 and", (std::usize::MAX),"found",start )
+                        )
+                    };
+
+                    if i_start >= l.len() || i_end > l.len() {
+                        return Err(
+                            crate::error!("Index out of bounds, the length is", (l.len()), "but the index is", (i_start.max(i_end)))
+                        )
+                    } else {
+                        let toret = Value::List(
+                            l[i_start..i_end].to_vec()
+                        );
+                        return Ok(
+                            toret
+                        )
+                    }
+                } else {
+                    Err(
+                        crate::error!("Invalid argument, expected list or string, found", (&args[0].get_type()))
+                    )
+                }
+            } else {
+                Err(
+                    crate::error!("Invalid argument, expected int, found", (&args[2].get_type()))
+                )
+            }
+        } else {
+            Err(
+                crate::error!("Invalid argument, expected int, found", (&args[1].get_type()))
+            )
+        }
     }
 
     pub fn input(&mut self, args: &Vec<Value>) -> crate::Result<Value> {

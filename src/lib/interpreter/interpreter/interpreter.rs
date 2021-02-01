@@ -172,6 +172,7 @@ impl Interpreter {
                     "pop" => self.pop(&valued),
                     "length" => self.len(&valued),
                     "foreach" => self.foreach(&valued),
+                    "slice" => self.slice(&valued),
                     "@" => self.index(&valued),
 
                     // fs
