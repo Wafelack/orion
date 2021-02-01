@@ -23,7 +23,7 @@ impl Parser {
     }
     fn peek(&self) -> Token {
         if self.is_at_end() {
-            return Token::RightParen;
+            return Token::Nil;
         }
         self.tokens[self.current].clone()
     }
@@ -52,9 +52,13 @@ impl Parser {
             }
         }
 
-        if self.peek() == Token::RightParen {
-            self.advance();
+        if self.is_at_end() {
+            return Err(
+                crate::error!("Unclosed delimiter.")
+            )
         }
+
+        self.advance();
 
         Ok(toret)
     }
