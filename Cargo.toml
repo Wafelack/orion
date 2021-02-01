@@ -1,6 +1,6 @@
 [package]
 name = "orion-cli"
-version = "0.1.1-alpha"
+version = "0.1.2-alpha"
 authors = ["Wafelack <wafelack@protonmail.com>"]
 edition = "2018"
 readme = "README.md"
