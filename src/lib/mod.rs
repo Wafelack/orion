@@ -7,3 +7,4 @@ pub use interpreter::interpreter::interpreter::Interpreter;
 pub use lexer::lexer::Lexer;
 pub use parser::parser::Parser;
 pub use lib::Result;
+pub use crate::*;

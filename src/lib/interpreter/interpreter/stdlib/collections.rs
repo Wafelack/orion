@@ -85,7 +85,7 @@ impl Interpreter {
         }
 
         if let Value::Int(i) = &args[1] {
-            let index = if *i > 0 {
+            let index = if *i >= 0 {
                 *i as usize
             } else {                
                 return Err(
