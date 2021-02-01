@@ -46,6 +46,36 @@ impl Interpreter {
             )
         }
     }
+
+    pub fn read_file(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+
+        if let Value::String(s) = &args[0] {
+            if Path::new(s).exists() {
+                Ok(
+                    Value::String(
+                        match fs::read_to_string(s) {
+                            Ok(s) => s,
+                            Err(e) => return Err(error!(e)),
+                        }
+                    )
+                )
+
+            } else {
+                Ok(
+                    Value::String("".to_owned())
+                )
+            }
+        } else {
+            return Err(
+                error!("Invalid argument, expected string,  found", (args[0].get_type()))
+            )
+        }
+    }
 }
 
 fn see_dir(path: &str) -> crate::Result<Vec<Value>> {
