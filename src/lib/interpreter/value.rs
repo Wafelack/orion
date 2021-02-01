@@ -78,7 +78,7 @@ fn jsonize(map: &BTreeMap<String, Value>, level: usize) -> String {
             }
             Value::Object(map) => toret.push_str(&format!("{}", jsonize(map, level + 1))),
             Value::Nil => toret.push_str("nil,\n"),
-            Value::Function(args, _) => toret.push_str(&format!("function({})", args.join(", "))),
+            Value::Function(args, _) => toret.push_str(&format!("function({})\n", args.join(", "))),
         }
     }
     toret.push_str(&format!("{}}},\n", get_indents(level)));
