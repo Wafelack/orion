@@ -4,6 +4,7 @@ use std::path::Path;
 use std::io::Write;
 use std::fs;
 use crate::*;
+use std::fs::File;
 
 impl Interpreter {
     pub fn exists(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
@@ -78,10 +79,46 @@ impl Interpreter {
         }
     }
 
+    pub fn create_file(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+        if let Value::String(s) = &args[0] {
+            match File::create(s) {
+                Ok(_) => Ok(Value::Nil),
+                Err(e) => Err(error!(e)),
+            }
+        } else {
+            return Err(
+                error!("Invalid argument, expected string,  found", (args[0].get_type()))
+            )
+        }
+    }
+    pub fn remove_file(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 1 {
+            return Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+        if let Value::String(s) = &args[0] {
+            match fs::remove_file(s) {
+                Ok(_) => Ok(Value::Nil),
+                Err(e) => Err(error!(e)),
+            }
+        } else {
+            return Err(
+                error!("Invalid argument, expected string,  found", (args[0].get_type()))
+            )
+        }
+    }
+
+
     pub fn write_file(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 3 {
             return Err(
-                error!("Invalid number of arguments, expected 2, found", (args.len()))
+                error!("Invalid number of arguments, expected 3, found", (args.len()))
             )
         }
 

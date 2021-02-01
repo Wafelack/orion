@@ -244,6 +244,19 @@ mod test {
                 interpreter.eval()?;
                 Ok(())
             }
+
+            #[test]
+            fn create_file() -> crate::Result<()> {
+                let code = "(fs:createFile \"test.txt\")(assert (fs:exists? \"test.txt\"))(fs:removeFile \"test.txt\")";
+
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+
+                interpreter.eval()?;
+                Ok(())
+            }
         }
     }
 }
