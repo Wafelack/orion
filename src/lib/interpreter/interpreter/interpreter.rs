@@ -181,6 +181,7 @@ impl Interpreter {
 
                     // sys
                     "sys:breakpoint" => self.breakpoint(&valued),
+                    "sys:exit" => self.exit(&valued),
 
 
                     _ => self.scope_function(name, &valued),

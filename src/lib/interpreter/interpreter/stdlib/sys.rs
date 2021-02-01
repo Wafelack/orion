@@ -5,6 +5,24 @@ use crate::*;
 use std::io;
 
 impl Interpreter {
+    pub fn exit(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() == 1 {
+            if let Value::Int(i) = &args[0] {
+                std::process::exit(*i);
+                Ok(
+                    Value::Nil
+                )
+            } else {
+                Err(
+                    error!("Invalid argument, expected integer, found", (&args[0].get_type()))
+                )
+            }
+        } else {
+            Err(
+                error!("Invalid number of arguments, expected 1, found", (args.len()))
+            )
+        }
+    }
     pub fn breakpoint(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() == 1 {
             if let Value::String(s) = &args[0] {
