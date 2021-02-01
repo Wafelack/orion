@@ -95,6 +95,35 @@ impl Lexer {
         }
 
     }
+
+    fn macro_(&mut self) {
+        while is_whitespace(self.peek()) && !self.is_at_end() {
+            if self.peek() == '\n' {self.line += 1;}
+            self.advance();
+        }
+        self.start = self.current;
+        while !self.is_at_end() && !is_whitespace(self.peek()) {
+            if self.peek() == '\n' { self.line += 1;}
+            self.advance();
+        }
+        let pattern = (self.code[self.start..self.current]).to_string();
+        while self.peek() != '{' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+        self.advance();
+        self.start = self.current;
+        while !self.is_at_end() && self.peek() != '}' {
+            if self.peek() == '\n' {self.line += 1;}
+            self.advance();
+        }
+        self.advance();
+        let replace = (self.code[self.start..self.current - 1]).to_string();
+        self.code = format!("{}{}", self.code[..self.current].to_owned(), self.code[self.current..].to_owned().replace(&pattern, &replace));
+    }
+
     fn identifier(&mut self) {
         let is_whitespace_or_end = |c: char| -> bool {
             c == ' ' || c == '\r' || c == '\n' || c == '\t' || c == ')' || c == '}' || c == '(' || c == '{'
@@ -104,7 +133,12 @@ impl Lexer {
             self.advance();
         }
 
-        let raw = &self.code[self.start..self.current];
+        let raw = self.code[self.start..self.current].to_string();
+        if raw == "macro" {
+            self.macro_();
+            return;
+        }
+
         if raw == "true" {
             self.add_token(Token::Bool(true));
         } else if raw == "false" {
@@ -139,4 +173,8 @@ impl Lexer {
         self.tokens.clone()
     }
 
+}
+
+fn is_whitespace (c: char) -> bool {
+    c == ' ' || c == '\r' || c == '\n' || c == '\t'
 }
