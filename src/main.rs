@@ -17,7 +17,7 @@ fn main() -> lib::Result<()> {
             if args.contains(&"--debug".to_owned()) {
                 println!("{}", ast);
             }
-            Interpreter::new(ast).eval()?;
+            Interpreter::new(ast, args.iter().filter(|x| x != &&"--debug").map(|x| x.to_owned()).collect::<Vec<String>>()).eval()?;
             Ok(())
         } else {
             Err(
@@ -36,7 +36,7 @@ fn repl() -> lib::Result<()> {
             Lexer::new(
                 format!("(print \"Orion REPL v{}\")", env!("CARGO_PKG_VERSION"))
             ).scan_tokens()
-        ).parse_tokens()?
+        ).parse_tokens()?, vec![],
     );
     interpreter.eval()?;
 

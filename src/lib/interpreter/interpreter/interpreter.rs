@@ -8,9 +8,12 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(ast: Node) -> Self {
+    pub fn new(ast: Node, args: Vec<String>) -> Self {
+        let mut master= BTreeMap::new();
+        let valued = Value::List(args.iter().map(|x| Value::String(x.to_owned())).collect::<Vec<Value>>());
+        master.insert("sys:args".to_owned(), (valued, false));
         Self {
-            scopes: vec![BTreeMap::new()],
+            scopes: vec![master],
             ast,
         }
     }
