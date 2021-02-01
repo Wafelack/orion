@@ -321,7 +321,7 @@ impl Interpreter {
                 if let Value::Object(map) = &args[0] {
                     for (key, value) in map{
                         self.scopes.push(BTreeMap::new());
-                        let mut scp = self.scopes.last_mut().unwrap();
+                        let scp = self.scopes.last_mut().unwrap();
                         scp.insert(func_args[0].to_owned(), (Value::String(key.to_owned()), true));
                         scp.insert(func_args[1].to_owned(), (value.to_owned(), true));
                         self.eval_calls(&body.children)?;

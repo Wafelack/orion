@@ -31,9 +31,6 @@ impl Lexer {
     fn peek(&mut self) -> char {
         self.code.chars().nth(self.current).unwrap_or('\0')
     }
-    fn peek_next(&mut self) -> char {
-        self.code.chars().nth(self.current + 1).unwrap_or('\0')
-    }
     fn scan_token(&mut self) {
         let c = self.advance();
 

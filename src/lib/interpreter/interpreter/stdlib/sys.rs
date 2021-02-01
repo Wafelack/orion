@@ -9,9 +9,6 @@ impl Interpreter {
         if args.len() == 1 {
             if let Value::Int(i) = &args[0] {
                 std::process::exit(*i);
-                Ok(
-                    Value::Nil
-                )
             } else {
                 Err(
                     error!("Invalid argument, expected integer, found", (&args[0].get_type()))
