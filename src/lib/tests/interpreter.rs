@@ -276,6 +276,19 @@ mod test {
                 interpreter.eval()?;
                 Ok(())
             }
+
+            #[test]
+            fn exec() -> crate::Result<()> {
+                let code = "(define out (sys:exec \"echo\" (list)))(assert (= (@ out \"status\") 0))";
+
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+
+                interpreter.eval()?;
+                Ok(())
+            }
         }
     }
 }
