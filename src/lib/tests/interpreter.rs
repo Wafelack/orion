@@ -215,6 +215,26 @@ mod test {
             Ok(())
         }
 
+        #[test]
+        fn foreach() -> crate::Result<()> {
+            let code = r#"
+            (var acc (list))
+            (define obj (object "a" 0 "b" 1 "c" 2))
+            (foreach obj (lambda (_ v) {
+                (set acc (push acc v))
+            }))
+            (print acc)
+            (assert (= (list 0 1 2) acc))"#;
+
+            let mut lexer = Lexer::new(code.to_owned());
+            let toks = lexer.scan_tokens();
+            let ast = Parser::new(toks).parse_tokens()?;
+            let mut interpreter = Interpreter::new(ast);
+
+            interpreter.eval()?;
+            Ok(())
+        }
+
 
         mod fs{
             use super::*;

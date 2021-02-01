@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
+use crate::*;
 use std::io;
 
 impl Interpreter {
@@ -199,6 +200,67 @@ impl Interpreter {
             )
         }
     }
+
+    pub fn foreach(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 2 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 2|3, found", (args.len()))
+            )
+        }
+
+        if let Value::Function(func_args, body) = &args[1] {
+            if func_args.len() == 1 {
+                if let Value::String(s) = &args[0] {
+                    for c in s.chars() {
+                        self.scopes.push(BTreeMap::new());
+                        self.scopes.last_mut().unwrap().insert(func_args[0].to_owned(), (Value::String(format!("{}", c)), true));
+                        self.eval_calls(&body.children)?;
+
+                        self.scopes.pop();
+                    }
+                    Ok(Value::Nil)
+                } else if let Value::List(l) = &args[0] {
+                    for el in l {
+                        self.scopes.push(BTreeMap::new());
+                        self.scopes.last_mut().unwrap().insert(func_args[0].to_owned(), (el.to_owned(), true));
+                        self.eval_calls(&body.children)?;
+
+                        self.scopes.pop();
+                    }
+                    Ok(Value::Nil)
+                } else {
+                    Err(
+                        error!("Invalid argument, expected string or list, found", (&args[0].get_type()))
+                    )
+                }
+            } else if func_args.len() == 2 {
+                if let Value::Object(map) = &args[0] {
+                    for (key, value) in map{
+                        self.scopes.push(BTreeMap::new());
+                        let mut scp = self.scopes.last_mut().unwrap();
+                        scp.insert(func_args[0].to_owned(), (Value::String(key.to_owned()), true));
+                        scp.insert(func_args[1].to_owned(), (value.to_owned(), true));
+                        self.eval_calls(&body.children)?;
+                        self.scopes.pop();
+                    }
+                    Ok(Value::Nil)
+                } else {
+                    Err(
+                        error!("Invalid argument, expected object, found", (&args[0].get_type()))
+                    )
+                }
+            } else {
+                Err(
+                    error!("Invalid argument, expected function(x) or function(k, v), found", (&args[1].get_type()))
+                )
+            }
+        } else {
+            Err(
+                error!("Invalid argument, expected function, found", (&args[1].get_type()))
+            )
+        }
+    }
+
     pub fn len(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 1 {
             return Err(
