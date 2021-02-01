@@ -46,17 +46,6 @@ impl Lexer {
             ';' => while !self.is_at_end() && self.peek() != '\n' {
                 self.advance();
             }
-            'n' => if self.peek() == 'i' {
-                    if self.peek_next() == 'l' {
-                        self.advance();
-                        self.advance();
-                        self.add_token(Token::Nil);
-                    } else {
-                        self.identifier();
-                    }
-                } else {    
-                    self.identifier();
-                }
             ' ' | '\t' | '\r' => {},
             '\n' => self.line += 1,
             '-' => if self.peek().is_digit(10) {
@@ -143,6 +132,8 @@ impl Lexer {
             self.add_token(Token::Bool(true));
         } else if raw == "false" {
             self.add_token(Token::Bool(false));
+        } else if raw == "nil" {
+            self.add_token(Token::Nil);
         } else {
             self.add_token(Token::Identifier(raw.to_owned()));
         }
