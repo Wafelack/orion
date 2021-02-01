@@ -1,0 +1,51 @@
+use std::collections::BTreeMap;
+use crate::interpreter::value::Value;
+use crate::interpreter::interpreter::interpreter::Interpreter;
+use crate::*;
+use std::io;
+
+impl Interpreter {
+    pub fn breakpoint(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() == 1 {
+            if let Value::String(s) = &args[0] {
+                self.breakpnt(&s);
+                Ok(
+                    Value::Nil
+                )
+            } else {
+                Err(
+                    error!("Invalid argument, expected string, found", (&args[0].get_type()))
+                )
+            }
+        } else if args.len() == 0 {
+            self.breakpnt("UNNAMED_BREAKPOINT");
+            Ok(Value::Nil)
+        } else {
+            Err(
+                error!("Invalid number of arguments, expected 1|0, found", (args.len()))
+            )
+        }
+    }
+    fn breakpnt(&mut self, name: &str) {
+        println!("\x1b[0;31m== Program hit breakpoint '{}' ==\x1b[0m", name);
+        println!("\nScopes: {}", self.print_scopes());
+        println!("== End of scopes ==");
+        println!("\nPress enter key to continue ...");
+        io::stdin().read_line(&mut String::new()).unwrap();
+    }
+    fn print_scopes(&mut self) -> String {
+        let mut toret = String::new();
+        for scope in &self.scopes {
+            toret.push_str("{\n");
+            for (key, (value, mutable)) in scope {
+                toret.push_str(
+                    format!("\t{} => Value: {} | Mutable: {},\n", key, value, mutable).as_str()
+                )
+            }
+            toret.push_str("},");
+        }
+        toret.pop();
+        toret.push('\n');
+        toret
+    }
+}

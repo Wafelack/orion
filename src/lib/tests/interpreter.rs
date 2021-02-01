@@ -223,7 +223,6 @@ mod test {
             (foreach obj (lambda (_ v) {
                 (set acc (push acc v))
             }))
-            (print acc)
             (assert (= (list 0 1 2) acc))"#;
 
             let mut lexer = Lexer::new(code.to_owned());

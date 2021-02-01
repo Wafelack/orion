@@ -179,6 +179,8 @@ impl Interpreter {
                     "fs:createFile" => self.create_file(&valued),
                     "fs:removeFile" => self.remove_file(&valued),
 
+                    // sys
+                    "sys:breakpoint" => self.breakpoint(&valued),
 
 
                     _ => self.scope_function(name, &valued),
