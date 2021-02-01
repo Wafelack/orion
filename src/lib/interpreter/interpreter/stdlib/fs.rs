@@ -1,6 +1,7 @@
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use std::path::Path;
+use std::io::Write;
 use std::fs;
 use crate::*;
 
@@ -72,6 +73,60 @@ impl Interpreter {
             }
         } else {
             return Err(
+                error!("Invalid argument, expected string,  found", (args[0].get_type()))
+            )
+        }
+    }
+
+    pub fn write_file(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 3 {
+            return Err(
+                error!("Invalid number of arguments, expected 2, found", (args.len()))
+            )
+        }
+
+        if let Value::String(s) = &args[0] {
+            if Path::new(s).exists() {
+
+                if let Value::String(mode) = &args[1] {
+
+                    if mode == "a" {
+                        let mut file = match fs::OpenOptions::new().append(true).open(s) {
+                            Ok(f) => f,
+                            Err(e) => return Err(error!(e)),
+                        };
+                        match file.write_all(format!("{}", &args[2]).as_bytes()) {
+                            Ok(()) => Ok(Value::Bool(true)),
+                            Err(e) => Err(
+                                error!(e),
+                            )
+                        }
+                    } else {
+                        let mut file = match fs::OpenOptions::new().write(true).open(s) {
+                            Ok(f) => f,
+                            Err(e) => return Err(error!(e)),
+                        };
+                        match file.write_all(format!("{}", &args[2]).as_bytes()) {
+                            Ok(()) => Ok(Value::Bool(true)),
+                            Err(e) => Err(
+                                error!(e),
+                            )
+                        }
+                    }
+
+                } else {
+                    Err(
+                        error!("Invalid argument, expected string,  found", (args[0].get_type()))
+                    )
+                }
+
+            } else {
+                Ok(
+                    Value::Bool(false),
+                )
+            }
+        } else {
+            Err(
                 error!("Invalid argument, expected string,  found", (args[0].get_type()))
             )
         }

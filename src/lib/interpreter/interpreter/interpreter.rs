@@ -174,6 +174,7 @@ impl Interpreter {
                     "fs:exists?" => self.exists(&valued),
                     "fs:readDir" => self.read_dir(&valued),
                     "fs:readFile" => self.read_file(&valued),
+                    "fs:writeFile" => self.write_file(&valued),
 
 
                     _ => self.scope_function(name, &valued),

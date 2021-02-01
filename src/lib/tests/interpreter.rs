@@ -1,171 +1,14 @@
 #[cfg(test)]
-mod tests {
+mod test {
     use crate::lexer::lexer::Lexer;
     use crate::lexer::tokens::Token;
     use crate::parser::node::*;
     use crate::parser::parser::Parser;
     use crate::interpreter::interpreter::interpreter::Interpreter;
 
-    mod tokenizing {
-        use super::*;
-
-        #[test]
-        fn string() {
-            let mut lexer = Lexer::new("\"foo\"".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::String("foo".to_owned())]);
-        }
-
-        #[test]
-        fn float() {
-            let mut lexer = Lexer::new("43.50".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Float(43.50)]);
-        }
-
-        #[test]
-        fn int() {
-            let mut lexer = Lexer::new("43".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Int(43)]);
-        }
-
-        #[test]
-        fn boolean() {
-            let mut lexer = Lexer::new("true false".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Bool(true), Token::Bool(false)]);
-        }
-
-        #[test]
-        fn nil() {
-            let mut lexer = Lexer::new("n ni nil".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Identifier("n".to_owned()), Token::Identifier("ni".to_owned()), Token::Nil]); 
-        }
-
-        #[test]
-        fn comment() {
-            let mut lexer = Lexer::new("; a looooooooooooooooooong comment\n45".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Int(45)]);
-        }
-
-        #[test]
-        fn paren() {
-            let mut lexer = Lexer::new("()".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::LeftParen, Token::RightParen]);
-        }
-
-        #[test]
-        fn brace() {
-            let mut lexer = Lexer::new("{}".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::LeftBrace, Token::RightBrace]);
-        }
-
-        #[test]
-        fn identifier() {
-            let mut lexer = Lexer::new("def".to_owned());
-            assert_eq!(lexer.scan_tokens(), vec![Token::Identifier("def".to_owned())]);
-        }
-    }
-
-    mod parsing {
-
-        use super::*;
-
-        #[test]
-        fn multiple_args() -> crate::Result<()> {
-            let mut lexer = Lexer::new("(print \"foo\" 4 nil true)".to_owned());
-            let mut parser = Parser::new( lexer.scan_tokens());
-            let ast = parser.parse_tokens()?;
-
-            assert_eq!(ast, Node {
-                ntype: NodeType::Scope,
-                children: vec![
-                    Node {
-                        ntype: NodeType::FunctionCall(
-                            "print".to_owned(),
-                        ),
-                        children: vec![
-                            Node {
-                                ntype: NodeType::String(
-                                    "foo".to_owned(),
-                                ),
-                                children: vec![],
-                            },
-                            Node {
-                                ntype: NodeType::Int(
-                                    4
-                                ),
-                                children: vec![],
-                            },
-                            Node {
-                                ntype: NodeType::Nil,
-                                children: vec![],
-                            },
-                            Node {
-                                ntype: NodeType::Bool(
-                                    true
-                                ),
-                                children: vec![],
-                            },
-                        ],
-                    },
-                ],
-            });
-
-            Ok(())
-        }
-
-        fn standardize(ast: &str) -> String {
-            ast.replace("\r", "")
-                .replace("\n", "")
-                .replace(" ", "")
-                .replace("\t", "")
-        }
-
-        #[test]
-        fn condition() -> crate::Result<()> {
-            let code = "(if (= a b) {(print \"equal\")} {(print \"not equal\")})";
-            let mut lexer = Lexer::new(code.to_owned());
-            let mut parser = Parser::new( lexer.scan_tokens());
-            let ast = parser.parse_tokens()?;
-
-            assert_eq!(standardize(&stringify(&ast,0)), standardize(r#"{
-                @type : FunctionCall("if")
-                @children : {
-                  @type : FunctionCall("=")
-                  @children : {
-                    @type : Identifier("a")
-                    @children : {
-                      }
-                    @type : Identifier("b")
-                    @children : {
-                      }
-                    }
-                  @type : Scope
-                  @children : {
-                    @type : FunctionCall("print")
-                    @children : {
-                      @type : String("equal")
-                      @children : {
-                        }
-                      }
-                    }
-                  @type : Scope
-                  @children : {
-                    @type : FunctionCall("print")
-                    @children : {
-                      @type : String("not equal")
-                      @children : {
-                        }
-                      }
-                    }
-                  }
-                }"#));
-
-            Ok(())
-        }
-
-    }
-
     mod interpreter {
         use super::*;
+        use crate::*;
 
         #[test]
         fn definition() -> crate::Result<()> {
@@ -299,7 +142,7 @@ mod tests {
         }
         #[test]
         fn object() -> crate::Result<()> {
-    
+
             let code = r#"
     (define foo (object "a" "b"
                         "c" 5
@@ -307,11 +150,11 @@ mod tests {
                         "e" nil
                         "f" 5.5))
     (assert (= (@ foo "f") 5.5))"#;
-    
+
             let mut lexer = Lexer::new(code.to_owned());
             let ast = Parser::new(lexer.scan_tokens()).parse_tokens()?;
             let mut interpreter = Interpreter::new(ast);
-    
+
             interpreter.eval()?;
             Ok(())
         }
@@ -322,12 +165,12 @@ mod tests {
             #[test]
             fn list() -> crate::Result<()> {
                 let code = "(var a (list 4 5))(set a (push a 4))(assert (= (@ a 2) 4))";
-                
+
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
                 let mut interpreter = Interpreter::new(ast);
-        
+
                 interpreter.eval()?;
                 Ok(())
             }
@@ -335,12 +178,12 @@ mod tests {
             #[test]
             fn objects() -> crate::Result<()> {
                 let code = "(var a (object \"a\" 5))(set a (push a \"b\" false))(print a)(assert (= (@ a \"b\") false))";
-                
+
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
                 let mut interpreter = Interpreter::new(ast);
-        
+
                 interpreter.eval()?;
                 Ok(())
             }
@@ -379,17 +222,28 @@ mod tests {
             #[test]
             fn exists() -> crate::Result<()> {
                 let code = "(assert (fs:exists? \".\"))";
-                
+
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
                 let ast = Parser::new(toks).parse_tokens()?;
                 let mut interpreter = Interpreter::new(ast);
-        
+
+                interpreter.eval()?;
+                Ok(())
+            }
+
+            #[test]
+            fn read_dir() -> crate::Result<()> {
+                let code = "(assert (= (@ (fs:readDir \"src\") 0) \"src/main.rs\"))";
+
+                let mut lexer = Lexer::new(code.to_owned());
+                let toks = lexer.scan_tokens();
+                let ast = Parser::new(toks).parse_tokens()?;
+                let mut interpreter = Interpreter::new(ast);
+
                 interpreter.eval()?;
                 Ok(())
             }
         }
     }
-
-
 }
