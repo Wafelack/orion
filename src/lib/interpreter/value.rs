@@ -27,6 +27,62 @@ impl Value {
             Self::Nil => "nil"
         }.to_owned()
     }
+    pub fn cast_to(&self, typ: &str) -> crate::Result<Value> {
+        match typ {
+            "string" => {
+                match self {
+                    Self::List(v) => {
+                        let mut toret = String::new();
+
+                        for val in v {
+                            toret.push_str(&format!("{}", val));
+                        }
+                        Ok(
+                            Value::String(toret)
+                        )
+                    }
+                    Self::Float(f) => Ok(Value::String(format!("{}", f))),
+                    Self::Int(i) => Ok(Value::String(format!("{}", i))),
+                    Self::Bool(b) => Ok(Value::String(format!("{}", b))),
+                    _ => Ok(Value::String(format!(""))),
+                }
+            }
+            "float" => {
+                match self {
+                    Self::Float(f) => Ok(Value::Float(*f)),
+                    Self::Int(i) => Ok(Value::Float(*i as f32)),
+                    Self::Bool(b) => Ok(Value::Float(if !b { 0.} else {1.})),
+                    Self::String(s) => Ok(Value::Float(s.parse::<f32>().unwrap_or(0.))),
+                    _ => Ok(Value::Float(0.)),
+                }
+            }
+            "int" => {
+                match self {
+                    Self::Float(f) => Ok(Value::Int(f.floor() as i32)),
+                    Self::Int(i) => Ok(Value::Int(*i)),
+                    Self::Bool(b) => Ok(Value::Int(*b as i32)),
+                    Self::String(s) => Ok(Value::Int(s.parse::<i32>().unwrap_or(0))),
+                    _ => Ok(Value::Int(0)),
+                }
+            }
+            "list" => {
+                Ok(
+                    Value::List(vec![self.to_owned()])
+                )
+            }
+            "bool" => {
+                match self {
+                    Self::Float(f) => Ok(Value::Bool(if *f == 0. { false } else {true})),
+                    Self::Int(i) => Ok(Value::Bool(if *i == 0 { false } else {true})),
+                    Self::Bool(b) => Ok(Value::Bool(*b)),
+                    Self::String(s) => Ok(Value::Bool(s.parse::<bool>().unwrap_or(false))),
+                    _ => Ok(Value::Bool(false)),
+                } }
+            _ => {
+                Ok(Value::Nil)
+            }
+        }
+    }
 }
 
 

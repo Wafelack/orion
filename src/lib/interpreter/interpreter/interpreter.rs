@@ -164,6 +164,7 @@ impl Interpreter {
                     "assert" => self.assert(&valued),
                     "typeof" => self._typeof(&valued),
                     "import" => self.import(&valued),
+                    "static_cast" => self.cast(&valued),
 
                     // Collections
                     "list" => self.list(&valued),
@@ -182,6 +183,9 @@ impl Interpreter {
                     "fs:writeFile" => self.write_file(&valued),
                     "fs:createFile" => self.create_file(&valued),
                     "fs:removeFile" => self.remove_file(&valued),
+
+                    // math
+
 
                     // sys
                     "sys:breakpoint" => self.breakpoint(&valued),

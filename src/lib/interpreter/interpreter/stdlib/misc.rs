@@ -29,6 +29,24 @@ impl Interpreter {
         Ok(Value::String(args[0].get_type()))
     }
 
+    pub fn cast(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() != 2 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
+            )
+        }
+
+        if let Value::String(s) = &args[0] {
+            Ok(
+                args[1].cast_to(s)?
+            )
+        } else {
+            return Err(
+                crate::error!("Invalid argument, expected string,  found", (args[0].get_type()))
+            )
+        }
+    }
+
     pub fn import(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
 
         use std::path::Path;
