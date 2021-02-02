@@ -121,3 +121,17 @@ All the Orion changes will be written here
 ### misc
 
 - static_cast
+
+# 0.1.0 | ?
+
+## Fixed
+
+- Fixed boolean and arithmetic Scopes and Function Calls bugs (index problems)
+
+## Added
+
+- Pattern matching
+
+## Improved
+
+- Getting started with pattern matching explanation

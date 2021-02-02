@@ -100,6 +100,47 @@ foo
 
 `bar` will appear on screen.
 
+## Pattern matching
+
+The last feature we'll see in this introduction is pattern matching.
+
+Pattern matching is a powerful way to avoid multiple print statements.
+
+In orion, it is implemented with the following syntax:
+
+```scheme
+(match <variable> {
+    (=> <case> {
+        <block>
+    })
+    (_ {
+        <default block>
+    })
+})
+```
+
+E.g:
+
+```scheme
+(define foo "bar")
+(match foo {
+    (=> "foo" { ; block is executed if foo == "foo"
+        (print "foo is foo")
+    })
+
+    (_ { ; default case
+        (print (+ "foo is not foo, but " foo))
+    })
+
+    (=> "bar" { ; won't be executed because default case is above
+        (print "foo is bar")
+    })
+})
+```
+
+Output: `foo is not foo, but bar`
+
+
 ## Conclusion
 
 Well,now you know the basics of Orion, you can continue your journey with [the documentation](https://github.com/wafelack/orion-lang/wiki) and thanks for interesting in learning Orion.
