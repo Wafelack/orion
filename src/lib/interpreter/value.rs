@@ -94,11 +94,12 @@ impl Display for Value {
                 write!(f, "[")?;
                 for i in 0..arr.len() {
                     if i == arr.len() - 1{
-                        write!(f, "{}]", arr[i])?;
+                        write!(f, "{}", arr[i])?;
                     } else {
                         write!(f, "{}, ", arr[i])?;
                     }
-                }   
+                }
+                write!(f, "]")?;
                 Ok(())
             }
             Value::Int(i) => write!(f, "{}", i),

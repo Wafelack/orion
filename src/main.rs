@@ -46,6 +46,9 @@ fn repl() -> lib::Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
+                if line == "(quit)" {
+                    return Ok(());
+                }
                 let mut lexer = Lexer::new(line.trim().to_owned());
                 let toks = lexer.scan_tokens();
                 let mut parser = Parser::new(toks);

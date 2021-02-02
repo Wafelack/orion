@@ -1,10 +1,6 @@
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
-use std::path::Path;
-use std::io::Write;
-use std::fs;
 use crate::*;
-use std::fs::File;
 
 impl Interpreter {
     pub fn cos(&mut self, args: &Vec<Value>) -> crate::Result<Value> {

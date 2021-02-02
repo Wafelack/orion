@@ -2,6 +2,38 @@ use crate::interpreter::interpreter::interpreter::Interpreter;
 use crate::parser::node::{Node, NodeType};
 
 impl Interpreter {
+    pub fn eval_drop(&mut self, children: &Vec<Node>) -> crate::Result<()> {
+        if children.len() != 1 {
+            return Err(
+                crate::error!("Function `drop` takes 1 arguments, but", (children.len()), "arguments were supplied.")
+            )
+        }
+        if let NodeType::Identifier(name) = &children[0].ntype {
+
+            if self.scopes.len() >= 1 {
+
+                for i in (0..self.scopes.len()).rev() {
+                    if self.scopes[i].contains_key(name) {
+                        self.scopes[i].remove(name);
+                        return Ok(())
+                    }
+                }
+                return Err(
+                    crate::error!("Attempted to drop an undefined variable: ", name)
+                );
+
+            } else {
+                Err (
+                    crate::error!("No scopes available.")
+                )
+            }
+
+        } else {
+            return Err(
+                crate::error!("Invalid arguments. Expected identifier, found",(&children[0].ntype.stringy_type()))
+            );
+        }
+    }
     pub fn eval_set(&mut self, children: &Vec<Node>) -> crate::Result<()> {
         if children.len() != 2 {
             return Err(

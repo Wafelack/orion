@@ -105,6 +105,10 @@ impl Interpreter {
                 self.eval_set(&args)?;
                 Ok(Value::Nil)
             }
+            "drop" => {
+                self.eval_drop(&args)?;
+                Ok(Value::Nil)
+            }
 
             // return
 
