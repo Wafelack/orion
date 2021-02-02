@@ -185,6 +185,18 @@ impl Interpreter {
                     "fs:removeFile" => self.remove_file(&valued),
 
                     // math
+                    "math:cos" => self.cos(&valued),
+                    "math:sin" => self.sin(&valued),
+                    "math:tan" => self.tan(&valued),
+                    "math:acos" => self.acos(&valued),
+                    "math:asin" => self.asin(&valued),
+                    "math:atan" => self.atan(&valued),
+                    "math:odd" => self.odd(&valued),
+                    "math:pow" => self.pow(&valued),
+                    "math:max" => self.max(&valued),
+                    "math:min" => self.min(&valued),
+                    "math:sqrt" => self.sqrt(&valued),
+                    "math:range" => self.range(&valued),
 
 
                     // sys
