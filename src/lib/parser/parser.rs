@@ -54,7 +54,7 @@ impl Parser {
 
         if self.is_at_end() {
             return Err(
-                crate::error!("Unclosed delimiter.")
+                crate::error!("Unclosed delimiter, missing `)`.")
             )
         }
 
@@ -83,6 +83,11 @@ impl Parser {
                 Token::LeftBrace => toret.add_child(self.parse_scope()?),
                 _ => return Err(crate::error!("Unexpected token:", current))
             }
+        }
+        if self.is_at_end() {
+            return Err(
+                crate::error!("Unclosed delimiter, missing `}`.")
+            )
         }
         if self.peek() == Token::RightBrace {
             self.advance();
