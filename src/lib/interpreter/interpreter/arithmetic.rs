@@ -6,6 +6,7 @@ impl Interpreter {
     pub fn eval_plus(&mut self, args: &Vec<Node>) -> crate::Result<Value> {
 
         if args.len() != 2 {
+            println!("{:?}", args);
             return Err(
                 crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
             );
@@ -27,8 +28,8 @@ impl Interpreter {
             NodeType::Bool(b) => Value::Bool(*b),
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
-            NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Scope => self.eval_scope(&args[1])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
         
@@ -79,8 +80,8 @@ impl Interpreter {
             NodeType::Bool(b) => Value::Bool(*b),
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
-            NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Scope => self.eval_scope(&args[1])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
 
@@ -124,8 +125,8 @@ impl Interpreter {
             NodeType::Bool(b) => Value::Bool(*b),
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
-            NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Scope => self.eval_scope(&args[1])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
 
@@ -170,8 +171,8 @@ impl Interpreter {
             NodeType::Bool(b) => Value::Bool(*b),
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
-            NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Scope => self.eval_scope(&args[1])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
 
@@ -216,8 +217,8 @@ impl Interpreter {
             NodeType::Bool(b) => Value::Bool(*b),
             NodeType::String(s) => Value::String(s.to_owned()),
             NodeType::Nil => Value::Nil,
-            NodeType::Scope => self.eval_scope(&args[0])?,
-            NodeType::FunctionCall(s) => self.eval_call(&s, &args[0].children)?,
+            NodeType::Scope => self.eval_scope(&args[1])?,
+            NodeType::FunctionCall(s) => self.eval_call(&s, &args[1].children)?,
             NodeType::Identifier(s) => self.identifier(&s)?,
         };
 

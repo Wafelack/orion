@@ -478,6 +478,30 @@ mod test {
                     interpreter.eval()?;
                     Ok(())
                 }
+
+                #[test]
+                fn matching() -> crate::Result<()> {
+
+                    let code = r#"
+(define a "foo")
+(define result (match a {
+    (=> "bar" {
+        (return "Of course, it is bar !")
+    })
+    (_ {
+        (+ "It is not bar, but it is '" (+ a "'"))
+    })
+}))
+(print result)"#;
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
             }
         }
     }

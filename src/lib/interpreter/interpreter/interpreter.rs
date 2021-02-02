@@ -121,6 +121,7 @@ impl Interpreter {
             // conditions
 
             "if" => self.eval_condition(&args),
+            "match" => self.eval_match(&args),
 
             // loops 
 
