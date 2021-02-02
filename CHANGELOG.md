@@ -82,3 +82,42 @@ All the Orion changes will be written here
 ## Improved
 
 - Improved unmatched closing delimiter error messages.
+
+# 0.1.3-alpha | 02/02/2021
+
+## Improved
+
+- Improved list display
+
+## Fixed
+
+- Fixed `=` with function call problem
+
+## Added
+
+### Docs
+
+- Added GETTING_STARTED.md
+
+### CLI
+
+- Added `(quit)` to quit the repl
+
+### math
+
+- math:odd
+- math:cos
+- math:sin
+- math:tan
+- math:acos
+- math:asin
+- math:atan
+- math:max
+- math:min
+- math:range
+- math:sqrt
+- math:pow
+
+### misc
+
+- static_cast

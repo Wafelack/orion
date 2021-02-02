@@ -83,6 +83,23 @@ E.g. a square function:
 
 In Orion, the latest value of the function body is returned.
 
+## Macros
+
+Orion implements metaprogramming through **macros**, the macro syntax is as following:
+
+```
+macro pattern {replaceWith}
+```
+
+E.g:
+
+```scheme
+macro foo {(print "bar")}
+foo
+```
+
+`bar` will appear on screen.
+
 ## Conclusion
 
-Well, you now know the basics of Orion, you can continue your journey with [the documentation](https://github.com/wafelack/orion-lang/wiki) and thanks for interesting in learning Orion.
+Well,now you know the basics of Orion, you can continue your journey with [the documentation](https://github.com/wafelack/orion-lang/wiki) and thanks for interesting in learning Orion.
