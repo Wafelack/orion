@@ -12,7 +12,6 @@ impl Interpreter {
         for i in 0..args.len() {
             if i == 0 {
                 first = args[0].get_type();
-                println!("{}: {}",i, first);
             }
 
             if args[i].get_type() != first {
@@ -111,25 +110,7 @@ impl Interpreter {
         }
     }
 
-    pub fn input(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
-        use std::io::Write;
 
-        Ok(if args.len() < 1 {
-            let mut line = String::new();
-            io::stdin().read_line(&mut line).unwrap();
-            Value::String(
-                line
-            )
-        } else {
-            let mut line = String::new();
-            print!("{}", args[0]);
-            io::stdout().flush().unwrap();
-            io::stdin().read_line(&mut line).unwrap();
-            Value::String(
-                line
-            )
-        })
-    }
 
     pub fn object(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         

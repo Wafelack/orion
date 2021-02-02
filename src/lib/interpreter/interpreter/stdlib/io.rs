@@ -1,5 +1,6 @@
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
+use std::io;
 
 impl Interpreter {
     pub fn print(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
@@ -8,6 +9,26 @@ impl Interpreter {
         }
         println!();
         Ok(Value::Nil)
+    }
+
+    pub fn input(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        use std::io::Write;
+
+        Ok(if args.len() < 1 {
+            let mut line = String::new();
+            io::stdin().read_line(&mut line).unwrap();
+            Value::String(
+                line
+            )
+        } else {
+            let mut line = String::new();
+            print!("{}", args[0]);
+            io::stdout().flush().unwrap();
+            io::stdin().read_line(&mut line).unwrap();
+            Value::String(
+                line
+            )
+        })
     }
 
     pub fn puts(&mut self, args: &Vec<Value>) -> crate::Result<Value> {

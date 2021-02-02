@@ -177,7 +177,7 @@ mod test {
 
             #[test]
             fn objects() -> crate::Result<()> {
-                let code = "(var a (object \"a\" 5))(set a (push a \"b\" false))(print a)(assert (= (@ a \"b\") false))";
+                let code = "(var a (object \"a\" 5))(set a (push a \"b\" false))(assert (= (@ a \"b\") false))";
 
                 let mut lexer = Lexer::new(code.to_owned());
                 let toks = lexer.scan_tokens();
@@ -492,7 +492,8 @@ mod test {
         (+ "It is not bar, but it is '" (+ a "'"))
     })
 }))
-(print result)"#;
+(print result)
+(assert (= result "It is not bar, but it is 'foo'"))"#;
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
