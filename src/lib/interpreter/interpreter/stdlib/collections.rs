@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use crate::*;
-use std::io;
 
 impl Interpreter {
     pub fn list(&mut self, args: &Vec<Value>) -> crate::Result<Value> {

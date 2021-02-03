@@ -1,12 +1,8 @@
 #[cfg(test)]
 mod test {
-
     use crate::lexer::lexer::Lexer;
-    use crate::lexer::tokens::Token;
     use crate::parser::node::*;
     use crate::parser::parser::Parser;
-    use crate::interpreter::interpreter::interpreter::Interpreter;
-
 
     mod parsing {
 

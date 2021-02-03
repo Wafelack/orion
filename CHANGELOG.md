@@ -127,10 +127,18 @@ All the Orion changes will be written here
 ## Fixed
 
 - Fixed boolean and arithmetic Scopes and Function Calls bugs (index problems)
+- Fixed trigonometry with radians instead of degrees
 
 ## Added
 
+### Core
+
 - Pattern matching
+
+### Math
+
+- math:initRng
+- math:rand
 
 ## Improved
 

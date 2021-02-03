@@ -1,7 +1,7 @@
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use crate::*;
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct MtGenerator {
     seed: f64,
