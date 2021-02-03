@@ -305,10 +305,11 @@ mod test {
 
             mod math {
                 use super::*;
+                use std::time::Instant;
 
                 #[test]
                 fn cos() -> crate::Result<()> {
-                    let code = "(define a (math:cos 60.))(assert (< a 0.50))";
+                    let code = "(define a (math:cos (/ math:PI 3)))(assert (< a 0.50))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -320,7 +321,7 @@ mod test {
                 }
                 #[test]
                 fn sin() -> crate::Result<()> {
-                    let code = "(define a (math:sin 30.))(assert (> a 0.50))";
+                    let code = "(define a (math:sin (/ math:PI 6)))(print a)(assert (= a 0.5))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -332,7 +333,7 @@ mod test {
                 }
                 #[test]
                 fn tan() -> crate::Result<()> {
-                    let code = "(define a (math:tan 45.))(assert (> a 1.00))";
+                    let code = "(define a (math:tan (/ math:PI 4)))(print a)(assert (= a 1.))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -346,7 +347,7 @@ mod test {
                 #[test]
                 fn acos() -> crate::Result<()> {
 
-                    let code = "(define a (math:acos 0.5))(assert (< a 60.))";
+                    let code = "(define a (math:acos 0.5))(print a)(assert (= a (/ math:PI 3)))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -360,7 +361,7 @@ mod test {
                 #[test]
                 fn asin() -> crate::Result<()> {
 
-                    let code = "(define a (math:asin 0.5))(assert (< a 30.))";
+                    let code = "(define a (math:asin 0.5))(print a)(assert (= a (/ math:PI 6)))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -374,7 +375,7 @@ mod test {
                 #[test]
                 fn atan() -> crate::Result<()> {
 
-                    let code = "(define a (math:atan 1.))(assert (< a 45.))";
+                    let code = "(define a (math:atan 1.))(print a)(assert (= a  (/ math:PI 4)))";
 
                     let mut lexer = Lexer::new(code.to_owned());
                     let toks = lexer.scan_tokens();
@@ -480,6 +481,32 @@ mod test {
                 }
 
                 #[test]
+                fn ack() -> crate::Result<()> {
+                    let code = r#"
+(define ack (lambda (m n) {
+    (if (= m 0) {
+        (+ n 1)
+    } {
+        (if (= n 0) {
+            (ack (- m 1) 1)
+        } {
+            (ack (- m 1) (ack m (- n 1)))
+        })
+    })
+}))
+(ack 3 3)"#;
+                    let start = Instant::now();
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+                    interpreter.eval()?;
+                    let elapsed = start.elapsed().as_millis();
+                    println!("Ack(3, 3) done in {}ms", elapsed);
+                    Ok(())
+                }
+
+                #[test]
                 fn matching() -> crate::Result<()> {
 
                     let code = r#"
@@ -492,7 +519,6 @@ mod test {
         (+ "It is not bar, but it is '" (+ a "'"))
     })
 }))
-(print result)
 (assert (= result "It is not bar, but it is 'foo'"))"#;
 
                     let mut lexer = Lexer::new(code.to_owned());

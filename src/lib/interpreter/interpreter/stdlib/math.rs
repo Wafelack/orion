@@ -102,7 +102,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                f.to_radians().cos()
+                f.cos()
             ))
         } else {
             Err(
@@ -319,7 +319,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                (0.0174533 * f).sin()
+                f.sin()
             ))
         } else {
             Err(
@@ -338,7 +338,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                (0.0174533 * f).tan()
+                f.tan()
             ))
         } else {
             Err(
@@ -358,7 +358,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                f.acos() / 0.0174533
+                f.acos()
             ))
         } else {
             Err(
@@ -376,7 +376,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                f.asin() / 0.0174533
+                f.asin()
             ))
         } else {
             Err(
@@ -395,7 +395,7 @@ impl Interpreter {
 
         if let Value::Float(f) = &args[0] {
             Ok(Value::Float(
-                f.atan() / 0.0174533
+                f.atan()
             ))
         } else {
             Err(
