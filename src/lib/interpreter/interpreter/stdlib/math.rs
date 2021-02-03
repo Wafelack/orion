@@ -1,8 +1,97 @@
 use crate::interpreter::value::Value;
 use crate::interpreter::interpreter::interpreter::Interpreter;
 use crate::*;
+use std::time::{SystemTime, UNIX_EPOCH, Duration};
+
+pub struct MtGenerator {
+    seed: f64,
+    j: f64,
+    k: f64,
+    period: u64,
+}
+
+impl MtGenerator {
+    pub fn new(seed: i32) -> Self {
+        Self {
+            seed: seed as f64,
+            j: 2f64.powi(31) - 1.,
+            k: 16807.,
+            period: 2u64.pow(30),
+        }
+    }
+    pub fn gen_number(&mut self, min: i32, max: i32) -> i32 {
+        self.seed = (self.k * self.seed) % self.j;
+        let toret = (max as f64 - min as f64 + 1.) * (self.seed / self.j) + min as f64;
+        self.period -= 1;
+        if self.period == 0 {
+            self.period = 2u64.pow(30)
+        }
+        toret.ceil() as i32
+    }
+}
 
 impl Interpreter {
+    pub fn init_rand(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+        if args.len() > 1 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 1|0, found", (args.len()))
+            );
+        }
+
+        if args.len() == 1 {
+            if let Value::Int(i) = &args[0] {
+                self.rng = Some(MtGenerator::new(*i));
+            } else {
+                return Err(
+                    error!("Invalid argument, expected int, found", (&args[0].get_type()))
+                )
+            }
+        } else {
+            let seed = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+            self.rng = Some(MtGenerator::new(
+                if seed > std::i32::MAX as u64{
+                    std::i32::MAX
+                } else {
+                    seed as i32
+                }
+            ));
+        }
+
+        Ok(Value::Nil)
+    }
+    pub fn gen_rand(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
+
+        if self.rng.is_none() {
+            return Err(
+                crate::error!("Error, random number generator is not initialized, initialize it with `math:initRng [seed]`")
+            );
+        }
+
+        if args.len() != 2 {
+            return Err(
+                crate::error!("Invalid number of arguments, expected 2, found", (args.len()))
+            );
+        }
+
+        if let Value::Int(start) = &args[0] {
+            if let Value::Int(end) = &args[1] {
+                Ok(
+                    Value::Int(
+                        self.rng.as_mut().unwrap().gen_number(*start, *end)
+                    )
+                )
+            } else {
+                Err(
+                    error!("Invalid argument, expected int, found", (&args[1].get_type()))
+                )
+            }
+        } else {
+            Err(
+                error!("Invalid argument, expected int, found", (&args[0].get_type()))
+            )
+        }
+
+    }
     pub fn cos(&mut self, args: &Vec<Value>) -> crate::Result<Value> {
         if args.len() != 1 {
             return Err(

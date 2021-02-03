@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 use crate::interpreter::value::Value;
 use crate::parser::node::{Node, NodeType};
+use crate::lib::interpreter::interpreter::stdlib::math::MtGenerator;
 
 pub struct Interpreter {
     pub scopes: Vec<BTreeMap<String, (Value, bool)>>,
     pub ast: Node,
+    pub rng: Option<MtGenerator>,
 }
 
 impl Interpreter {
@@ -15,6 +17,7 @@ impl Interpreter {
         Self {
             scopes: vec![master],
             ast,
+            rng: None,
         }
     }
     pub fn process_ast(&mut self, ast: &Node) -> crate::Result<()> {
@@ -203,6 +206,8 @@ impl Interpreter {
                     "math:sqrt" => self.sqrt(&valued),
                     "math:range" => self.range(&valued),
                     "math:clamp" => self.clamp(&valued),
+                    "math:initRng" => self.init_rand(&valued),
+                    "math:rand" => self.gen_rand(&valued),
 
 
                     // sys
