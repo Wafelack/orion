@@ -126,8 +126,9 @@ All the Orion changes will be written here
 
 ## Fixed
 
-- Fixed boolean and arithmetic Scopes and Function Calls bugs (index problems)
-- Fixed trigonometry with radians instead of degrees
+- Boolean and arithmetic Scopes and Function Calls bugs (index problems)
+- Trigonometry with radians instead of degrees
+- Input with a trim
 
 ## Added
 

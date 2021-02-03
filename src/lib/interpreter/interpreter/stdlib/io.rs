@@ -26,7 +26,7 @@ impl Interpreter {
             io::stdout().flush().unwrap();
             io::stdin().read_line(&mut line).unwrap();
             Value::String(
-                line
+                line.trim().to_owned()
             )
         })
     }

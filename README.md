@@ -32,20 +32,27 @@
 }))
 ```
 
-### Ackermann function
+### More or less game
 
 ```lisp
-(define ack (lambda (m n) {
-    (if (= m 0) {
-        (+ n 1)
-    } {
-        (if (= n 0) {
-            (ack (- m 1) 1)
-        } {
-            (ack (- m 1) (ack m (- n 1)))
-        })
+(math:initRng)
+(define toGuess (math:rand 1 100))
+(var guessed 0)
+(var tries 0)
+
+(while (!= guessed toGuess) {
+  (set tries (+ tries 1))
+  (set guessed (static_cast "int" (input "Input number: ")))
+  (if (< guessed toGuess) {
+    (print "More !")
+  } {
+    (if (> guessed toGuess) {
+      (print "Less !")
     })
-}))
+  })
+})
+(print (+ "Well done, you found the number in " (+ (static_cast "string" tries) " tries")))
+
 ```
 
 ## Documentation
