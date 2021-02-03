@@ -24,17 +24,15 @@ impl Interpreter {
             rng: None,
         }
     }
-    pub fn process_ast(&mut self, ast: &Node) -> crate::Result<()> {
-        self.eval_calls(&ast.children)?;
-        Ok(())
+    pub fn process_ast(&mut self, ast: &Node) -> crate::Result<Value> {
+        self.eval_calls(&ast.children)
     }
     pub fn get_ast(&mut self) -> Node {
         self.ast.clone()
     }
-    pub fn eval(&mut self) -> crate::Result<()> {
+    pub fn eval(&mut self) -> crate::Result<Value> {
         let ast = &self.get_ast();
-        self.eval_scope(ast)?;
-        Ok(())
+        self.eval_scope(ast)
     }
     pub fn eval_scope(&mut self, scope: &Node) -> crate::Result<Value> {
         self.scopes.push(BTreeMap::new());

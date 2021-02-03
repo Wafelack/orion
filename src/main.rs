@@ -60,7 +60,7 @@ fn repl() -> lib::Result<()> {
                     }
                 };
                 match interpreter.process_ast(&ast) {
-                    Ok(_) => {}
+                    Ok(out) => println!("{}", out),
                     Err(e) => {
                         println!("{}", e);
                         continue;
