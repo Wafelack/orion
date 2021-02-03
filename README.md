@@ -57,9 +57,9 @@
 
 ## Documentation
 
-The standard library docs are available [on the wiki](https://github.com/Wafelack/orion-lang/wiki)
+- To learn the basics: [Getting Started](./GETTING_STARTED.md)
+- The standard library docs are available [on the wiki](https://github.com/Wafelack/orion-lang/wiki)
 
-:construction: The `GETTING_STARTED.md` is currently work in progress.
 
 ## Performances
 
