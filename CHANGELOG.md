@@ -122,7 +122,7 @@ All the Orion changes will be written here
 
 - static_cast
 
-# 0.1.0 | ?
+# 0.1.0 | 03/02/2021
 
 ## Fixed
 
