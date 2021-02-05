@@ -1,4 +1,4 @@
-name: Orion
+name: Checks
 
 on:
   push:
