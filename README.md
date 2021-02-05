@@ -18,6 +18,16 @@ To install orion you can either:
 * Download binary from the releases.
 * Run `cargo install orion-cli`
 
+## Help
+
+### To run the repl
+
+- Run `orion` in a terminal
+
+### To execute a file
+
+- Run `orion <file>` in a terminal (you can add the `--debug` option to display AST)
+
 ## Examples
 
 ### Factorial
