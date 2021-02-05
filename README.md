@@ -13,7 +13,7 @@
 
 ## Install
 
-To install orion you can either
+To install orion you can either:
 
 * Download binary from the releases.
 * Run `cargo install orion-cli`
