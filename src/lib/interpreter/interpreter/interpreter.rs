@@ -211,6 +211,12 @@ impl Interpreter {
                     "math:initRng" => self.init_rand(&valued),
                     "math:rand" => self.gen_rand(&valued),
 
+                    // option
+                    "some" => self.some(&valued),
+                    "none" => self.none(&valued),
+                    "?" => self.unwrap(&valued),
+                    "?=>" => self.unwrap_or(&valued),
+
 
                     // sys
                     "sys:breakpoint" => self.breakpoint(&valued),

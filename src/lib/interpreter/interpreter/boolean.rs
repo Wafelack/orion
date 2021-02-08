@@ -90,6 +90,10 @@ impl Interpreter {
                 Value::Bool(rh) => Value::Bool(rh == lh),
                 _ => Value::Bool(false),
             }
+            Value::Option(lh) => match rhs {
+                Value::Option(rh) => Value::Bool(rh == lh),
+                _ => Value::Bool(false),
+            }
             _ => Value::Bool(false)
         })
     }
@@ -156,6 +160,10 @@ impl Interpreter {
             }
             Value::Bool(lh) => match rhs {
                 Value::Bool(rh) => Value::Bool(rh != lh),
+                _ => Value::Bool(true),
+            }
+            Value::Option(lh) => match rhs {
+                Value::Option(rh) => Value::Bool(rh != lh),
                 _ => Value::Bool(false),
             }
             _ => Value::Nil

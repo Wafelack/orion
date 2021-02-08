@@ -144,3 +144,16 @@ All the Orion changes will be written here
 ## Improved
 
 - Getting started with pattern matching explanation
+
+# 0.1.1 | ?
+
+## Added
+
+### Types
+
+- Option\<T>
+
+### STD
+
+- unwrap
+- unwrap_or

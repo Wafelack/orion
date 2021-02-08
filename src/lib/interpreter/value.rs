@@ -11,6 +11,7 @@ pub enum Value {
     String(String),
     Bool(bool),
     Function(Vec<String>, Node),
+    Option(Option<Box<Value>>),
     Nil
 }
 
@@ -24,6 +25,7 @@ impl Value {
             Self::String(_) => "string",
             Self::Bool(_) => "bool",
             Self::Function(_,_) => "function",
+            Self::Option(_) => "option",
             Self::Nil => "nil"
         }.to_owned()
     }
@@ -108,6 +110,9 @@ impl Display for Value {
             Value::Bool(b) => write!(f, "{}", b),
             Value::Function(args, _) => write!(f, "function({})", args.join(", ")),
             Value::Nil => write!(f, "nil"),
+            Value::Option(opt) => write!(f, "{}", if (*opt).is_some() {
+                format!("Some({})", (*opt).clone().unwrap())
+            } else {"None".to_owned()}),
         }
     }
 }
@@ -119,6 +124,9 @@ fn jsonize(map: &BTreeMap<String, Value>, level: usize) -> String {
         toret.push_str(&format!("{}{} => ", get_indents(level + 1), key));
 
         match value {
+            Value::Option(opt) => toret.push_str(&format!("{},\n", if (*opt).is_some() {
+                format!("Some({})", (*opt).clone().unwrap())
+            } else {"None".to_owned()})),
             Value::String(s) => toret.push_str(&format!("{},\n",s)),
             Value::Int(i) => toret.push_str(&format!("{},\n", i)),
             Value::Float(f) => toret.push_str(&format!("{},\n", f)),
