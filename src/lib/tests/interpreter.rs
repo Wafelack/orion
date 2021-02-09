@@ -522,6 +522,71 @@ mod test {
                     interpreter.eval()?;
                     Ok(())
                 }
+
+                #[test]
+                fn some() -> crate::Result<()> {
+                    let code = "(define a (some 4))(assert (= (typeof a) \"option\"))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
+
+                #[test]
+                fn none() -> crate::Result<()> {
+                    let code = "(define a (none))(assert (= (typeof a) \"option\"))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
+
+                #[test]
+                fn unwrap() -> crate::Result<()> {
+                    let code = "(define a (some 4))(assert (= (typeof (? a)) \"int\"))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens()?;
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval()?;
+                    Ok(())
+                }
+
+                #[test]
+                #[should_panic]
+                fn unwrap_none() {
+                    let code = "(define a (none))(assert (= (typeof (? a)) \"int\"))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens().unwrap();
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval().unwrap();
+                }
+
+                #[test]
+                fn unwrap_or() {
+                    let code = "(define a (none))(assert (= (typeof (?=> a 4)) \"int\"))";
+
+                    let mut lexer = Lexer::new(code.to_owned());
+                    let toks = lexer.scan_tokens();
+                    let ast = Parser::new(toks).parse_tokens().unwrap();
+                    let mut interpreter = Interpreter::new(ast, vec![]);
+
+                    interpreter.eval().unwrap();
+                }
+
             }
         }
     }
