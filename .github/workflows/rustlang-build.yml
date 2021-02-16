@@ -1,0 +1,66 @@
+name: Continuous Build
+
+###! Triggers a build on following rust versions if a file with 'rs' extension has been modified:
+###! - stable
+###! - beta
+###! - nightly
+###! - minimal supported version
+###! Using platforms:
+###! - Ubuntu
+###! - MacOS
+###! - Windows
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+    - '**.rs'
+  pull_request:
+    # branches: [ master ]
+    types: [ synchronize, opened, reopened, ready_for_review ]
+    paths:
+    - '**.rs'
+
+env:
+  # Forces color in GitHub UI
+  CLICOLOR_FORCE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Builds the source code
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        rust: [stable, beta, nightly, 1.44.0]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Run CI
+        if: matrix.rust == 'stable' || matrix.rust == 'beta'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+      - name: Run CI (Allow Failures)
+        if: matrix.rust == 'nightly'
+        continue-on-error: true
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+      - name: Run CI (Minimal Supported Rust Version)
+        if: matrix.rust != 'stable' && matrix.rust != 'beta' && matrix.rust != 'nightly' && matrix.os == 'ubuntu-latest'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
