@@ -1,0 +1,30 @@
+name: Continuous Build
+
+###! Triggers a test if a file with 'rs' extension has been modified
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+    - '**.rs'
+  pull_request:
+    # branches: [ master ]
+    types: [ synchronize, opened, reopened, ready_for_review ]
+    paths:
+    - '**.rs'
+
+env:
+  # Forces color in GitHub UI
+  CLICOLOR_FORCE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Tests the source code
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run tests
+        run: cargo test --verbose
