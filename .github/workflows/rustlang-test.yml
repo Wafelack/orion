@@ -1,4 +1,4 @@
-name: Continuous Build
+name: Continuous Test
 
 ###! Triggers a test if a file with 'rs' extension has been modified
 
