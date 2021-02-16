@@ -8,7 +8,7 @@ on:
     paths:
     - '**.rs'
   pull_request:
-    # branches: [ master ]
+    branches: [ master ]
     types: [ synchronize, opened, reopened, ready_for_review ]
     paths:
     - '**.rs'
