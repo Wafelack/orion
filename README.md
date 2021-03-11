@@ -13,10 +13,14 @@
 
 ## Install
 
-To install orion you can either:
+### From releases
 
 * Download binary from the releases.
+
+### With cargo
+
 * Run `cargo install orion-cli`
+* Run `cp ~/.cargo/bin/orion-cli ~/.cargo/bin/orion`
 
 ## Help
 
