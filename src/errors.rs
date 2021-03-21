@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct OrionError(pub String);
 
 pub type Result<T> = std::result::Result<T, OrionError>;

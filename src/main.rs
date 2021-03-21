@@ -1,7 +1,9 @@
 mod errors;
+mod lexer;
+mod tests;
 
-pub use errors::{Result, OrionError};
-use std::{process::{exit}};
+pub use errors::{OrionError, Result};
+use std::process::exit;
 
 fn try_main() -> Result<()> {
     Ok(())
@@ -9,15 +11,18 @@ fn try_main() -> Result<()> {
 
 fn main() {
     match try_main() {
-        Ok(()) => {},
+        Ok(()) => {}
         Err(e) => {
-            eprintln!("[{}] {}", if cfg!(windows) {
-                "Orion Error"
-            } else {
-                "\x1b[0;31mOrion Error\x1b[0m"
-            }, e.0);
+            eprintln!(
+                "[{}] {}",
+                if cfg!(windows) {
+                    "Orion Error"
+                } else {
+                    "\x1b[0;31mOrion Error\x1b[0m"
+                },
+                e.0
+            );
             exit(1);
-
-        }    
+        }
     }
 }
