@@ -22,6 +22,17 @@ impl Token {
     pub fn new(ttype: TType, col: usize, line: usize) -> Self {
         Self { line, ttype, col }
     }
+    pub fn get_type(&self) -> String {
+        match self.ttype {
+            TType::LParen => "Opening Parenthese",
+            TType::RParen => "Closing Parenthese",
+            TType::Str(_) => "String",
+            TType::Number(_) => "Integer",
+            TType::Float(_) => "Float",
+            TType::Bool(_) => "Boolean",
+            TType::Ident(_) => "Function Call",
+        }.to_string()
+    }
 }
 
 pub struct Lexer {
