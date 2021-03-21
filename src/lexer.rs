@@ -75,8 +75,8 @@ impl Lexer {
         self.advance(); // Closing "
 
         self.add_token(TType::Str(
-            self.input[self.start + 1..self.current - 1].to_string(),
-        ));
+                self.input[self.start + 1..self.current - 1].to_string(),
+                ));
 
         Ok(())
     }
@@ -92,6 +92,9 @@ impl Lexer {
                 self.line += 1;
             }
             '"' => self.string()?,
+            ';' => while !self.is_at_end() && self.peek() != '\n' {
+                self.advance();
+            }            
             _ => {
                 if c.is_digit(10) {
                     self.number();

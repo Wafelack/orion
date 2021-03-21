@@ -1,5 +1,6 @@
 mod errors;
 mod lexer;
+mod parser;
 mod tests;
 
 pub use errors::{OrionError, Result};
