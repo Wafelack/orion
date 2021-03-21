@@ -1,0 +1,12 @@
+[package]
+name = "orion-lang"
+version = "0.1.0"
+authors = ["Wafelack <wafelack@protonmail.com>"]
+edition = "2018"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+
+[dependencies]
