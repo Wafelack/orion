@@ -25,9 +25,7 @@
 (def or (lambda (lhs rhs)
 	(match lhs
 		(True True)
-		(False (match rhs
-			(True True)
-			(False False))))))
+		(False rhs))))
 
 (def assert_eq (lambda (lhs rhs)
 	(match (= lhs rhs)

@@ -9,7 +9,7 @@ $(OUTPUT) : $(INPUT) $(MAIN)
 
 .PHONY : clean
 clean :
-	latexmk -C
+	@latexmk -C
 
 see : $(OUTPUT)
 	@firefox-bin ./$(OUTPUT)
