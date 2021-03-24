@@ -2,6 +2,7 @@ mod errors;
 mod lexer;
 mod parser;
 mod tests;
+mod interpreter;
 
 pub use errors::{OrionError, Result};
 use std::process::exit;

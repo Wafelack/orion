@@ -1,4 +1,8 @@
-use crate::{Result, error, OrionError, lexer::{Token, TType}};
+use crate::{
+    error,
+    lexer::{TType, Token},
+    OrionError, Result,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NType {
@@ -22,6 +26,15 @@ impl Node {
             children: vec![],
         }
     }
+    pub fn type_lit(&self) -> String {
+        match &self.ntype {
+            NType::Ident(_) => "Identifier",
+            NType::Integer(_) => "Integer",
+            NType::Single(_) => "Single",
+            NType::Str(_) => "String",
+            NType::Bool(_) => "Boolean",
+        }.to_string()
+    }
     pub fn add_child(&mut self, child: Node) {
         self.children.push(child);
     }
@@ -42,7 +55,6 @@ impl Node {
         toret.push_str(&format!("{}],\n", gen_indents(indentations - 1)));
         toret
     }
-
 }
 
 pub struct Parser {
@@ -52,7 +64,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(input: Vec<Token>) ->  Self {
+    pub fn new(input: Vec<Token>) -> Self {
         Self {
             current: 0,
             input,
@@ -73,7 +85,14 @@ impl Parser {
         let mut to_push = match &raw_tp.ttype {
             TType::LParen => self.proc_fn()?,
             TType::Ident(i) => Node::new(NType::Ident(i.to_string())),
-            _ => return error!("{}:{} | Expected Opening Parenthese or Function Call, found {}.", raw_tp.line, raw_tp.col, raw_tp.get_type())
+            _ => {
+                return error!(
+                    "{}:{} | Expected Opening Parenthese or Function Call, found {}.",
+                    raw_tp.line,
+                    raw_tp.col,
+                    raw_tp.get_type()
+                )
+            }
         };
 
         let mut closed = false;
@@ -93,12 +112,13 @@ impl Parser {
                     break;
                 }
             }
-
-
         }
 
         if !closed && self.input[self.current - 1].ttype != TType::RParen {
-            return error!("{}:{} | Unclosed expression, expected ')'", raw_tp.line, raw_tp.col);
+            return error!(
+                "{}:{} | Unclosed expression, expected ')'",
+                raw_tp.line, raw_tp.col
+            );
         }
 
         Ok(to_push)
@@ -114,7 +134,12 @@ impl Parser {
                 Ok(())
             }
 
-            _ => error!("{}:{} | Expected Opening Parenthese, found {}.", tok.line, tok.col, tok.get_type()),
+            _ => error!(
+                "{}:{} | Expected Opening Parenthese, found {}.",
+                tok.line,
+                tok.col,
+                tok.get_type()
+            ),
         }
     }
 
@@ -126,7 +151,6 @@ impl Parser {
         Ok(self.output.clone())
     }
 }
-
 
 fn gen_indents(amount: usize) -> String {
     let mut toret = String::new();

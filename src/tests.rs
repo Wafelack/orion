@@ -1,14 +1,29 @@
 #[cfg(test)]
 mod test {
-    use crate::{Result, parser::{Parser, NType, Node}, lexer::{Lexer, TType, Token}};
+    use crate::{
+        lexer::{Lexer, TType, Token},
+        parser::{NType, Node, Parser},
+        Result,
+    };
 
-#[test]
+    #[test]
     fn lexing() -> Result<()> {
         let mut lexer = Lexer::new("()\"Foo Bar\"True False TrueFalse 4 9.1");
         let tokens = lexer.proc_tokens()?;
 
-        assert_eq!(tokens,
-                   vec![Token::new(TType::LParen, 1, 1), Token::new(TType::RParen, 2, 1), Token::new(TType::Str("Foo Bar".to_owned()), 11, 1), Token::new(TType::Bool(true), 15, 1), Token::new(TType::Bool(false), 21, 1), Token::new(TType::Ident("TrueFalse".to_owned()), 31, 1), Token::new(TType::Number(4), 33, 1), Token::new(TType::Float(9.1), 37, 1)]);
+        assert_eq!(
+            tokens,
+            vec![
+                Token::new(TType::LParen, 1, 1),
+                Token::new(TType::RParen, 2, 1),
+                Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
+                Token::new(TType::Bool(true), 15, 1),
+                Token::new(TType::Bool(false), 21, 1),
+                Token::new(TType::Ident("TrueFalse".to_owned()), 31, 1),
+                Token::new(TType::Number(4), 33, 1),
+                Token::new(TType::Float(9.1), 37, 1)
+            ]
+        );
 
         Ok(())
     }
@@ -36,7 +51,7 @@ mod test {
         let mut while_func = Node::new(NType::Ident("while".to_owned()));
         while_func.add_child(Node::new(NType::Ident("x".to_string())));
         while_func.add_child(Node::new(NType::Ident("y".to_string())));
-        
+
         master.add_child(let_func);
         master.add_child(while_func);
 
@@ -44,5 +59,4 @@ mod test {
 
         Ok(())
     }
-
 }
