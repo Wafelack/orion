@@ -6,12 +6,36 @@ pub enum Value {
     Single(f32),
     Boolean(bool),
     Str(String),
-    Maybe(Option<Value>),
-    Function(Node, Vec<String>, Vec<HashMap<String, Value>>)
+    Maybe(Box<Option<Value>>),
+    Function(Node /* Body */,
+            Vec<String> /* Args */,
+            Vec<HashMap<String, Value>> /* Scopes */,
+
+            String /* Return type */,
+            Vec<String>, /* Args type */)
 }
 
 impl Value {
-    pub fn get_type()
+    pub fn get_type(&self) -> String {
+        match self {
+            Self::Integer(_) => "Integer".to_string(),
+            Self::Single(_) => "Single".to_string(),
+            Self::Boolean(_) => "Boolean".to_string(),
+            Self::Str(_) => "String".to_string(),
+            Self::Maybe(b) => match &**b {
+                Some(v) => format!("Maybe {}", v.get_type()),
+                None => "Maybe".to_string(),
+            }
+            Self::Function(_, _, _, ret, args) => {
+                let mut to_ret = "".to_owned();
+
+                args.iter().for_each(|a| to_ret.push_str(&format!("{} -> ", a)));
+
+                to_ret.push_str(&ret);
+                to_ret
+            }
+        }
+    }
 }
 
 pub struct Interpreter {
