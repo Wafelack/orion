@@ -127,7 +127,7 @@ impl Interpreter {
     fn eval_call(&mut self, call: &Node) -> Result<Value> {
 
         if let NType::Ident(function) = &call.ntype {
-           
+
             match function.as_str() {
                 "def!" => self.def(&call),
                 _ => unimplemented!(),
@@ -139,14 +139,14 @@ impl Interpreter {
 
     }
     fn def(&mut self, node: &Node) -> Result<Value> {
-        
+
         check_args!(node, "def!", 2)?;
         let raw_name = &node.children[0];
 
         check_type!(raw_name, "Identifier")?;
 
         if let NType::Ident(identifier) = &raw_name.ntype {
-    
+
 
             Ok(Value::Integer(0))
         } else {

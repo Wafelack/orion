@@ -30,7 +30,7 @@ mod test {
 
     #[test]
     fn parsing() -> Result<()> {
-        let code = "(lambda (x y z) e)";
+        let code = "(λ (x y z) e)(defn! factorial (n) (if (< n 1) 1 (* n (factorial (- n 1)))))";
         println!("{}", code);
         let tokens = Lexer::new(code).proc_tokens()?;
         let expressions = Parser::new(tokens).parse()?;

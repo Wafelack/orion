@@ -1,4 +1,8 @@
-use crate::{Result, bug, error, OrionError, lexer::{Token, TType}};
+use crate::{
+    bug, error,
+    lexer::{TType, Token},
+    OrionError, Result,
+};
 use std::mem::discriminant;
 
 #[derive(Debug, Clone)]
@@ -26,46 +30,55 @@ impl Parser {
             output: vec![],
             current: 0usize,
         }
-    } 
+    }
     fn advance(&mut self, expected: TType) -> Result<Token> {
         let popped = self.pop()?;
 
         if discriminant(&popped.ttype) != discriminant(&expected) {
-            println!("{:?}", &popped);
-            error!("{}:{} | Expected {}, found {}.", popped.line, popped.col, expected.get_type(), popped.ttype.get_type()) 
+            error!(
+                "{}:{} | Expected {}, found {}.",
+                popped.line,
+                popped.col,
+                expected.get_type(),
+                popped.ttype.get_type()
+                )
         } else {
             Ok(popped)
         }
-
     }
     fn pop(&mut self) -> Result<Token> {
         if self.current + 1 >= self.input.len() {
             let previous = &self.input[self.current];
-            error!("{}:{} | Unfinished expression.", previous.line, previous.col)
+            error!(
+                "{}:{} | Unfinished expression.",
+                previous.line, previous.col
+                )
         } else {
             self.current += 1;
             Ok(self.input[self.current - 1].clone())
         }
     }
     fn peek(&self) -> Option<Token> {
-        self.input.iter().nth(self.current).and_then(|t| Some(t.clone()))
+        self.input
+            .iter()
+            .nth(self.current)
+            .and_then(|t| Some(t.clone()))
     }
     fn is_at_end(&self) -> bool {
-        self.current >= self.input.len()
+        self.current + 1 >= self.input.len()
     }
     fn advance_many(&mut self, expected: TType) -> Result<Vec<Token>> {
         let mut toret = vec![];
 
-        while !self.is_at_end() && &self.peek().unwrap().ttype == &expected {
-            toret.push(self.advance(expected.clone())?);
-        }
-
-        toret.push(self.advance(expected)?);
+        while !self.is_at_end()
+            && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
-    fn parse_expr(&mut self) -> Result<Expr> {
-
+    fn parse_expr(&mut self, topexpr: bool) -> Result<Expr> {
         let root = self.pop()?;
 
         Ok(match &root.ttype {
@@ -78,46 +91,58 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
-                    TType::LParen => self.parse_expr()?,
+                    TType::LParen => self.parse_expr(false)?,
                     TType::Ident(ident) => match ident.as_str() {
                         "lambda" | "λ" => {
                             self.advance(TType::LParen)?;
                             let args = self.advance_many(TType::Ident("".to_owned()))?;
                             self.advance(TType::RParen)?;
 
-                            let mut args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
+                            let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
                                 ident
                             } else {
-                                bug!("Qu'est-ce que ça fout là ?");
+                                bug!("What is this thing doing here ?");
                             }).collect::<Vec<_>>();
 
-                            let mut body = self.parse_expr()?;
+                            let mut body = self.parse_expr(false)?;
 
                             for arg in args.into_iter().rev() {
-                                body = Expr::Lambda(arg.to_string(), Box::new(body)); 
+                                body = Expr::Lambda(arg.to_string(), Box::new(body));
                             }
-
                             self.advance(TType::RParen)?;
-
                             body
                         }
-                        _ => unimplemented!(),
+                        x => {
+                            let mut to_add = vec![Expr::Var(x.to_string())];
+                            while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                                to_add.push(self.parse_expr(false)?);
+                            }
+
+                            if !topexpr {
+                                self.advance(TType::RParen)?;
+                            }
+                            Expr::Call(to_add)
+                        }
                     }
                     TType::RParen => Expr::Unit,
                     _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
                 }
             }
-        TType::RParen => return error!("{}:{} | Unexpected Closing Parenthese.", root.line, root.col)
-    })
-}
-
-pub fn parse(&mut self) -> Result<Vec<Expr>> {
-
-    while self.current < self.input.len() {
-        self.parse_expr()?;
+            TType::RParen => {
+                return error!(
+                    "{}:{} | Unexpected Closing Parenthese.",
+                    root.line, root.col
+                    )
+            }
+        })
     }
 
+    pub fn parse(&mut self) -> Result<Vec<Expr>> {
+        while !self.is_at_end() {
+            let to_push = self.parse_expr(true)?;
+            self.output.push(to_push);
+        }
 
-    Ok(self.output.clone())
-}
+        Ok(self.output.clone())
+    }
 }
