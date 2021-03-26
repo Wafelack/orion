@@ -5,10 +5,10 @@ use crate::{
 };
 use std::mem::discriminant;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Var(String),
-    Call(Vec<Expr>),
+    Call(Box<Expr>, Box<Expr>),
     Lambda(String, Box<Expr>),
     Integer(i32),
     Single(f32),
@@ -113,15 +113,20 @@ impl Parser {
                             body
                         }
                         x => {
-                            let mut to_add = vec![Expr::Var(x.to_string())];
+                            let func = Expr::Var(x.to_string());
+                            let mut args = vec![];
                             while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                                to_add.push(self.parse_expr(false)?);
+                                args.push(self.parse_expr(false)?);
                             }
+
+//                            args = args.into_iter().rev().collect::<Vec<Expr>>();
 
                             if !topexpr {
                                 self.advance(TType::RParen)?;
                             }
-                            Expr::Call(to_add)
+
+                            let args = args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)));
+                            args
                         }
                     }
                     TType::RParen => Expr::Unit,
