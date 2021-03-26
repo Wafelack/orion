@@ -11,6 +11,22 @@ pub enum TType {
     Ident(String),
 }
 
+impl TType {
+    pub fn get_type(&self) -> String {
+        match self {
+            Self::LParen => "Opening Parenthese",
+            Self::RParen => "Closing Parenthese",
+            Self::Str(_) => "String",
+            Self::Number(_) => "Integer",
+            Self::Float(_) => "Float",
+            Self::Bool(_) => "Boolean",
+            Self::Ident(_) => "Identifier",
+        }
+        .to_string()
+    }
+
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub line: usize,
@@ -21,18 +37,6 @@ pub struct Token {
 impl Token {
     pub fn new(ttype: TType, col: usize, line: usize) -> Self {
         Self { line, ttype, col }
-    }
-    pub fn get_type(&self) -> String {
-        match self.ttype {
-            TType::LParen => "Opening Parenthese",
-            TType::RParen => "Closing Parenthese",
-            TType::Str(_) => "String",
-            TType::Number(_) => "Integer",
-            TType::Float(_) => "Float",
-            TType::Bool(_) => "Boolean",
-            TType::Ident(_) => "Function Call",
-        }
-        .to_string()
     }
 }
 

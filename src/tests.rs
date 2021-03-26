@@ -2,7 +2,7 @@
 mod test {
     use crate::{
         lexer::{Lexer, TType, Token},
-        parser::{NType, Node, Parser},
+        parser::{Expr, Parser},
         Result,
     };
 
@@ -30,32 +30,12 @@ mod test {
 
     #[test]
     fn parsing() -> Result<()> {
-        let code = "(let foo (lambda (x y) (+ x y)))(while x y)";
+        let code = "(lambda (x y z) e)";
+        println!("{}", code);
         let tokens = Lexer::new(code).proc_tokens()?;
-        let node = Parser::new(tokens).parse()?;
+        let expressions = Parser::new(tokens).parse()?;
 
-        let mut master = Node::new(NType::Ident("begin".to_owned()));
-        let mut let_func = Node::new(NType::Ident("let".to_owned()));
-        let mut lambda_func = Node::new(NType::Ident("lambda".to_string()));
-        let mut x = Node::new(NType::Ident("x".to_string()));
-        x.add_child(Node::new(NType::Ident("y".to_string())));
-        let mut plus = Node::new(NType::Ident("+".to_string()));
-        plus.add_child(Node::new(NType::Ident("x".to_string())));
-        plus.add_child(Node::new(NType::Ident("y".to_string())));
-
-        lambda_func.add_child(x);
-        lambda_func.add_child(plus);
-        let_func.add_child(Node::new(NType::Ident("foo".to_owned())));
-        let_func.add_child(lambda_func);
-
-        let mut while_func = Node::new(NType::Ident("while".to_owned()));
-        while_func.add_child(Node::new(NType::Ident("x".to_string())));
-        while_func.add_child(Node::new(NType::Ident("y".to_string())));
-
-        master.add_child(let_func);
-        master.add_child(while_func);
-
-        assert_eq!(node, master);
+        println!("{:?}", expressions);
 
         Ok(())
     }

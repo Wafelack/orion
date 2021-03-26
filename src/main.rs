@@ -7,6 +7,13 @@ mod interpreter;
 pub use errors::{OrionError, Result};
 use std::process::exit;
 
+#[macro_export]
+macro_rules! bug {
+    ($bug:literal) => {
+        panic!("This is a bug, please report it with the following information: {}: [{}:{}]", $bug, file!(), line!())
+    }
+}
+
 fn try_main() -> Result<()> {
     Ok(())
 }

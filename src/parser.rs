@@ -1,168 +1,123 @@
-use crate::{
-    error,
-    lexer::{TType, Token},
-    OrionError, Result,
-};
+use crate::{Result, bug, error, OrionError, lexer::{Token, TType}};
+use std::mem::discriminant;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum NType {
-    Ident(String),
+#[derive(Debug, Clone)]
+pub enum Expr {
+    Var(String),
+    Call(Vec<Expr>),
+    Lambda(String, Box<Expr>),
     Integer(i32),
     Single(f32),
-    Str(String),
-    Bool(bool),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Node {
-    pub ntype: NType,
-    pub children: Vec<Node>,
-}
-
-impl Node {
-    pub fn new(ntype: NType) -> Self {
-        Self {
-            ntype,
-            children: vec![],
-        }
-    }
-    pub fn type_lit(&self) -> String {
-        match &self.ntype {
-            NType::Ident(_) => "Identifier",
-            NType::Integer(_) => "Integer",
-            NType::Single(_) => "Single",
-            NType::Str(_) => "String",
-            NType::Bool(_) => "Boolean",
-        }.to_string()
-    }
-    pub fn add_child(&mut self, child: Node) {
-        self.children.push(child);
-    }
-    pub fn stringify(&self, indentations: usize) -> String {
-        let mut toret = String::new();
-        toret.push_str(&format!("\n{}[\n", gen_indents(indentations)));
-        for children in &self.children {
-            toret.push_str(&format!("{}{{\n", gen_indents(indentations + 1)));
-            toret.push_str(&format!("{}@type : ", gen_indents(indentations + 2)));
-            toret.push_str(&format!("{:?},\n", children.ntype));
-
-            if !children.children.is_empty() {
-                toret.push_str(&format!("{}@children : ", gen_indents(indentations + 2)));
-                toret.push_str(&children.stringify(indentations + 3));
-            }
-            toret.push_str(&format!("{}}},\n", gen_indents(indentations + 1)))
-        }
-        toret.push_str(&format!("{}],\n", gen_indents(indentations - 1)));
-        toret
-    }
+    Boolean(bool),
+    Unit,
+    String(String),
 }
 
 pub struct Parser {
-    current: usize,
     input: Vec<Token>,
-    output: Node,
+    output: Vec<Expr>,
+    current: usize,
 }
 
 impl Parser {
     pub fn new(input: Vec<Token>) -> Self {
         Self {
-            current: 0,
             input,
-            output: Node::new(NType::Ident("begin".to_owned())),
+            output: vec![],
+            current: 0usize,
+        }
+    } 
+    fn advance(&mut self, expected: TType) -> Result<Token> {
+        let popped = self.pop()?;
+
+        if discriminant(&popped.ttype) != discriminant(&expected) {
+            println!("{:?}", &popped);
+            error!("{}:{} | Expected {}, found {}.", popped.line, popped.col, expected.get_type(), popped.ttype.get_type()) 
+        } else {
+            Ok(popped)
+        }
+
+    }
+    fn pop(&mut self) -> Result<Token> {
+        if self.current + 1 >= self.input.len() {
+            let previous = &self.input[self.current];
+            error!("{}:{} | Unfinished expression.", previous.line, previous.col)
+        } else {
+            self.current += 1;
+            Ok(self.input[self.current - 1].clone())
         }
     }
-
+    fn peek(&self) -> Option<Token> {
+        self.input.iter().nth(self.current).and_then(|t| Some(t.clone()))
+    }
     fn is_at_end(&self) -> bool {
         self.current >= self.input.len()
     }
-    fn advance(&mut self) -> Option<&Token> {
-        self.current += 1;
-        Some(&self.input[self.current - 1])
+    fn advance_many(&mut self, expected: TType) -> Result<Vec<Token>> {
+        let mut toret = vec![];
+
+        while !self.is_at_end() && &self.peek().unwrap().ttype == &expected {
+            toret.push(self.advance(expected.clone())?);
+        }
+
+        toret.push(self.advance(expected)?);
+
+        Ok(toret)
     }
+    fn parse_expr(&mut self) -> Result<Expr> {
 
-    fn proc_fn(&mut self) -> Result<Node> {
-        let raw_tp = self.advance().unwrap().clone();
-        let mut to_push = match &raw_tp.ttype {
-            TType::LParen => self.proc_fn()?,
-            TType::Ident(i) => Node::new(NType::Ident(i.to_string())),
-            _ => {
-                return error!(
-                    "{}:{} | Expected Opening Parenthese or Function Call, found {}.",
-                    raw_tp.line,
-                    raw_tp.col,
-                    raw_tp.get_type()
-                )
-            }
-        };
+        let root = self.pop()?;
 
-        let mut closed = false;
+        Ok(match &root.ttype {
+            TType::Str(s) => Expr::String(s.to_string()),
+            TType::Float(f) => Expr::Single(*f),
+            TType::Number(i) => Expr::Integer(*i),
+            TType::Bool(b) => Expr::Boolean(*b),
+            TType::Ident(v) => Expr::Var(v.to_string()),
+            TType::LParen => {
+                let subroot = self.pop()?;
 
-        while !self.is_at_end() {
-            let raw = self.advance().unwrap();
+                match &subroot.ttype {
+                    TType::LParen => self.parse_expr()?,
+                    TType::Ident(ident) => match ident.as_str() {
+                        "lambda" | "λ" => {
+                            self.advance(TType::LParen)?;
+                            let args = self.advance_many(TType::Ident("".to_owned()))?;
+                            self.advance(TType::RParen)?;
 
-            match &raw.ttype {
-                TType::LParen => to_push.add_child(self.proc_fn()?),
-                TType::Str(s) => to_push.add_child(Node::new(NType::Str(s.to_string()))),
-                TType::Number(n) => to_push.add_child(Node::new(NType::Integer(*n))),
-                TType::Float(r) => to_push.add_child(Node::new(NType::Single(*r))),
-                TType::Bool(b) => to_push.add_child(Node::new(NType::Bool(*b))),
-                TType::Ident(i) => to_push.add_child(Node::new(NType::Ident(i.to_string()))),
-                TType::RParen => {
-                    closed = true;
-                    break;
+                            let mut args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
+                                ident
+                            } else {
+                                bug!("Qu'est-ce que ça fout là ?");
+                            }).collect::<Vec<_>>();
+
+                            let mut body = self.parse_expr()?;
+
+                            for arg in args.into_iter().rev() {
+                                body = Expr::Lambda(arg.to_string(), Box::new(body)); 
+                            }
+
+                            self.advance(TType::RParen)?;
+
+                            body
+                        }
+                        _ => unimplemented!(),
+                    }
+                    TType::RParen => Expr::Unit,
+                    _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
                 }
             }
-        }
-
-        if !closed && self.input[self.current - 1].ttype != TType::RParen {
-            return error!(
-                "{}:{} | Unclosed expression, expected ')'",
-                raw_tp.line, raw_tp.col
-            );
-        }
-
-        Ok(to_push)
-    }
-
-    fn parse_tokens(&mut self) -> Result<()> {
-        let tok = self.advance().unwrap();
-
-        match tok.ttype {
-            TType::LParen => {
-                let to_add = self.proc_fn()?;
-                self.output.add_child(to_add);
-                Ok(())
-            }
-
-            _ => error!(
-                "{}:{} | Expected Opening Parenthese, found {}.",
-                tok.line,
-                tok.col,
-                tok.get_type()
-            ),
-        }
-    }
-
-    pub fn parse(&mut self) -> Result<Node> {
-        while !self.is_at_end() {
-            self.parse_tokens()?;
-        }
-
-        Ok(self.output.clone())
-    }
+        TType::RParen => return error!("{}:{} | Unexpected Closing Parenthese.", root.line, root.col)
+    })
 }
 
-fn gen_indents(amount: usize) -> String {
-    let mut toret = String::new();
-    for _ in 0..amount {
-        toret.push_str("  ");
-    }
-    toret
-}
+pub fn parse(&mut self) -> Result<Vec<Expr>> {
 
-impl std::fmt::Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.stringify(1))?;
-        Ok(())
+    while self.current < self.input.len() {
+        self.parse_expr()?;
     }
+
+
+    Ok(self.output.clone())
+}
 }
