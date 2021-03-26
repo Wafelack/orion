@@ -7,8 +7,10 @@ pub enum TType {
     Str(String),
     Number(i32),
     Float(f32),
-    Bool(bool),
     Ident(String),
+    Def,
+    Enum,
+    Lambda,
 }
 
 impl TType {
@@ -19,8 +21,8 @@ impl TType {
             Self::Str(_) => "String",
             Self::Number(_) => "Integer",
             Self::Float(_) => "Float",
-            Self::Bool(_) => "Boolean",
             Self::Ident(_) => "Identifier",
+            _ => "Keyword",
         }
         .to_string()
     }
@@ -51,7 +53,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(input: impl ToString) -> Self {
         Self {
-            input: input.to_string().replace("λ", "lambda").to_string(),
+            input: input.to_string().replace("λ", "lambda!").to_string(),
             output: vec![],
             current: 0,
             column: 0,
@@ -153,8 +155,9 @@ impl Lexer {
         let raw = self.input[self.start..self.current].to_string();
 
         match raw.as_str() {
-            "True" => self.add_token(TType::Bool(true)),
-            "False" => self.add_token(TType::Bool(false)),
+            "def" => self.add_token(TType::Def),
+            "enum" => self.add_token(TType::Enum),
+            "lambda" => self.add_token(TType::Lambda),
             _ => self.add_token(TType::Ident(raw)),
         }
     }

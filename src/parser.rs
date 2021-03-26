@@ -13,6 +13,8 @@ pub enum Expr {
     Integer(i32),
     Single(f32),
     Boolean(bool),
+    Def(String, Box<Expr>),
+    Match(Vec<Expr>),
     Unit,
     String(String),
 }
@@ -92,42 +94,56 @@ impl Parser {
 
                 match &subroot.ttype {
                     TType::LParen => self.parse_expr(false)?,
-                    TType::Ident(ident) => match ident.as_str() {
-                        "lambda" | "λ" => {
-                            self.advance(TType::LParen)?;
-                            let args = self.advance_many(TType::Ident("".to_owned()))?;
+                    TType::Def => {
+                        let raw_name = self.advance(TType::Ident("".to_owned()))?;
+                        let name = if let TType::Ident(n) = raw_name.ttype {
+                            n
+                        } else {
+                            bug!("UNEXPECTED_NON_IDENTIFIER");
+                        };
+
+                        let value = self.parse_expr(false)?;
+
+                        if !topexpr {
                             self.advance(TType::RParen)?;
+                        }
 
-                            let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
-                                ident
-                            } else {
-                                bug!("What is this thing doing here ?");
-                            }).collect::<Vec<_>>();
+                        Expr::Def(name, Box::new(value))
+                    }
+                    TType::Lambda => {
+                        self.advance(TType::LParen)?;
+                        let args = self.advance_many(TType::Ident("".to_owned()))?;
+                        self.advance(TType::RParen)?;
 
-                            let mut body = self.parse_expr(false)?;
+                        let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
+                            ident
+                        } else {
+                            bug!("What is this thing doing here ?");
+                        }).collect::<Vec<_>>();
 
-                            for arg in args.into_iter().rev() {
-                                body = Expr::Lambda(arg.to_string(), Box::new(body));
-                            }
+                        let mut body = self.parse_expr(false)?;
+
+                        for arg in args.into_iter().rev() {
+                            body = Expr::Lambda(arg.to_string(), Box::new(body));
+                        }
+                        if !topexpr {
                             self.advance(TType::RParen)?;
-                            body
                         }
-                        x => {
-                            let func = Expr::Var(x.to_string());
-                            let mut args = vec![];
-                            while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                                args.push(self.parse_expr(false)?);
-                            }
-
-//                            args = args.into_iter().rev().collect::<Vec<Expr>>();
-
-                            if !topexpr {
-                                self.advance(TType::RParen)?;
-                            }
-
-                            let args = args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)));
-                            args
+                        body
+                    }
+                    TType::Ident(x) => {
+                        let func = Expr::Var(x.to_string());
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            args.push(self.parse_expr(false)?);
                         }
+
+                        if !topexpr {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        let args = args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)));
+                        args
                     }
                     TType::RParen => Expr::Unit,
                     _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
@@ -139,6 +155,7 @@ impl Parser {
                     root.line, root.col
                     )
             }
+            _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col)
         })
     }
 

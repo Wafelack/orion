@@ -8,7 +8,7 @@ mod test {
 
     #[test]
     fn lexing() -> Result<()> {
-        let mut lexer = Lexer::new("()\"Foo Bar\"True False TrueFalse 4 9.1");
+        let mut lexer = Lexer::new("()\"Foo Bar\"True False TrueFalse 4 9.1 lambda! λ match! def!");
         let tokens = lexer.proc_tokens()?;
 
         assert_eq!(
@@ -21,7 +21,11 @@ mod test {
             Token::new(TType::Bool(false), 21, 1),
             Token::new(TType::Ident("TrueFalse".to_owned()), 31, 1),
             Token::new(TType::Number(4), 33, 1),
-            Token::new(TType::Float(9.1), 37, 1)
+            Token::new(TType::Float(9.1), 37, 1),
+            Token::new(TType::Lambda, 45, 1),
+            Token::new(TType::Lambda, 53, 1),
+            Token::new(TType::Match, 60, 1),
+            Token::new(TType::Def, 65, 1),
             ]
             );
 

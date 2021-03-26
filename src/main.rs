@@ -1,5 +1,5 @@
 mod errors;
-mod interpreter;
+// mod interpreter;
 mod lexer;
 mod parser;
 mod tests;
