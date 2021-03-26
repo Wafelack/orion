@@ -53,7 +53,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(input: impl ToString) -> Self {
         Self {
-            input: input.to_string().replace("λ", "lambda!").to_string(),
+            input: input.to_string().replace("λ", "lambda").to_string(),
             output: vec![],
             current: 0,
             column: 0,

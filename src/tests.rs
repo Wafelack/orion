@@ -8,7 +8,7 @@ mod test {
 
     #[test]
     fn lexing() -> Result<()> {
-        let mut lexer = Lexer::new("()\"Foo Bar\"True False TrueFalse 4 9.1 lambda! λ match! def!");
+        let mut lexer = Lexer::new("()\"Foo Bar\"TrueFalse 4 9.1 lambda λ def");
         let tokens = lexer.proc_tokens()?;
 
         assert_eq!(
@@ -17,15 +17,12 @@ mod test {
             Token::new(TType::LParen, 1, 1),
             Token::new(TType::RParen, 2, 1),
             Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
-            Token::new(TType::Bool(true), 15, 1),
-            Token::new(TType::Bool(false), 21, 1),
-            Token::new(TType::Ident("TrueFalse".to_owned()), 31, 1),
-            Token::new(TType::Number(4), 33, 1),
-            Token::new(TType::Float(9.1), 37, 1),
-            Token::new(TType::Lambda, 45, 1),
-            Token::new(TType::Lambda, 53, 1),
-            Token::new(TType::Match, 60, 1),
-            Token::new(TType::Def, 65, 1),
+            Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
+            Token::new(TType::Number(4), 22, 1),
+            Token::new(TType::Float(9.1), 26, 1),
+            Token::new(TType::Lambda, 33, 1),
+            Token::new(TType::Lambda, 40, 1),
+            Token::new(TType::Def, 44, 1),
             ]
             );
 
@@ -49,11 +46,11 @@ mod test {
 
         #[test]
         fn global_parsing() -> Result<()> {
-            let code = "(defn! factorial (n) (if (< n 1) 1 (* n (factorial (- n 1)))))";
+            let code = "(enum Option (Some value)(None))(defn factorial (n) (if (< n 1) 1 (* n (factorial (- n 1)))))";
             let tokens = Lexer::new(code).proc_tokens()?;
             let expressions = Parser::new(tokens).parse()?;
 
-            assert_eq!(format!("{:?}", expressions), r#"[Call(Call(Call(Var("defn!"), Var("factorial")), Var("n")), Call(Call(Call(Var("if"), Call(Call(Var("<"), Var("n")), Integer(1))), Integer(1)), Call(Call(Var("*"), Var("n")), Call(Var("factorial"), Call(Call(Var("-"), Var("n")), Integer(1))))))]"#.to_string());
+            assert_eq!(format!("{:?}", expressions), r#"[Enum("Option", ["Some", "None"], [1, 0]), Call(Call(Call(Var("defn"), Var("factorial")), Var("n")), Call(Call(Call(Var("if"), Call(Call(Var("<"), Var("n")), Integer(1))), Integer(1)), Call(Call(Var("*"), Var("n")), Call(Var("factorial"), Call(Call(Var("-"), Var("n")), Integer(1))))))]"#.to_string());
 
             Ok(())
 
