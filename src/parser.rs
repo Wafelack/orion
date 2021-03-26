@@ -3,7 +3,7 @@ use crate::{
     lexer::{TType, Token},
     OrionError, Result,
 };
-use std::mem::discriminant;
+use std::{mem::discriminant, collections::HashMap};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -14,7 +14,7 @@ pub enum Expr {
     Single(f32),
     Boolean(bool),
     Def(String, Box<Expr>),
-    Enum(String, Vec<String>, Vec<u8>),
+    Enum(String, HashMap<String, u8>),
     Unit,
     String(String),
 }
@@ -122,9 +122,7 @@ impl Parser {
                             return error!("{}:{} | Enum names have to start with a capital letter.", r_name.line, r_name.col);
                         }
 
-                        let mut variants = vec![];
-                        let mut containing = vec![];
-
+                        let mut var_len = HashMap::new();
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
 
                             self.advance(TType::LParen)?;
@@ -144,8 +142,7 @@ impl Parser {
 
                             let length = self.advance_many(TType::Ident("".to_owned()))?.len() as u8;
 
-                            variants.push(vname);
-                            containing.push(length);
+                            var_len.insert(vname, length);
 
                             self.advance(TType::RParen)?;
                         }
@@ -155,7 +152,7 @@ impl Parser {
                         }
 
 
-                        Expr::Enum(name, variants, containing)
+                        Expr::Enum(name, var_len)
                     }
                     TType::Lambda => {
                         self.advance(TType::LParen)?;

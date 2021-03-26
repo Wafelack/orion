@@ -49,8 +49,7 @@ mod test {
             let code = "(enum Option (Some value)(None))(defn factorial (n) (if (< n 1) 1 (* n (factorial (- n 1)))))";
             let tokens = Lexer::new(code).proc_tokens()?;
             let expressions = Parser::new(tokens).parse()?;
-
-            assert_eq!(format!("{:?}", expressions), r#"[Enum("Option", ["Some", "None"], [1, 0]), Call(Call(Call(Var("defn"), Var("factorial")), Var("n")), Call(Call(Call(Var("if"), Call(Call(Var("<"), Var("n")), Integer(1))), Integer(1)), Call(Call(Var("*"), Var("n")), Call(Var("factorial"), Call(Call(Var("-"), Var("n")), Integer(1))))))]"#.to_string());
+            assert_eq!(format!("{:?}", expressions), r#"[Enum("Option", {"Some": 1, "None": 0}), Call(Call(Call(Var("defn"), Var("factorial")), Var("n")), Call(Call(Call(Var("if"), Call(Call(Var("<"), Var("n")), Integer(1))), Integer(1)), Call(Call(Var("*"), Var("n")), Call(Var("factorial"), Call(Call(Var("-"), Var("n")), Integer(1))))))]"#.to_string());
 
             Ok(())
 
