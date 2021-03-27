@@ -98,7 +98,10 @@ impl Interpreter {
             Expr::String(s) => Ok(Value::String(s.to_string())),
             Expr::Unit => Ok(Value::Unit),
             Expr::Lambda(arg, body) => Ok(Value::Lambda(
-                self.scopes.clone(),
+                match custom_scope {
+                    Some(s) => s.clone(),
+                    None => self.scopes.clone(),
+                } ,
                 arg.to_string(),
                 (**body).clone(),
             )),
@@ -121,9 +124,8 @@ impl Interpreter {
 
                     new_scopes.last_mut().unwrap().insert(argument, arg);
 
-                    self.eval_expr(&body, Some(&new_scopes))?;
+                    self.eval_expr(&body, Some(&new_scopes))
 
-                    Ok(Value::Unit)
                 } else {
                     error!(
                         "Attempted to use an expression of type {} as a Function.",
