@@ -3,19 +3,19 @@ use crate::{
     lexer::{TType, Token},
     OrionError, Result,
 };
-use std::{mem::discriminant, collections::HashMap};
+use std::{collections::HashMap, mem::discriminant};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Var(String), //
-    Call(Box<Expr>, Box<Expr>), // 
-    Lambda(String, Box<Expr>), //
-    Integer(i32), // 
-    Single(f32), //
-    Def(String, Box<Expr>), //
+    Var(String),                //
+    Call(Box<Expr>, Box<Expr>), //
+    Lambda(String, Box<Expr>),  //
+    Integer(i32),               //
+    Single(f32),                //
+    Def(String, Box<Expr>),     //
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
-    Unit, //
+    Unit,           //
     String(String), //
 }
 
@@ -43,7 +43,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-                )
+            )
         } else {
             Ok(popped)
         }
@@ -54,7 +54,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-                )
+            )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -76,9 +76,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-            {
-                toret.push(self.advance(expected.clone())?);
-            }
+        {
+            toret.push(self.advance(expected.clone())?);
+        }
 
         Ok(toret)
     }
@@ -89,17 +89,19 @@ impl Parser {
             TType::Str(s) => Expr::String(s.to_string()),
             TType::Float(f) => Expr::Single(*f),
             TType::Number(i) => Expr::Integer(*i),
-            TType::Ident(v) => if (65..91).contains(&(v.chars().nth(0).unwrap() as u8)) {
-                Expr::Constr(v.to_string(), vec![])
-            } else if (97..123).contains(&(v.chars().nth(0).unwrap() as u8)) {
-                Expr::Var(v.to_string())
-            } else {
-                return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
-            },
-                TType::LParen => {
-                    let subroot = self.pop()?;
+            TType::Ident(v) => {
+                if (65..91).contains(&(v.chars().nth(0).unwrap() as u8)) {
+                    Expr::Constr(v.to_string(), vec![])
+                } else if (97..123).contains(&(v.chars().nth(0).unwrap() as u8)) {
+                    Expr::Var(v.to_string())
+                } else {
+                    return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
+                }
+            }
+            TType::LParen => {
+                let subroot = self.pop()?;
 
-                    match &subroot.ttype {
+                match &subroot.ttype {
                         TType::LParen => self.parse_expr()?,
                         TType::Def => {
                             let raw_name = self.advance(TType::Ident("".to_owned()))?;
@@ -137,7 +139,12 @@ impl Parser {
                             let mut var_len = HashMap::new();
                             while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
 
-                                self.advance(TType::LParen)?;
+                                let mul = if self.peek().unwrap().ttype == TType::LParen {
+                                    self.advance(TType::LParen)?;
+                                    true
+                                } else {
+                                    false
+                                };
 
                                 let r_name = self.advance(TType::Ident("".to_owned()))?;
 
@@ -152,11 +159,18 @@ impl Parser {
                                     return error!("{}:{} | Enum variant names have to start with a uppercase letter.", r_name.line, r_name.col);
                                 }
 
-                                let length = self.advance_many(TType::Ident("".to_owned()))?.len() as u8;
+                                let length = if mul {
+                                    self.advance_many(TType::Ident("".to_owned()))?.len() as u8
+                                } else {
+                                    0u8
+                                };
 
                                 var_len.insert(vname, length);
 
-                                self.advance(TType::RParen)?;
+                                if mul {
+
+                                    self.advance(TType::RParen)?;
+                                }
                             }
 
                             if !self.is_at_end() {
@@ -209,14 +223,14 @@ impl Parser {
                         TType::RParen => Expr::Unit,
                         _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
                     }
-                }
+            }
             TType::RParen => {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                    )
+                )
             }
-            _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col)
+            _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
     }
 

@@ -4,9 +4,12 @@ mod lexer;
 mod parser;
 mod tests;
 
+use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
-use std::{process::exit, io::{self, Write}};
-use crate::{parser::{Parser}, interpreter::{Interpreter}, lexer::{Lexer}};
+use std::{
+    io::{self, Write},
+    process::exit,
+};
 
 #[macro_export]
 macro_rules! bug {
@@ -16,7 +19,7 @@ macro_rules! bug {
             $bug,
             file!(),
             line!()
-            )
+        )
     };
 }
 
@@ -29,12 +32,10 @@ fn print_err(e: OrionError) {
             "\x1b[0;31mOrion Error\x1b[0m"
         },
         e.0
-        );
-
+    );
 }
 
 fn try_main() -> Result<()> {
-
     let mut interpreter = Interpreter::new(vec![]);
 
     loop {
@@ -47,7 +48,7 @@ fn try_main() -> Result<()> {
             Err(e) => {
                 print_err(e);
                 continue;
-            },
+            }
         };
         let ast = match Parser::new(tokens).parse() {
             Ok(ast) => ast,
@@ -67,7 +68,6 @@ fn try_main() -> Result<()> {
         }
         buffer.clear();
     }
-
 }
 
 fn main() {

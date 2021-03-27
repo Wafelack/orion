@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test {
     use crate::{
+        interpreter::{Interpreter, Value},
         lexer::{Lexer, TType, Token},
         parser::{Expr, Parser},
-        interpreter::{Interpreter, Value},
         Result,
     };
 
@@ -15,17 +15,17 @@ mod test {
         assert_eq!(
             tokens,
             vec![
-            Token::new(TType::LParen, 1, 1),
-            Token::new(TType::RParen, 2, 1),
-            Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
-            Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
-            Token::new(TType::Number(4), 22, 1),
-            Token::new(TType::Float(9.1), 26, 1),
-            Token::new(TType::Lambda, 33, 1),
-            Token::new(TType::Lambda, 40, 1),
-            Token::new(TType::Def, 44, 1),
+                Token::new(TType::LParen, 1, 1),
+                Token::new(TType::RParen, 2, 1),
+                Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
+                Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
+                Token::new(TType::Number(4), 22, 1),
+                Token::new(TType::Float(9.1), 26, 1),
+                Token::new(TType::Lambda, 33, 1),
+                Token::new(TType::Lambda, 40, 1),
+                Token::new(TType::Def, 44, 1),
             ]
-            );
+        );
 
         Ok(())
     }
@@ -43,7 +43,6 @@ mod test {
             assert_eq!(scopes[0]["bar"], scopes[0]["foo"]);
 
             Ok(())
-
         }
     }
 
@@ -58,7 +57,6 @@ mod test {
 
             assert_eq!(format!("{:?}", expressions), r#"[Lambda("x", Lambda("y", Lambda("z", Var("e")))), Call(Call(Call(Call(Var("foo"), Var("a")), Var("b")), Var("c")), Var("d"))]"#.to_string());
 
-
             Ok(())
         }
 
@@ -70,8 +68,6 @@ mod test {
             assert_eq!(format!("{:?}", expressions), r#"[Constr("Just", Integer(9)), Call(Call(Call(Var("defn"), Var("factorial")), Var("n")), Call(Call(Call(Var("if"), Call(Call(Var("<"), Var("n")), Integer(1))), Integer(1)), Call(Call(Var("*"), Var("n")), Call(Var("factorial"), Call(Call(Var("-"), Var("n")), Integer(1))))))]"#.to_string());
 
             Ok(())
-
         }
-
     }
 }
