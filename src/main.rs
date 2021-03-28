@@ -63,6 +63,7 @@ fn try_main() -> Result<()> {
                 continue;
             }
         };
+
         interpreter.update_ast(ast);
 
         match interpreter.interpret(true) {

@@ -19,6 +19,10 @@ pub enum Expr {
     String(String), //
 }
 
+fn first_char(s: impl ToString) -> char {
+    s.to_string().chars().nth(0).unwrap()
+}
+
 pub struct Parser {
     input: Vec<Token>,
     output: Vec<Expr>,
@@ -90,9 +94,9 @@ impl Parser {
             TType::Float(f) => Expr::Single(*f),
             TType::Number(i) => Expr::Integer(*i),
             TType::Ident(v) => {
-                if (65..91).contains(&(v.chars().nth(0).unwrap() as u8)) {
+                if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
-                } else if (97..123).contains(&(v.chars().nth(0).unwrap() as u8)) {
+                } else if first_char(&v).is_ascii_lowercase() {
                     Expr::Var(v.to_string())
                 } else {
                     return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
@@ -100,133 +104,132 @@ impl Parser {
             }
             TType::LParen => {
 
-                if !self.is_at_end() && self.peek().unwrap().ttype == TType::LParen {
-                    self.parse_expr()?
-                } else {
-                    let subroot = self.pop()?;
+                let subroot = self.pop()?;
 
-                    match &subroot.ttype {
-                        TType::LParen => bug!("UNEXPECTED_LEFT_PAREN"),
-                        TType::Def => {
-                            let raw_name = self.advance(TType::Ident("".to_owned()))?;
-                            let name = if let TType::Ident(n) = raw_name.ttype {
-                                n
+                match &subroot.ttype {
+                    TType::Def => {
+                        let raw_name = self.advance(TType::Ident("".to_owned()))?;
+                        let name = if let TType::Ident(n) = raw_name.ttype {
+                            n
+                        } else {
+                            bug!("UNEXPECTED_NON_IDENTIFIER");
+                        };
+
+                        if !first_char(&name).is_ascii_lowercase() {
+                            return error!("{}:{} | Constant names have to start with a lowercase letter.", raw_name.line, raw_name.col);
+                        }
+
+                        let value = self.parse_expr()?;
+
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        Expr::Def(name, Box::new(value))
+                    }
+                    TType::Enum => {
+                        let r_name = self.advance(TType::Ident("".to_owned()))?;
+
+                        let name = if let TType::Ident(n) = r_name.ttype {
+                            n
+                        } else {
+                            bug!("UNEXPECTED_NON_IDENTIFIER");
+                        };
+
+                        if !first_char(&name).is_ascii_uppercase() {
+                            return error!("{}:{} | Enum names have to start with a uppercase letter.", r_name.line, r_name.col);
+                        }
+
+                        let mut var_len = HashMap::new();
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+
+                            let mul = if self.peek().unwrap().ttype == TType::LParen {
+                                self.advance(TType::LParen)?;
+                                true
                             } else {
-                                bug!("UNEXPECTED_NON_IDENTIFIER");
+                                false
                             };
 
-                            if !(97..123).contains(&(name.chars().nth(0).unwrap() as u8)) {
-                                return error!("{}:{} | Constant names have to start with a lowercase letter.", raw_name.line, raw_name.col);
-                            }
-
-                            let value = self.parse_expr()?;
-
-                            if !self.is_at_end() {
-                                self.advance(TType::RParen)?;
-                            }
-
-                            Expr::Def(name, Box::new(value))
-                        }
-                        TType::Enum => {
                             let r_name = self.advance(TType::Ident("".to_owned()))?;
 
-                            let name = if let TType::Ident(n) = r_name.ttype {
+                            let vname = if let TType::Ident(n) = r_name.ttype {
                                 n
                             } else {
                                 bug!("UNEXPECTED_NON_IDENTIFIER");
                             };
 
-                            if !(65..91).contains(&(name.chars().nth(0).unwrap() as u8)) {
-                                return error!("{}:{} | Enum names have to start with a uppercase letter.", r_name.line, r_name.col);
+
+                            if !first_char(&vname).is_ascii_uppercase() {
+                                return error!("{}:{} | Enum variant names have to start with a uppercase letter.", r_name.line, r_name.col);
                             }
 
-                            let mut var_len = HashMap::new();
-                            while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-
-                                let mul = if self.peek().unwrap().ttype == TType::LParen {
-                                    self.advance(TType::LParen)?;
-                                    true
-                                } else {
-                                    false
-                                };
-
-                                let r_name = self.advance(TType::Ident("".to_owned()))?;
-
-                                let vname = if let TType::Ident(n) = r_name.ttype {
-                                    n
-                                } else {
-                                    bug!("UNEXPECTED_NON_IDENTIFIER");
-                                };
-
-
-                                if !(65..91).contains(&(vname.chars().nth(0).unwrap() as u8)) {
-                                    return error!("{}:{} | Enum variant names have to start with a uppercase letter.", r_name.line, r_name.col);
-                                }
-
-                                let length = if mul {
-                                    self.advance_many(TType::Ident("".to_owned()))?.len() as u8
-                                } else {
-                                    0u8
-                                };
-
-                                var_len.insert(vname, length);
-
-                                if mul {
-
-                                    self.advance(TType::RParen)?;
-                                }
-                            }
-
-                            if !self.is_at_end() {
-                                self.advance(TType::RParen)?;
-                            }
-
-
-                            Expr::Enum(name, var_len)
-                        }
-                        TType::Lambda => {
-                            self.advance(TType::LParen)?;
-                            let args = self.advance_many(TType::Ident("".to_owned()))?;
-                            self.advance(TType::RParen)?;
-
-                            let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
-                                ident
+                            let length = if mul {
+                                self.advance_many(TType::Ident("".to_owned()))?.len() as u8
                             } else {
-                                bug!("What is this thing doing here ?");
-                            }).collect::<Vec<_>>();
+                                0u8
+                            };
 
-                            let mut body = self.parse_expr()?;
+                            var_len.insert(vname, length);
 
-                            for arg in args.into_iter().rev() {
-                                body = Expr::Lambda(arg.to_string(), Box::new(body));
-                            }
-                            if !self.is_at_end() {
+                            if mul {
+
                                 self.advance(TType::RParen)?;
                             }
-                            body
                         }
-                        TType::Ident(x) => {
-                            let func = Expr::Var(x.to_string());
-                            let mut args = vec![];
-                            while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                                args.push(self.parse_expr()?);
-                            }
 
-                            if !self.is_at_end() {
-                                self.advance(TType::RParen)?;
-                            }
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
 
-                            if (97..123).contains(&(x.chars().nth(0).unwrap() as u8)) {
-                                let to_ret = args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)));
-                                to_ret
-                            } else if (65..91).contains(&(x.chars().nth(0).unwrap() as u8)) {
+
+                        Expr::Enum(name, var_len)
+                    }
+                    TType::Lambda => {
+                        self.advance(TType::LParen)?;
+                        let args = self.advance_many(TType::Ident("".to_owned()))?;
+                        self.advance(TType::RParen)?;
+
+                        let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
+                            ident
+                        } else {
+                            bug!("What is this thing doing here ?");
+                        }).collect::<Vec<_>>();
+
+                        let mut body = self.parse_expr()?;
+
+                        for arg in args.into_iter().rev() {
+                            body = Expr::Lambda(arg.to_string(), Box::new(body));
+                        }
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        body
+                    }
+                    TType::RParen => Expr::Unit, 
+                    _ => {
+                        self.current -= 1; // Safe because at least 1 paren
+                        let func = self.parse_expr()?;
+
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            args.push(self.parse_expr()?);
+                        }
+
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        if let Expr::Var(x) = &func {
+                            if first_char(x).is_ascii_uppercase() {
                                 Expr::Constr(x.to_string(), args)
+                            } else if first_char(&x).is_ascii_lowercase() {
+                                args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)))
                             } else {
                                 return error!("{}:{} | Invalid variable name: {}.", subroot.line, subroot.col, x);
                             }
+                        } else {
+                            args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)))
                         }
-                        TType::RParen => Expr::Unit,
-                        _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
                     }
                 }
             }

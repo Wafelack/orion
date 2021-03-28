@@ -98,12 +98,7 @@ impl Interpreter {
             Expr::Single(f) => Ok(Value::Single(*f)),
             Expr::String(s) => Ok(Value::String(s.to_string())),
             Expr::Unit => Ok(Value::Unit),
-            Expr::Lambda(arg, body) => Ok(Value::Lambda(
-                    match custom_scope {
-                        Some(s) => s.clone(),
-                        None => self.scopes.clone(),
-                    } ,
-                    arg.to_string(),
+            Expr::Lambda(arg, body) => Ok(Value::Lambda(custom_scope.unwrap_or(&self.scopes).clone(), arg.to_string(),
                     (**body).clone(),
                     )),
                     Expr::Call(function, argument) => {
