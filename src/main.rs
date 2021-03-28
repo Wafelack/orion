@@ -42,7 +42,13 @@ fn try_main() -> Result<()> {
         let mut buffer = String::new();
         print!("Orion REPL> ");
         io::stdout().flush().unwrap();
-        io::stdin().read_line(&mut buffer).unwrap();
+        match io::stdin().read_line(&mut buffer) {
+            Ok(_) => {},
+            Err(_) => {
+                println!("Failed to read stream");
+                continue;
+            }
+        }
         let tokens = match Lexer::new(&buffer).proc_tokens() {
             Ok(toks) => toks,
             Err(e) => {
@@ -59,8 +65,8 @@ fn try_main() -> Result<()> {
         };
         interpreter.update_ast(ast);
 
-        match interpreter.interpret() {
-            Ok(v) => println!("{:?}", v),
+        match interpreter.interpret(true) {
+            Ok(_) => {}
             Err(e) => {
                 print_err(e);
                 continue;

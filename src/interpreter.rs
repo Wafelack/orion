@@ -32,7 +32,7 @@ impl Interpreter {
             Value::Integer(i) => format!("{}", i),
             Value::Single(f) => format!("{}", f),
             Value::String(s) => format!("{}", s),
-            Value::Lambda(_, x, _) => format!("λ ({})", x),
+            Value::Lambda(_, x, _) => format!("λ{}", x),
             Value::Unit => "()".to_string(),
             Value::Constr(idx, vals) => {
                 let name = self
@@ -48,16 +48,17 @@ impl Interpreter {
                         "({} {})",
                         name,
                         vals.iter()
-                            .map(|v| self.get_lit_val(v))
-                            .collect::<Vec<String>>()
-                            .join(" ")
-                    )
+                        .map(|v| self.get_lit_val(v))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                        )
                 }
             }
         }
     }
-    pub fn interpret(&mut self) -> Result<Value> {
+    pub fn interpret(&mut self, repl: bool) -> Result<Value> {
         let toret = self.eval_expressions(&(self.input.clone()))?;
+        if repl { println!("{}", self.get_lit_val(&toret)); }
         Ok(toret)
     }
     pub fn update_ast(&mut self, ast: Vec<Expr>) {
@@ -66,7 +67,7 @@ impl Interpreter {
     fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
-                return self.eval_expr(expr, None);
+                return Ok(self.eval_expr(expr, None)?);
             } else {
                 self.eval_expr(expr, None)?;
             }
@@ -78,7 +79,7 @@ impl Interpreter {
         &mut self,
         expr: &Expr,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         match expr {
             Expr::Def(name, value) => {
                 let valued = self.eval_expr(value, None)?;
@@ -98,60 +99,59 @@ impl Interpreter {
             Expr::String(s) => Ok(Value::String(s.to_string())),
             Expr::Unit => Ok(Value::Unit),
             Expr::Lambda(arg, body) => Ok(Value::Lambda(
-                match custom_scope {
-                    Some(s) => s.clone(),
-                    None => self.scopes.clone(),
-                } ,
-                arg.to_string(),
-                (**body).clone(),
-            )),
-            Expr::Call(function, argument) => {
-                let arg = self.eval_expr(&**argument, None)?;
+                    match custom_scope {
+                        Some(s) => s.clone(),
+                        None => self.scopes.clone(),
+                    } ,
+                    arg.to_string(),
+                    (**body).clone(),
+                    )),
+                    Expr::Call(function, argument) => {
+                        let arg = self.eval_expr(&**argument, custom_scope)?;
 
-                // TEMPORARY, JUST FOR TESTING
-                if let Expr::Var(v) = &**function {
-                    if v.as_str() == "print" {
-                        println!("{}", self.get_lit_val(&arg));
-                        return Ok(Value::Unit);
-                    }
-                }
-
-                let func = self.eval_expr(&**function, None)?;
-
-                if let Value::Lambda(scopes, argument, body) = func {
-                    let mut new_scopes = scopes;
-                    new_scopes.push(HashMap::new());
-
-                    new_scopes.last_mut().unwrap().insert(argument, arg);
-
-                    self.eval_expr(&body, Some(&new_scopes))
-
-                } else {
-                    error!(
-                        "Attempted to use an expression of type {} as a Function.",
-                        match func {
-                            Value::Integer(_) => "Integer",
-                            Value::String(_) => "String",
-                            Value::Unit => "Unit",
-                            Value::Single(_) => "Single",
-                            Value::Constr(idx, _) => self
-                                .name_idx
-                                .iter()
-                                .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
-                                .unwrap()
-                                .as_str(),
-                            _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
+                        // TEMPORARY, JUST FOR TESTING
+                        if let Expr::Var(v) = &**function {
+                            if v.as_str() == "print" {
+                                println!("{}", self.get_lit_val(&arg));
+                                return Ok(Value::Unit);
+                            }
                         }
-                    )
-                }
-            }
+
+                        let func = self.eval_expr(&**function, custom_scope)?;
+
+                        if let Value::Lambda(scopes, argument, body) = func {
+                            let mut new_scopes = scopes;
+                            new_scopes.push(HashMap::new());
+
+                            new_scopes.last_mut().unwrap().insert(argument, arg);
+                            self.eval_expr(&body, Some(&new_scopes))
+
+                        } else {
+                            error!(
+                                "Attempted to use an expression of type {} as a Function.",
+                                match func {
+                                    Value::Integer(_) => "Integer",
+                                    Value::String(_) => "String",
+                                    Value::Unit => "Unit",
+                                    Value::Single(_) => "Single",
+                                    Value::Constr(idx, _) => self
+                                        .name_idx
+                                        .iter()
+                                        .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
+                                        .unwrap()
+                                        .as_str(),
+                                    _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
+                                }
+                                )
+                        }
+                    }
             Expr::Enum(name, variants) => {
                 for (variant, containing) in variants {
                     if self.name_idx.contains_key(variant) {
                         return error!(
                             "Attempted to redefine an existing enum variant: {}.",
                             variant
-                        );
+                            );
                     }
 
                     let length = self.variants.len();
@@ -173,7 +173,7 @@ impl Interpreter {
                             "This enum variant takes {} values but {} were supplied.",
                             self.variants[idx],
                             args.len()
-                        )
+                            )
                     } else {
                         let mut values = vec![];
 
@@ -188,7 +188,7 @@ impl Interpreter {
             Expr::Var(var) => {
                 for scope in match custom_scope {
                     Some(s) => s.iter().rev(),
-                    None => self.scopes.iter().rev(),
+                        None => self.scopes.iter().rev(),
                 } {
                     if scope.contains_key(var) {
                         return Ok(scope[var].clone());

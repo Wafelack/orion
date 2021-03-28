@@ -43,7 +43,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-            )
+                )
         } else {
             Ok(popped)
         }
@@ -54,7 +54,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-            )
+                )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -76,9 +76,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-        {
-            toret.push(self.advance(expected.clone())?);
-        }
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
@@ -99,10 +99,14 @@ impl Parser {
                 }
             }
             TType::LParen => {
-                let subroot = self.pop()?;
 
-                match &subroot.ttype {
-                        TType::LParen => self.parse_expr()?,
+                if !self.is_at_end() && self.peek().unwrap().ttype == TType::LParen {
+                    self.parse_expr()?
+                } else {
+                    let subroot = self.pop()?;
+
+                    match &subroot.ttype {
+                        TType::LParen => bug!("UNEXPECTED_LEFT_PAREN"),
                         TType::Def => {
                             let raw_name = self.advance(TType::Ident("".to_owned()))?;
                             let name = if let TType::Ident(n) = raw_name.ttype {
@@ -193,7 +197,7 @@ impl Parser {
 
                             let mut body = self.parse_expr()?;
 
-                            for arg in args.into_iter() {
+                            for arg in args.into_iter().rev() {
                                 body = Expr::Lambda(arg.to_string(), Box::new(body));
                             }
                             if !self.is_at_end() {
@@ -213,7 +217,8 @@ impl Parser {
                             }
 
                             if (97..123).contains(&(x.chars().nth(0).unwrap() as u8)) {
-                                args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)))
+                                let to_ret = args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)));
+                                to_ret
                             } else if (65..91).contains(&(x.chars().nth(0).unwrap() as u8)) {
                                 Expr::Constr(x.to_string(), args)
                             } else {
@@ -223,16 +228,19 @@ impl Parser {
                         TType::RParen => Expr::Unit,
                         _ => return error!("{}:{} | Expected Closing Parenthese, Opening Parenthese or Identifier, found {}.", subroot.line, subroot.col, subroot.ttype.get_type()),
                     }
+                }
             }
             TType::RParen => {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                )
+                    )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
+
     }
+
 
     pub fn parse(&mut self) -> Result<Vec<Expr>> {
         while !self.is_at_end() {
