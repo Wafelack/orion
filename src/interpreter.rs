@@ -1,4 +1,4 @@
-use crate::{bug, error, parser::Expr, OrionError, Result};
+use crate::{bug, error, parser::{Expr, Constant}, OrionError, Result};
 use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -94,52 +94,55 @@ impl Interpreter {
                     Ok(Value::Unit)
                 }
             }
-            Expr::Integer(i) => Ok(Value::Integer(*i)),
-            Expr::Single(f) => Ok(Value::Single(*f)),
-            Expr::String(s) => Ok(Value::String(s.to_string())),
-            Expr::Unit => Ok(Value::Unit),
+            Expr::Constant(constant) => match constant {
+                Constant::Integer(i) => Ok(Value::Integer(*i)),
+                Constant::Single(f) => Ok(Value::Single(*f)),
+                Constant::String(s) => Ok(Value::String(s.to_string())),
+                Constant::Unit => Ok(Value::Unit),
+
+            }
             Expr::Lambda(arg, body) => Ok(Value::Lambda(custom_scope.unwrap_or(&self.scopes).clone(), arg.to_string(),
-                    (**body).clone(),
-                    )),
-                    Expr::Call(function, argument) => {
-                        let arg = self.eval_expr(&**argument, custom_scope)?;
+            (**body).clone(),
+            )),
+            Expr::Call(function, argument) => {
+                let arg = self.eval_expr(&**argument, custom_scope)?;
 
-                        // TEMPORARY, JUST FOR TESTING
-                        if let Expr::Var(v) = &**function {
-                            if v.as_str() == "print" {
-                                println!("{}", self.get_lit_val(&arg));
-                                return Ok(Value::Unit);
-                            }
-                        }
-
-                        let func = self.eval_expr(&**function, custom_scope)?;
-
-                        if let Value::Lambda(scopes, argument, body) = func {
-                            let mut new_scopes = scopes;
-                            new_scopes.push(HashMap::new());
-
-                            new_scopes.last_mut().unwrap().insert(argument, arg);
-                            self.eval_expr(&body, Some(&new_scopes))
-
-                        } else {
-                            error!(
-                                "Attempted to use an expression of type {} as a Function.",
-                                match func {
-                                    Value::Integer(_) => "Integer",
-                                    Value::String(_) => "String",
-                                    Value::Unit => "Unit",
-                                    Value::Single(_) => "Single",
-                                    Value::Constr(idx, _) => self
-                                        .name_idx
-                                        .iter()
-                                        .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
-                                        .unwrap()
-                                        .as_str(),
-                                    _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
-                                }
-                                )
-                        }
+                // TEMPORARY, JUST FOR TESTING
+                if let Expr::Var(v) = &**function {
+                    if v.as_str() == "print" {
+                        println!("{}", self.get_lit_val(&arg));
+                        return Ok(Value::Unit);
                     }
+                }
+
+                let func = self.eval_expr(&**function, custom_scope)?;
+
+                if let Value::Lambda(scopes, argument, body) = func {
+                    let mut new_scopes = scopes;
+                    new_scopes.push(HashMap::new());
+
+                    new_scopes.last_mut().unwrap().insert(argument, arg);
+                    self.eval_expr(&body, Some(&new_scopes))
+
+                } else {
+                    error!(
+                        "Attempted to use an expression of type {} as a Function.",
+                        match func {
+                            Value::Integer(_) => "Integer",
+                            Value::String(_) => "String",
+                            Value::Unit => "Unit",
+                            Value::Single(_) => "Single",
+                            Value::Constr(idx, _) => self
+                                .name_idx
+                                .iter()
+                                .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
+                                .unwrap()
+                                .as_str(),
+                            _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
+                        }
+                        )
+                }
+            }
             Expr::Enum(name, variants) => {
                 for (variant, containing) in variants {
                     if self.name_idx.contains_key(variant) {

@@ -10,13 +10,25 @@ pub enum Expr {
     Var(String),                //
     Call(Box<Expr>, Box<Expr>), //
     Lambda(String, Box<Expr>),  //
-    Integer(i32),               //
-    Single(f32),                //
+    Constant(Constant),
     Def(String, Box<Expr>),     //
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
-    Unit,           //
-    String(String), //
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Constant {
+    Integer(i32),
+    Single(f32),
+    String(String),
+    Unit
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Pattern {
+    Var(String),
+    Constr(u8, Vec<Pattern>),
+    Constant(Constant),
 }
 
 fn first_char(s: impl ToString) -> char {
@@ -90,9 +102,9 @@ impl Parser {
         let root = self.pop()?;
 
         Ok(match &root.ttype {
-            TType::Str(s) => Expr::String(s.to_string()),
-            TType::Float(f) => Expr::Single(*f),
-            TType::Number(i) => Expr::Integer(*i),
+            TType::Str(s) => Expr::Constant(Constant::String(s.to_string())),
+            TType::Float(f) => Expr::Constant(Constant::Single(*f)),
+            TType::Number(i) => Expr::Constant(Constant::Integer(*i)),
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
@@ -205,7 +217,7 @@ impl Parser {
                         }
                         body
                     }
-                    TType::RParen => Expr::Unit, 
+                    TType::RParen => Expr::Constant(Constant::Unit), 
                     _ => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
