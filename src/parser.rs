@@ -11,7 +11,7 @@ pub enum Expr {
     Call(Box<Expr>, Box<Expr>), //
     Lambda(String, Box<Expr>),  //
     Constant(Constant),
-    Def(String, Box<Expr>),     //
+    Def(String, Box<Expr>), //
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
 }
@@ -21,7 +21,7 @@ pub enum Constant {
     Integer(i32),
     Single(f32),
     String(String),
-    Unit
+    Unit,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -59,7 +59,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-                )
+            )
         } else {
             Ok(popped)
         }
@@ -70,7 +70,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-                )
+            )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -92,9 +92,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-            {
-                toret.push(self.advance(expected.clone())?);
-            }
+        {
+            toret.push(self.advance(expected.clone())?);
+        }
 
         Ok(toret)
     }
@@ -115,7 +115,6 @@ impl Parser {
                 }
             }
             TType::LParen => {
-
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
@@ -128,7 +127,10 @@ impl Parser {
                         };
 
                         if !first_char(&name).is_ascii_lowercase() {
-                            return error!("{}:{} | Constant names have to start with a lowercase letter.", raw_name.line, raw_name.col);
+                            return error!(
+                                "{}:{} | Constant names have to start with a lowercase letter.",
+                                raw_name.line, raw_name.col
+                            );
                         }
 
                         let value = self.parse_expr()?;
@@ -149,12 +151,14 @@ impl Parser {
                         };
 
                         if !first_char(&name).is_ascii_uppercase() {
-                            return error!("{}:{} | Enum names have to start with a uppercase letter.", r_name.line, r_name.col);
+                            return error!(
+                                "{}:{} | Enum names have to start with a uppercase letter.",
+                                r_name.line, r_name.col
+                            );
                         }
 
                         let mut var_len = HashMap::new();
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-
                             let mul = if self.peek().unwrap().ttype == TType::LParen {
                                 self.advance(TType::LParen)?;
                                 true
@@ -170,7 +174,6 @@ impl Parser {
                                 bug!("UNEXPECTED_NON_IDENTIFIER");
                             };
 
-
                             if !first_char(&vname).is_ascii_uppercase() {
                                 return error!("{}:{} | Enum variant names have to start with a uppercase letter.", r_name.line, r_name.col);
                             }
@@ -184,7 +187,6 @@ impl Parser {
                             var_len.insert(vname, length);
 
                             if mul {
-
                                 self.advance(TType::RParen)?;
                             }
                         }
@@ -193,7 +195,6 @@ impl Parser {
                             self.advance(TType::RParen)?;
                         }
 
-
                         Expr::Enum(name, var_len)
                     }
                     TType::Lambda => {
@@ -201,11 +202,16 @@ impl Parser {
                         let args = self.advance_many(TType::Ident("".to_owned()))?;
                         self.advance(TType::RParen)?;
 
-                        let args = args.iter().map(|e| if let TType::Ident(ident) = &e.ttype {
-                            ident
-                        } else {
-                            bug!("What is this thing doing here ?");
-                        }).collect::<Vec<_>>();
+                        let args = args
+                            .iter()
+                            .map(|e| {
+                                if let TType::Ident(ident) = &e.ttype {
+                                    ident
+                                } else {
+                                    bug!("What is this thing doing here ?");
+                                }
+                            })
+                            .collect::<Vec<_>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -217,7 +223,7 @@ impl Parser {
                         }
                         body
                     }
-                    TType::RParen => Expr::Constant(Constant::Unit), 
+                    TType::RParen => Expr::Constant(Constant::Unit),
                     _ => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
@@ -235,12 +241,19 @@ impl Parser {
                             if first_char(x).is_ascii_uppercase() {
                                 Expr::Constr(x.to_string(), args)
                             } else if first_char(&x).is_ascii_lowercase() {
-                                args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)))
+                                args.into_iter().fold(func, |root, elem| {
+                                    Expr::Call(Box::new(root), Box::new(elem))
+                                })
                             } else {
-                                return error!("{}:{} | Invalid variable name: {}.", subroot.line, subroot.col, x);
+                                return error!(
+                                    "{}:{} | Invalid variable name: {}.",
+                                    subroot.line, subroot.col, x
+                                );
                             }
                         } else {
-                            args.into_iter().fold(func, |root, elem| Expr::Call(Box::new(root), Box::new(elem)))
+                            args.into_iter().fold(func, |root, elem| {
+                                Expr::Call(Box::new(root), Box::new(elem))
+                            })
                         }
                     }
                 }
@@ -249,13 +262,11 @@ impl Parser {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                    )
+                )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
-
     }
-
 
     pub fn parse(&mut self) -> Result<Vec<Expr>> {
         while !self.is_at_end() {

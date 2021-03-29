@@ -43,7 +43,7 @@ fn try_main() -> Result<()> {
         print!("Orion REPL> ");
         io::stdout().flush().unwrap();
         match io::stdin().read_line(&mut buffer) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(_) => {
                 println!("Failed to read stream");
                 continue;

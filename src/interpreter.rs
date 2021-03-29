@@ -1,4 +1,8 @@
-use crate::{bug, error, parser::{Expr, Constant}, OrionError, Result};
+use crate::{
+    bug, error,
+    parser::{Constant, Expr},
+    OrionError, Result,
+};
 use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -48,17 +52,23 @@ impl Interpreter {
                         "({} {})",
                         name,
                         vals.iter()
-                        .map(|v| self.get_lit_val(v))
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                        )
+                            .map(|v| self.get_lit_val(v))
+                            .collect::<Vec<String>>()
+                            .join(" ")
+                    )
                 }
             }
         }
     }
     pub fn interpret(&mut self, repl: bool) -> Result<Value> {
         let toret = self.eval_expressions(&(self.input.clone()))?;
-        if repl { println!("{}", self.get_lit_val(&toret)); }
+        if repl {
+            let to_p = self.get_lit_val(&toret);
+
+            if to_p.as_str() != "()" {
+                println!("{}", to_p)
+            }
+        }
         Ok(toret)
     }
     pub fn update_ast(&mut self, ast: Vec<Expr>) {
@@ -79,7 +89,7 @@ impl Interpreter {
         &mut self,
         expr: &Expr,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        ) -> Result<Value> {
+    ) -> Result<Value> {
         match expr {
             Expr::Def(name, value) => {
                 let valued = self.eval_expr(value, None)?;
@@ -99,10 +109,11 @@ impl Interpreter {
                 Constant::Single(f) => Ok(Value::Single(*f)),
                 Constant::String(s) => Ok(Value::String(s.to_string())),
                 Constant::Unit => Ok(Value::Unit),
-
-            }
-            Expr::Lambda(arg, body) => Ok(Value::Lambda(custom_scope.unwrap_or(&self.scopes).clone(), arg.to_string(),
-            (**body).clone(),
+            },
+            Expr::Lambda(arg, body) => Ok(Value::Lambda(
+                custom_scope.unwrap_or(&self.scopes).clone(),
+                arg.to_string(),
+                (**body).clone(),
             )),
             Expr::Call(function, argument) => {
                 let arg = self.eval_expr(&**argument, custom_scope)?;
@@ -123,7 +134,6 @@ impl Interpreter {
 
                     new_scopes.last_mut().unwrap().insert(argument, arg);
                     self.eval_expr(&body, Some(&new_scopes))
-
                 } else {
                     error!(
                         "Attempted to use an expression of type {} as a Function.",
@@ -140,7 +150,7 @@ impl Interpreter {
                                 .as_str(),
                             _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
                         }
-                        )
+                    )
                 }
             }
             Expr::Enum(name, variants) => {
@@ -149,7 +159,7 @@ impl Interpreter {
                         return error!(
                             "Attempted to redefine an existing enum variant: {}.",
                             variant
-                            );
+                        );
                     }
 
                     let length = self.variants.len();
@@ -171,7 +181,7 @@ impl Interpreter {
                             "This enum variant takes {} values but {} were supplied.",
                             self.variants[idx],
                             args.len()
-                            )
+                        )
                     } else {
                         let mut values = vec![];
 
@@ -186,7 +196,7 @@ impl Interpreter {
             Expr::Var(var) => {
                 for scope in match custom_scope {
                     Some(s) => s.iter().rev(),
-                        None => self.scopes.iter().rev(),
+                    None => self.scopes.iter().rev(),
                 } {
                     if scope.contains_key(var) {
                         return Ok(scope[var].clone());
