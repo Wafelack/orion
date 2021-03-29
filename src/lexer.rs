@@ -10,6 +10,7 @@ pub enum TType {
     Ident(String),
     Def,
     Enum,
+    Tuple,
     Lambda,
 }
 
@@ -158,6 +159,7 @@ impl Lexer {
             "def" => self.add_token(TType::Def),
             "enum" => self.add_token(TType::Enum),
             "lambda" => self.add_token(TType::Lambda),
+            ";" => self.add_token(TType::Tuple),
             _ => self.add_token(TType::Ident(raw)),
         }
     }

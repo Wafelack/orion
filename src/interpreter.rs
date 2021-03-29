@@ -13,6 +13,7 @@ pub enum Value {
     Lambda(Vec<HashMap<String, Value>>, String, Expr),
     Unit,
     Constr(usize, Vec<Value>),
+    Tuple(Vec<Value>),
 }
 
 pub struct Interpreter {
@@ -38,6 +39,7 @@ impl Interpreter {
             Value::String(s) => format!("{}", s),
             Value::Lambda(_, x, _) => format!("λ{}", x),
             Value::Unit => "()".to_string(),
+            Value::Tuple(vals) => format!("({})", vals.iter().map(|v| self.get_lit_val(&v)).collect::<Vec<_>>().join(", ")),
             Value::Constr(idx, vals) => {
                 let name = self
                     .name_idx
@@ -192,6 +194,15 @@ impl Interpreter {
                         Ok(Value::Constr(idx, values))
                     }
                 }
+            }
+            Expr::Tuple(content) => {
+                let mut vals = vec![];
+
+                for field in content {
+                    vals.push(self.eval_expr(field, None)?);
+                }
+
+                Ok(Value::Tuple(vals))
             }
             Expr::Var(var) => {
                 for scope in match custom_scope {

@@ -13,6 +13,7 @@ pub enum Expr {
     Constant(Constant),
     Def(String, Box<Expr>), //
     Constr(String, Vec<Expr>),
+    Tuple(Vec<Expr>),
     Enum(String, HashMap<String, u8>),
 }
 
@@ -59,7 +60,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-            )
+                )
         } else {
             Ok(popped)
         }
@@ -70,7 +71,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-            )
+                )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -92,14 +93,15 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-        {
-            toret.push(self.advance(expected.clone())?);
-        }
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
     fn parse_expr(&mut self) -> Result<Expr> {
         let root = self.pop()?;
+        eprintln!("{:?}", &root);
 
         Ok(match &root.ttype {
             TType::Str(s) => Expr::Constant(Constant::String(s.to_string())),
@@ -130,7 +132,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Constant names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
-                            );
+                                );
                         }
 
                         let value = self.parse_expr()?;
@@ -154,7 +156,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Enum names have to start with a uppercase letter.",
                                 r_name.line, r_name.col
-                            );
+                                );
                         }
 
                         let mut var_len = HashMap::new();
@@ -211,7 +213,7 @@ impl Parser {
                                     bug!("What is this thing doing here ?");
                                 }
                             })
-                            .collect::<Vec<_>>();
+                        .collect::<Vec<_>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -223,8 +225,35 @@ impl Parser {
                         }
                         body
                     }
+                    TType::Tuple => {
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            let tok = self.pop()?;
+                            eprintln!("{:?}", tok);
+                            args.push(match tok.ttype {
+                                TType::Ident(idnt) => if first_char(&idnt).is_ascii_uppercase() {
+                                    Expr::Constr(idnt, vec![])
+                                } else {
+                                    Expr::Var(idnt)
+                                },
+                                TType::Number(i) => Expr::Constant(Constant::Integer(i)),
+                                TType::Float(f) => Expr::Constant(Constant::Single(f)),
+                                TType::Str(s) => Expr::Constant(Constant::String(s)),
+                                TType::LParen => self.parse_expr()?,
+                                _ => return error!("{}:{} | Expected Constant of Function call, found {}.", tok.line, tok.col, tok.ttype.get_type()),
+                            })
+                        }
+
+                        if !self.is_at_end() {
+                            eprintln!("foo");
+                            self.advance(TType::RParen)?;
+                            eprintln!("Bar");
+                        }
+
+                        Expr::Tuple(args)
+                    }
                     TType::RParen => Expr::Constant(Constant::Unit),
-                    _ => {
+                    TType::LParen | TType::Ident(_) => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
 
@@ -248,7 +277,7 @@ impl Parser {
                                 return error!(
                                     "{}:{} | Invalid variable name: {}.",
                                     subroot.line, subroot.col, x
-                                );
+                                    );
                             }
                         } else {
                             args.into_iter().fold(func, |root, elem| {
@@ -256,13 +285,14 @@ impl Parser {
                             })
                         }
                     }
+                    _ => return error!("{}:{} | Unexpected Constant.", subroot.line, subroot.col),
                 }
             }
             TType::RParen => {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                )
+                    )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
