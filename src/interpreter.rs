@@ -1,6 +1,6 @@
 use crate::{
     bug, error,
-    parser::{Constant, Expr},
+    parser::{Literal, Expr},
     OrionError, Result,
 };
 use std::collections::HashMap;
@@ -97,7 +97,7 @@ impl Interpreter {
                 let valued = self.eval_expr(value, None)?;
 
                 if self.scopes.last().unwrap().contains_key(name) {
-                    error!("Constant is already in scope: {}.", name)
+                    error!("Literal is already in scope: {}.", name)
                 } else {
                     self.scopes
                         .last_mut()
@@ -106,11 +106,11 @@ impl Interpreter {
                     Ok(Value::Unit)
                 }
             }
-            Expr::Constant(constant) => match constant {
-                Constant::Integer(i) => Ok(Value::Integer(*i)),
-                Constant::Single(f) => Ok(Value::Single(*f)),
-                Constant::String(s) => Ok(Value::String(s.to_string())),
-                Constant::Unit => Ok(Value::Unit),
+            Expr::Literal(constant) => match constant {
+                Literal::Integer(i) => Ok(Value::Integer(*i)),
+                Literal::Single(f) => Ok(Value::Single(*f)),
+                Literal::String(s) => Ok(Value::String(s.to_string())),
+                Literal::Unit => Ok(Value::Unit),
             },
             Expr::Lambda(arg, body) => Ok(Value::Lambda(
                 custom_scope.unwrap_or(&self.scopes).clone(),
@@ -214,7 +214,7 @@ impl Interpreter {
                     }
                 }
 
-                error!("Constant not in scope: {}.", var)
+                error!("Literal not in scope: {}.", var)
             }
         }
     }

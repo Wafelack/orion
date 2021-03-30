@@ -10,15 +10,15 @@ pub enum Expr {
     Var(String),                //
     Call(Box<Expr>, Box<Expr>), //
     Lambda(String, Box<Expr>),  //
-    Constant(Constant),
+    Literal(Literal),
     Def(String, Box<Expr>), //
     Constr(String, Vec<Expr>),
-    Tuple(Vec<Expr>),
     Enum(String, HashMap<String, u8>),
+    Tuple(Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Constant {
+pub enum Literal {
     Integer(i32),
     Single(f32),
     String(String),
@@ -29,7 +29,8 @@ pub enum Constant {
 pub enum Pattern {
     Var(String),
     Constr(u8, Vec<Pattern>),
-    Constant(Constant),
+    Tuple(Vec<Pattern>),
+    Literal(Literal),
 }
 
 fn first_char(s: impl ToString) -> char {
@@ -104,9 +105,9 @@ impl Parser {
         eprintln!("{:?}", &root);
 
         Ok(match &root.ttype {
-            TType::Str(s) => Expr::Constant(Constant::String(s.to_string())),
-            TType::Float(f) => Expr::Constant(Constant::Single(*f)),
-            TType::Number(i) => Expr::Constant(Constant::Integer(*i)),
+            TType::Str(s) => Expr::Literal(Constant::String(s.to_string())),
+            TType::Float(f) => Expr::Literal(Constant::Single(*f)),
+            TType::Number(i) => Expr::Literal(Constant::Integer(*i)),
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
@@ -130,7 +131,7 @@ impl Parser {
 
                         if !first_char(&name).is_ascii_lowercase() {
                             return error!(
-                                "{}:{} | Constant names have to start with a lowercase letter.",
+                                "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
                                 );
                         }
@@ -228,20 +229,7 @@ impl Parser {
                     TType::Tuple => {
                         let mut args = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                            let tok = self.pop()?;
-                            eprintln!("{:?}", tok);
-                            args.push(match tok.ttype {
-                                TType::Ident(idnt) => if first_char(&idnt).is_ascii_uppercase() {
-                                    Expr::Constr(idnt, vec![])
-                                } else {
-                                    Expr::Var(idnt)
-                                },
-                                TType::Number(i) => Expr::Constant(Constant::Integer(i)),
-                                TType::Float(f) => Expr::Constant(Constant::Single(f)),
-                                TType::Str(s) => Expr::Constant(Constant::String(s)),
-                                TType::LParen => self.parse_expr()?,
-                                _ => return error!("{}:{} | Expected Constant of Function call, found {}.", tok.line, tok.col, tok.ttype.get_type()),
-                            })
+                            args.push(self.parse_expr()?);
                         }
 
                         if !self.is_at_end() {
@@ -252,7 +240,7 @@ impl Parser {
 
                         Expr::Tuple(args)
                     }
-                    TType::RParen => Expr::Constant(Constant::Unit),
+                    TType::RParen => Expr::Literal(Constant::Unit),
                     TType::LParen | TType::Ident(_) => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
@@ -285,7 +273,7 @@ impl Parser {
                             })
                         }
                     }
-                    _ => return error!("{}:{} | Unexpected Constant.", subroot.line, subroot.col),
+                    _ => return error!("{}:{} | Unexpected Literal.", subroot.line, subroot.col),
                 }
             }
             TType::RParen => {
