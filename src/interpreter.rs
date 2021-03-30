@@ -1,9 +1,9 @@
 use crate::{
     bug, error,
-    parser::{Literal, Expr},
+    parser::{Expr, Literal, Pattern},
     OrionError, Result,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::discriminant};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -39,7 +39,13 @@ impl Interpreter {
             Value::String(s) => format!("{}", s),
             Value::Lambda(_, x, _) => format!("λ{}", x),
             Value::Unit => "()".to_string(),
-            Value::Tuple(vals) => format!("({})", vals.iter().map(|v| self.get_lit_val(&v)).collect::<Vec<_>>().join(", ")),
+            Value::Tuple(vals) => format!(
+                "({})",
+                vals.iter()
+                    .map(|v| self.get_lit_val(&v))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             Value::Constr(idx, vals) => {
                 let name = self
                     .name_idx
@@ -87,135 +93,249 @@ impl Interpreter {
 
         Ok(Value::Unit) // Should not be called
     }
+    fn eval_def(&mut self, name: &String, value: &Expr) -> Result<Value> {
+        let valued = self.eval_expr(value, None)?;
+
+        if self.scopes.last().unwrap().contains_key(name) {
+            error!("Literal is already in scope: {}.", name)
+        } else {
+            self.scopes
+                .last_mut()
+                .unwrap()
+                .insert(name.to_string(), valued);
+            Ok(Value::Unit)
+        }
+    }
+    fn eval_literal(&mut self, literal: &Literal) -> Result<Value> {
+        match literal {
+            Literal::Integer(i) => Ok(Value::Integer(*i)),
+            Literal::Single(f) => Ok(Value::Single(*f)),
+            Literal::String(s) => Ok(Value::String(s.to_string())),
+            Literal::Unit => Ok(Value::Unit),
+        }
+    }
+    fn eval_lambda(
+        &mut self,
+        arg: &String,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+        body: &Box<Expr>,
+    ) -> Result<Value> {
+        Ok(Value::Lambda(
+            custom_scope.unwrap_or(&self.scopes).clone(),
+            arg.to_string(),
+            (**body).clone(),
+        ))
+    }
+    fn eval_call(
+        &mut self,
+        function: &Box<Expr>,
+        argument: &Box<Expr>,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+    ) -> Result<Value> {
+        let arg = self.eval_expr(&**argument, custom_scope)?;
+
+        // TEMPORARY, JUST FOR TESTING
+        if let Expr::Var(v) = &**function {
+            if v.as_str() == "print" {
+                println!("{}", self.get_lit_val(&arg));
+                return Ok(Value::Unit);
+            }
+        }
+
+        let func = self.eval_expr(&**function, custom_scope)?;
+
+        if let Value::Lambda(scopes, argument, body) = func {
+            let mut new_scopes = scopes;
+            new_scopes.push(HashMap::new());
+
+            new_scopes.last_mut().unwrap().insert(argument, arg);
+            self.eval_expr(&body, Some(&new_scopes))
+        } else {
+            error!(
+                "Attempted to use an expression of type {} as a Function.",
+                match func {
+                    Value::Integer(_) => "Integer",
+                    Value::String(_) => "String",
+                    Value::Unit => "Unit",
+                    Value::Single(_) => "Single",
+                    Value::Constr(idx, _) => self
+                        .name_idx
+                        .iter()
+                        .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
+                        .unwrap()
+                        .as_str(),
+                    _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
+                }
+            )
+        }
+    }
+    fn eval_enum(&mut self, name: &String, variants: &HashMap<String, u8>) -> Result<Value> {
+        for (variant, containing) in variants {
+            if self.name_idx.contains_key(variant) {
+                return error!(
+                    "Attempted to redefine an existing enum variant: {}.",
+                    variant
+                );
+            }
+
+            let length = self.variants.len();
+            self.name_idx
+                .insert(variant.to_string(), (length, name.to_string()));
+            self.variants.push(*containing);
+        }
+
+        Ok(Value::Unit)
+    }
+    fn eval_constructor(&mut self, name: &String, args: &Vec<Expr>) -> Result<Value> {
+        if !self.name_idx.contains_key(name) {
+            error!("Attempted to use an undefined enum variant: {}.", name)
+        } else {
+            let idx = self.name_idx[name].0;
+
+            if args.len() as u8 != self.variants[idx] {
+                error!(
+                    "This enum variant takes {} values but {} were supplied.",
+                    self.variants[idx],
+                    args.len()
+                )
+            } else {
+                let mut values = vec![];
+
+                for arg in args {
+                    values.push(self.eval_expr(arg, None)?);
+                }
+
+                Ok(Value::Constr(idx, values))
+            }
+        }
+    }
+    fn eval_tuple(&mut self, content: &Vec<Expr>) -> Result<Value> {
+        let mut vals = vec![];
+
+        for field in content {
+            vals.push(self.eval_expr(field, None)?);
+        }
+
+        Ok(Value::Tuple(vals))
+    }
+    fn eval_var(
+        &mut self,
+        var: &String,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+    ) -> Result<Value> {
+        for scope in match custom_scope {
+            Some(s) => s.iter().rev(),
+            None => self.scopes.iter().rev(),
+        } {
+            if scope.contains_key(var) {
+                return Ok(scope[var].clone());
+            }
+        }
+
+        error!("Literal not in scope: {}.", var)
+    }
+    fn eval_match(
+        &mut self,
+        to_match: &Expr,
+        couples: &Vec<(Pattern, Expr)>,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+    ) -> Result<Value> {
+        Ok(Value::Unit)
+    }
+    fn unpatternize(
+        &mut self,
+        pat: &Pattern,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+    ) -> Result<Value> {
+        Ok(match pat {
+            Pattern::Literal(lit) => match lit {
+                Literal::Integer(i) => Value::Integer(*i),
+                Literal::Single(f) => Value::Single(*f),
+                Literal::String(s) => Value::String(s.to_string()),
+                Literal::Unit => Value::Unit,
+            },
+            Pattern::Var(v) => self.eval_var(&v, custom_scope)?,
+            Pattern::Tuple(vals) => {
+                let mut valued = vec![];
+
+                for val in vals {
+                    valued.push(self.unpatternize(val, custom_scope)?);
+                }
+                Value::Tuple(valued)
+            }
+            Pattern::Constr(variant, params) => {
+                if self.name_idx.contains_key(variant) {
+                    return error!("Attempted to use an undefined enum variant: {}.", &variant);
+                }
+
+                let idx = *&self.name_idx[variant].0;
+
+                let mut fields = vec![];
+                for param in params {
+                    fields.push(self.unpatternize(param, custom_scope)?);
+                }
+
+                Value::Constr(idx, fields)
+            }
+        })
+    }
+    fn patternize(&mut self, val: &Value) -> Result<Pattern> {
+        Ok(match val {
+            Value::Integer(i) => Pattern::Literal(Literal::Integer(*i)),
+            Value::Single(f) => Pattern::Literal(Literal::Single(*f)),
+            Value::String(s) => Pattern::Literal(Literal::String(s.to_string())),
+            Value::Unit => Pattern::Literal(Literal::Unit),
+            Value::Tuple(vals) => {
+                let mut patterned = vec![];
+
+                for val in vals {
+                    patterned.push(self.patternize(val)?);
+                }
+
+                Pattern::Tuple(patterned)
+            }
+            Value::Constr(idx, params) => {
+                let named = self
+                    .name_idx
+                    .iter()
+                    .find_map(|(k, (val, _))| {
+                        if *val == *idx {
+                            Some(k.to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap();
+                let mut patterned = vec![];
+
+                for param in params {
+                    patterned.push(self.patternize(param)?);
+                }
+
+                Pattern::Constr(named, patterned)
+            }
+            Value::Lambda(_, _, _) => {
+                return error!("Expected Constructor, Tuple or Literal, found Lambda.")
+            }
+        })
+    }
+
     fn eval_expr(
         &mut self,
         expr: &Expr,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
     ) -> Result<Value> {
         match expr {
-            Expr::Def(name, value) => {
-                let valued = self.eval_expr(value, None)?;
+            Expr::Def(name, value) => self.eval_def(name, value),
+            Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
+            Expr::Literal(literal) => self.eval_literal(literal),
+            Expr::Call(function, argument) => self.eval_call(function, argument, custom_scope),
 
-                if self.scopes.last().unwrap().contains_key(name) {
-                    error!("Literal is already in scope: {}.", name)
-                } else {
-                    self.scopes
-                        .last_mut()
-                        .unwrap()
-                        .insert(name.to_string(), valued);
-                    Ok(Value::Unit)
-                }
-            }
-            Expr::Literal(constant) => match constant {
-                Literal::Integer(i) => Ok(Value::Integer(*i)),
-                Literal::Single(f) => Ok(Value::Single(*f)),
-                Literal::String(s) => Ok(Value::String(s.to_string())),
-                Literal::Unit => Ok(Value::Unit),
-            },
-            Expr::Lambda(arg, body) => Ok(Value::Lambda(
-                custom_scope.unwrap_or(&self.scopes).clone(),
-                arg.to_string(),
-                (**body).clone(),
-            )),
-            Expr::Call(function, argument) => {
-                let arg = self.eval_expr(&**argument, custom_scope)?;
-
-                // TEMPORARY, JUST FOR TESTING
-                if let Expr::Var(v) = &**function {
-                    if v.as_str() == "print" {
-                        println!("{}", self.get_lit_val(&arg));
-                        return Ok(Value::Unit);
-                    }
-                }
-
-                let func = self.eval_expr(&**function, custom_scope)?;
-
-                if let Value::Lambda(scopes, argument, body) = func {
-                    let mut new_scopes = scopes;
-                    new_scopes.push(HashMap::new());
-
-                    new_scopes.last_mut().unwrap().insert(argument, arg);
-                    self.eval_expr(&body, Some(&new_scopes))
-                } else {
-                    error!(
-                        "Attempted to use an expression of type {} as a Function.",
-                        match func {
-                            Value::Integer(_) => "Integer",
-                            Value::String(_) => "String",
-                            Value::Unit => "Unit",
-                            Value::Single(_) => "Single",
-                            Value::Constr(idx, _) => self
-                                .name_idx
-                                .iter()
-                                .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
-                                .unwrap()
-                                .as_str(),
-                            _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
-                        }
-                    )
-                }
-            }
-            Expr::Enum(name, variants) => {
-                for (variant, containing) in variants {
-                    if self.name_idx.contains_key(variant) {
-                        return error!(
-                            "Attempted to redefine an existing enum variant: {}.",
-                            variant
-                        );
-                    }
-
-                    let length = self.variants.len();
-                    self.name_idx
-                        .insert(variant.to_string(), (length, name.to_string()));
-                    self.variants.push(*containing);
-                }
-
-                Ok(Value::Unit)
-            }
-            Expr::Constr(name, args) => {
-                if !self.name_idx.contains_key(name) {
-                    error!("Attempted to use an undefined enum variant: {}.", name)
-                } else {
-                    let idx = self.name_idx[name].0;
-
-                    if args.len() as u8 != self.variants[idx] {
-                        error!(
-                            "This enum variant takes {} values but {} were supplied.",
-                            self.variants[idx],
-                            args.len()
-                        )
-                    } else {
-                        let mut values = vec![];
-
-                        for arg in args {
-                            values.push(self.eval_expr(arg, None)?);
-                        }
-
-                        Ok(Value::Constr(idx, values))
-                    }
-                }
-            }
-            Expr::Tuple(content) => {
-                let mut vals = vec![];
-
-                for field in content {
-                    vals.push(self.eval_expr(field, None)?);
-                }
-
-                Ok(Value::Tuple(vals))
-            }
-            Expr::Var(var) => {
-                for scope in match custom_scope {
-                    Some(s) => s.iter().rev(),
-                    None => self.scopes.iter().rev(),
-                } {
-                    if scope.contains_key(var) {
-                        return Ok(scope[var].clone());
-                    }
-                }
-
-                error!("Literal not in scope: {}.", var)
-            }
+            Expr::Lambda(arg, body) => self.eval_lambda(arg, custom_scope, body),
+            Expr::Enum(name, variants) => self.eval_enum(name, variants),
+            Expr::Constr(name, args) => self.eval_constructor(name, args),
+            Expr::Tuple(content) => self.eval_tuple(content),
+            Expr::Var(var) => self.eval_var(var, custom_scope),
         }
     }
 }

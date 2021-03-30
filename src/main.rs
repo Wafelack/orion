@@ -64,6 +64,8 @@ fn try_main() -> Result<()> {
             }
         };
 
+        println!("{:?}", ast);
+
         interpreter.update_ast(ast);
 
         match interpreter.interpret(true) {

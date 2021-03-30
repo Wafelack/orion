@@ -15,6 +15,7 @@ pub enum Expr {
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
     Tuple(Vec<Expr>),
+    Match(Box<Expr>, Vec<(Pattern, Expr)>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,7 +29,7 @@ pub enum Literal {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Pattern {
     Var(String),
-    Constr(u8, Vec<Pattern>),
+    Constr(String, Vec<Pattern>),
     Tuple(Vec<Pattern>),
     Literal(Literal),
 }
@@ -61,7 +62,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-                )
+            )
         } else {
             Ok(popped)
         }
@@ -72,7 +73,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-                )
+            )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -94,20 +95,92 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-            {
-                toret.push(self.advance(expected.clone())?);
-            }
+        {
+            toret.push(self.advance(expected.clone())?);
+        }
 
         Ok(toret)
     }
-    fn parse_expr(&mut self) -> Result<Expr> {
+
+    fn parse_pattern(&mut self) -> Result<Pattern> {
         let root = self.pop()?;
-        eprintln!("{:?}", &root);
 
         Ok(match &root.ttype {
-            TType::Str(s) => Expr::Literal(Constant::String(s.to_string())),
-            TType::Float(f) => Expr::Literal(Constant::Single(*f)),
-            TType::Number(i) => Expr::Literal(Constant::Integer(*i)),
+            TType::Str(s) => Pattern::Literal(Literal::String(s.to_string())),
+            TType::Number(i) => Pattern::Literal(Literal::Integer(*i)),
+            TType::Float(f) => Pattern::Literal(Literal::Single(*f)),
+            TType::Ident(id) => Pattern::Var(id.to_string()),
+            TType::LParen => {
+                let subroot = self.pop()?;
+
+                match &subroot.ttype {
+                    TType::RParen => Pattern::Literal(Literal::Unit),
+                    TType::Tuple => {
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            args.push(self.parse_pattern()?);
+                        }
+
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        Pattern::Tuple(args)
+                    }
+                    TType::LParen | TType::Ident(_) => {
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            args.push(self.parse_pattern()?);
+                        }
+
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        if let TType::Ident(x) = &subroot.ttype {
+                            if first_char(x).is_ascii_uppercase() {
+                                Pattern::Constr(x.to_string(), args)
+                            } else {
+                                return error!(
+                                    "{}:{} | Invalid Enum Variant name, Enum Variant names have to start with an uppercase letter: {}.",
+                                    subroot.line, subroot.col, x
+                                    );
+                            }
+                        } else {
+                            return error!(
+                                "{}:{} | Expected an Enum Variant.",
+                                subroot.line, subroot.col
+                            );
+                        }
+                    }
+                    _ => {
+                        return error!(
+                            "{}:{} | Expected Tuple or Enum Variant, found {}.",
+                            subroot.line,
+                            subroot.col,
+                            subroot.ttype.get_type()
+                        )
+                    }
+                }
+            }
+            _ => {
+                return error!(
+                    "{}:{} | Expected Literal, Identifier, Tuple or Enum Variant, found {}.",
+                    root.line,
+                    root.col,
+                    root.ttype.get_type()
+                )
+            }
+        })
+    }
+
+    fn parse_expr(&mut self) -> Result<Expr> {
+        let root = self.pop()?;
+
+        Ok(match &root.ttype {
+            TType::Str(s) => Expr::Literal(Literal::String(s.to_string())),
+            TType::Float(f) => Expr::Literal(Literal::Single(*f)),
+            TType::Number(i) => Expr::Literal(Literal::Integer(*i)),
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
@@ -133,7 +206,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
-                                );
+                            );
                         }
 
                         let value = self.parse_expr()?;
@@ -143,6 +216,23 @@ impl Parser {
                         }
 
                         Expr::Def(name, Box::new(value))
+                    }
+                    TType::Match => {
+                        let to_match = self.parse_expr()?;
+                        let mut couples = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            self.advance(TType::LParen)?;
+
+                            let pat = self.parse_pattern()?;
+
+                            let todo = self.parse_expr()?;
+
+                            couples.push((pat, todo));
+
+                            self.advance(TType::RParen)?;
+                        }
+
+                        Expr::Match(Box::new(to_match), couples)
                     }
                     TType::Enum => {
                         let r_name = self.advance(TType::Ident("".to_owned()))?;
@@ -157,7 +247,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Enum names have to start with a uppercase letter.",
                                 r_name.line, r_name.col
-                                );
+                            );
                         }
 
                         let mut var_len = HashMap::new();
@@ -214,7 +304,7 @@ impl Parser {
                                     bug!("What is this thing doing here ?");
                                 }
                             })
-                        .collect::<Vec<_>>();
+                            .collect::<Vec<_>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -233,14 +323,12 @@ impl Parser {
                         }
 
                         if !self.is_at_end() {
-                            eprintln!("foo");
                             self.advance(TType::RParen)?;
-                            eprintln!("Bar");
                         }
 
                         Expr::Tuple(args)
                     }
-                    TType::RParen => Expr::Literal(Constant::Unit),
+                    TType::RParen => Expr::Literal(Literal::Unit),
                     TType::LParen | TType::Ident(_) => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
@@ -254,7 +342,7 @@ impl Parser {
                             self.advance(TType::RParen)?;
                         }
 
-                        if let Expr::Var(x) = &func {
+                        if let TType::Ident(x) = &subroot.ttype {
                             if first_char(x).is_ascii_uppercase() {
                                 Expr::Constr(x.to_string(), args)
                             } else if first_char(&x).is_ascii_lowercase() {
@@ -265,7 +353,7 @@ impl Parser {
                                 return error!(
                                     "{}:{} | Invalid variable name: {}.",
                                     subroot.line, subroot.col, x
-                                    );
+                                );
                             }
                         } else {
                             args.into_iter().fold(func, |root, elem| {
@@ -280,7 +368,7 @@ impl Parser {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                    )
+                )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
