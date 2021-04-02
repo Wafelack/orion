@@ -15,6 +15,7 @@ pub enum Expr {
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
     Tuple(Vec<Expr>),
+    Load(Vec<String>),
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
 }
 
@@ -62,7 +63,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-            )
+                )
         } else {
             Ok(popped)
         }
@@ -73,7 +74,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-            )
+                )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -95,9 +96,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-        {
-            toret.push(self.advance(expected.clone())?);
-        }
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
@@ -158,7 +159,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Expected an Enum Variant.",
                                 subroot.line, subroot.col
-                            );
+                                );
                         }
                     }
                     _ => {
@@ -167,7 +168,7 @@ impl Parser {
                             subroot.line,
                             subroot.col,
                             subroot.ttype.get_type()
-                        )
+                            )
                     }
                 }
             }
@@ -177,7 +178,7 @@ impl Parser {
                     root.line,
                     root.col,
                     root.ttype.get_type()
-                )
+                    )
             }
         })
     }
@@ -202,6 +203,20 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
+                    TType::Load => {
+                        let mut names = vec![];
+
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::LParen {
+                            let r_name = self.advance(TType::Str("".to_owned()))?;
+
+                            if let TType::Str(n) = r_name.ttype {
+                                names.push(n);
+                            } else {
+                                bug!("UNEXPECTED_STRING")
+                            }
+                        }
+                        Expr::Load(names)
+                    }
                     TType::Def => {
                         let raw_name = self.advance(TType::Ident("".to_owned()))?;
                         let name = if let TType::Ident(n) = raw_name.ttype {
@@ -214,7 +229,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
-                            );
+                                );
                         }
 
                         let value = self.parse_expr()?;
@@ -255,7 +270,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Enum names have to start with a uppercase letter.",
                                 r_name.line, r_name.col
-                            );
+                                );
                         }
 
                         let mut var_len = HashMap::new();
@@ -312,7 +327,7 @@ impl Parser {
                                     bug!("What is this thing doing here ?");
                                 }
                             })
-                            .collect::<Vec<_>>();
+                        .collect::<Vec<_>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -361,7 +376,7 @@ impl Parser {
                                 return error!(
                                     "{}:{} | Invalid variable name: {}.",
                                     subroot.line, subroot.col, x
-                                );
+                                    );
                             }
                         } else {
                             args.into_iter().fold(func, |root, elem| {
@@ -376,7 +391,7 @@ impl Parser {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                )
+                    )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })

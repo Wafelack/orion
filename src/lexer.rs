@@ -13,6 +13,7 @@ pub enum TType {
     Tuple,
     Lambda,
     Match,
+    Load,
 }
 
 impl TType {
@@ -162,6 +163,7 @@ impl Lexer {
             "lambda" => self.add_token(TType::Lambda),
             "," => self.add_token(TType::Tuple),
             "match" => self.add_token(TType::Match),
+            "load" => self.add_token(TType::Load),
             _ => self.add_token(TType::Ident(raw)),
         }
     }

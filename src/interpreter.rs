@@ -1,9 +1,10 @@
 use crate::{
     bug, error,
-    parser::{Expr, Literal, Pattern},
+    lexer::{Lexer},
+    parser::{Parser, Expr, Literal, Pattern},
     OrionError, Result,
 };
-use std::collections::HashMap;
+use std::{path::Path, fs, collections::HashMap, env};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -413,6 +414,41 @@ impl Interpreter {
             }
         })
     }
+    fn eval_load(&mut self, params: &Vec<String>) -> Result<Value> {
+
+        let lib_link = match env::var("ORION_LIB") {
+            Ok(v) => v,
+            _ => if cfg!(windows) {
+                "C:/Program Files/Orion/lib"
+            } else if cfg!(macos) {
+                "/usr/local/lib/orion"
+            } else {
+                "/usr/lib/orion"
+            }.to_string()
+        };
+
+        for param in params {
+            let lib_path = &format!("{}/{}", lib_link, param);
+
+            let content = if Path::new(lib_path).exists() {
+                match fs::read_to_string(lib_path) {
+                    Ok(c) => c,
+                    _ => return error!("Failed to read file: {}.", lib_path),
+                }
+            } else if Path::new(&param).exists() {
+                match fs::read_to_string(param) {
+                    Ok(c) => c,
+                    _ => return error!("Failed to read file: {}.", lib_path),
+                }
+            } else {
+                return error!("File not found: {}.", param);
+            };
+
+            self.eval_expressions(&Parser::new(Lexer::new(content).proc_tokens()?).parse()?)?;
+        }
+
+        Ok(Value::Unit)
+    }
 
     fn eval_expr(
         &mut self,
@@ -424,7 +460,7 @@ impl Interpreter {
             Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
             Expr::Literal(literal) => self.eval_literal(literal),
             Expr::Call(function, argument) => self.eval_call(function, argument, custom_scope),
-
+            Expr::Load(params) => self.eval_load(params),
             Expr::Lambda(arg, body) => self.eval_lambda(arg, custom_scope, body),
             Expr::Enum(name, variants) => self.eval_enum(name, variants),
             Expr::Constr(name, args) => self.eval_constructor(name, args),
