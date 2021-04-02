@@ -3,7 +3,7 @@ use crate::{
     parser::{Expr, Literal, Pattern},
     OrionError, Result,
 };
-use std::{collections::HashMap, mem::discriminant};
+use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -234,13 +234,107 @@ impl Interpreter {
 
         error!("Literal not in scope: {}.", var)
     }
+    fn match_and_bound(
+        &mut self,
+        patternized: &Pattern,
+        pattern: &Pattern,
+        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+    ) -> Option<HashMap<String, Value>> {
+        let mut to_ret = HashMap::new();
+
+        let val = match self.unpatternize(patternized, custom_scope) {
+            Ok(v) => v,
+            _ => bug!("UNEXPECTED_ERROR"),
+        };
+
+
+        match pattern {
+            Pattern::Var(v) => match self.eval_var(v, custom_scope) {
+                Ok(v) => {
+                    if v == val {
+                        Some(to_ret)
+                    } else {
+                        None
+                    }
+                }
+                _ => {
+                    to_ret.insert(v.to_string(), val);
+                    Some(to_ret)
+                }
+            },
+            Pattern::Tuple(patterns) => {
+                if let Pattern::Tuple(vpat) = patternized {
+                    if vpat.len() == patterns.len() {
+                        for i in 0..vpat.len() {
+                            match self.match_and_bound(&vpat[i], &patterns[i], custom_scope) {
+                                Some(sc) => to_ret.extend(sc),
+                                None => return None,
+                            }
+                        }
+                        Some(to_ret)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            Pattern::Constr(name, patterns) => {
+                if let Pattern::Constr(vname, vpat) = patternized {
+                    if vname == name {
+                        if vpat.len() == patterns.len() {
+                            for i in 0..vpat.len() {
+                                match self.match_and_bound(&vpat[i], &patterns[i], custom_scope) {
+                                    Some(sc) => to_ret.extend(sc),
+                                    None => return None,
+                                }
+                            }
+                            Some(to_ret)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => match self.unpatternize(&pattern, custom_scope) {
+                Ok(v) => {
+                    if v == val {
+                        Some(to_ret)
+                    } else {
+                        None
+                    }
+                }
+                _ => bug!("UNEXPECTED_ERROR"),
+            },
+        }
+    }
     fn eval_match(
         &mut self,
         to_match: &Expr,
         couples: &Vec<(Pattern, Expr)>,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
     ) -> Result<Value> {
-        Ok(Value::Unit)
+        let to_match = self.eval_expr(to_match, custom_scope)?;
+
+        let patternized = self.patternize(&to_match)?;
+
+        for (pat, expr) in couples {
+            match self.match_and_bound(&patternized, &pat, custom_scope) {
+                Some(scopes) => {
+                    let cloned = self.scopes.clone();
+                    let mut new = (*(custom_scope.clone().unwrap_or(&cloned))).clone();
+                    new.push(scopes);
+                    return self.eval_expr(expr, Some(&new));
+                }
+                None => continue,
+            }
+        }
+
+        error!("No pattern can be matched.")
     }
     fn unpatternize(
         &mut self,
@@ -264,7 +358,7 @@ impl Interpreter {
                 Value::Tuple(valued)
             }
             Pattern::Constr(variant, params) => {
-                if self.name_idx.contains_key(variant) {
+                if !self.name_idx.contains_key(variant) {
                     return error!("Attempted to use an undefined enum variant: {}.", &variant);
                 }
 

@@ -14,7 +14,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="1.0.2 (e86c870879, 2021-01-15)"
-   sodipodi:docname="code_structure.svg">
+   sodipodi:docname="code_structure.svg"
+   inkscape:export-filename="/home/wafelack/Documents/code/orion/assets/code_structure.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
   <defs
      id="defs2">
     <rect
@@ -488,11 +491,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.08"
-     inkscape:cx="6618.083"
-     inkscape:cy="2169.2092"
+     inkscape:zoom="0.16"
+     inkscape:cx="7051.4193"
+     inkscape:cy="4747.0307"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g2999"
      inkscape:document-rotation="0"
      showgrid="false"
      showguides="true"
@@ -518,7 +521,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -797,7 +800,7 @@
          transform="matrix(8.1176352,0,0,8.1176352,2208.569,833.16291)"><tspan
            x="-85.861328"
            y="36.343819"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.77255px;font-family:Gilroy-Medium;-inkscape-font-specification:Gilroy-Medium;fill:#ffffff">core/*.on</tspan></tspan></text>
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.77255px;font-family:Gilroy-Medium;-inkscape-font-specification:Gilroy-Medium;fill:#ffffff">core/*.orn</tspan></tspan></text>
       <rect
          style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          id="rect1558"
@@ -865,7 +868,7 @@
          transform="matrix(8.1176352,0,0,8.1176352,2505.9595,837.06699)"><tspan
            x="-85.861328"
            y="36.343819"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.77255px;font-family:Gilroy-Medium;-inkscape-font-specification:Gilroy-Medium;fill:#ffffff">std/*.on</tspan></tspan></text>
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.77255px;font-family:Gilroy-Medium;-inkscape-font-specification:Gilroy-Medium;fill:#ffffff">std/*.orn</tspan></tspan></text>
     </g>
     <text
        xml:space="preserve"

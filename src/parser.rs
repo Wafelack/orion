@@ -109,7 +109,15 @@ impl Parser {
             TType::Str(s) => Pattern::Literal(Literal::String(s.to_string())),
             TType::Number(i) => Pattern::Literal(Literal::Integer(*i)),
             TType::Float(f) => Pattern::Literal(Literal::Single(*f)),
-            TType::Ident(id) => Pattern::Var(id.to_string()),
+            TType::Ident(v) => {
+                if first_char(&v).is_ascii_uppercase() {
+                    Pattern::Constr(v.to_string(), vec![])
+                } else if first_char(&v).is_ascii_lowercase() || v.as_str() == "_" {
+                    Pattern::Var(v.to_string())
+                } else {
+                    return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
+                }
+            }
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -184,7 +192,7 @@ impl Parser {
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
-                } else if first_char(&v).is_ascii_lowercase() {
+                } else if first_char(&v).is_ascii_lowercase() || v.as_str() == "_" {
                     Expr::Var(v.to_string())
                 } else {
                     return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
