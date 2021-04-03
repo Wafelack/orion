@@ -41,6 +41,16 @@ mod test {
             Interpreter::new(expressions).interpret(false)?;
             Ok(())
         }
+
+        #[test]
+        fn functions() -> Result<()> {
+            let code = r#"(load "lib/core/bool.orn")(def foo (lambda (x y) (_add x y)))(assert_eq (foo 5 6) 11)"#;
+            let tokens = Lexer::new(code).proc_tokens()?;
+            let expressions = Parser::new(tokens).parse()?;
+            Interpreter::new(expressions).interpret(false)?;
+            Ok(())
+        }
+
     }
 
     mod parsing {
