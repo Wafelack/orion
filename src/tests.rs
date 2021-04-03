@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test {
     use crate::{
-        interpreter::{Interpreter, Value},
+        interpreter::Interpreter,
         lexer::{Lexer, TType, Token},
-        parser::{Expr, Parser},
+        parser::Parser,
         Result,
     };
 
@@ -58,7 +58,6 @@ mod test {
             Interpreter::new(expressions).interpret(false)?;
             Ok(())
         }
-
     }
 
     mod parsing {
