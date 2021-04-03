@@ -17,8 +17,10 @@ pub enum Expr {
     Tuple(Vec<Expr>),
     Load(Vec<String>),
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
+    Panic(String,Box<Expr>),
 
     // Builtins
+    Format(Vec<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
     Opp(Box<Expr>),
@@ -205,6 +207,25 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
+                    TType::Panic => {
+                        let to_ret = self.parse_expr()?;
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        Expr::Panic(format!("[{}:{}] Program panicked at: ", subroot.line, subroot.col), Box::new(to_ret))
+                    }
+                    TType::Format => {
+                        let mut to_fmt = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            to_fmt.push(self.parse_expr()?);
+                        }
+
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+
+                        Expr::Format(to_fmt)
+                    }
                     TType::Add => {
                         let to_ret = Expr::Add(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
                         if !self.is_at_end() {

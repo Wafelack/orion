@@ -488,6 +488,21 @@ impl Interpreter {
             Expr::Constr(name, args) => self.eval_constructor(name, args),
             Expr::Tuple(content) => self.eval_tuple(content),
             Expr::Var(var) => self.eval_var(var, custom_scope),
+            Expr::Panic(prefix, content) => {
+                let valued = self.eval_expr(&**content, custom_scope)?;
+                eprintln!("{}{}", prefix, self.get_lit_val(&valued));
+                std::process::exit(1);
+            }
+            Expr::Format(expressions) => {
+                let mut to_ret = format!("");
+
+                for expr in expressions {
+                    let evaluated = self.eval_expr(&expr, custom_scope)?;
+                    to_ret.push_str(&self.get_lit_val(&evaluated));
+                }
+
+                Ok(Value::String(to_ret))
+            }
             Expr::Add(lh, rh) => {
                 let lhs = self.eval_expr(&**lh, custom_scope)?;
                 let rhs = self.eval_expr(&**rh, custom_scope)?;

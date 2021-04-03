@@ -14,8 +14,10 @@ pub enum TType {
     Lambda,
     Match,
     Load,
+    Panic,
 
     // Builtins
+    Format,
     Add,
     Opp,
     Div,
@@ -170,8 +172,10 @@ impl Lexer {
             "," => self.add_token(TType::Tuple),
             "match" => self.add_token(TType::Match),
             "load" => self.add_token(TType::Load),
+            "panic" => self.add_token(TType::Panic),
 
             // Add
+            "format" => self.add_token(TType::Format),
             "_add" => self.add_token(TType::Add),
             "_opp" => self.add_token(TType::Opp),
             "_div" => self.add_token(TType::Div),
