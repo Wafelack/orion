@@ -259,7 +259,7 @@ impl Parser {
                     TType::Load => {
                         let mut names = vec![];
 
-                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::LParen {
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             let r_name = self.advance(TType::Str("".to_owned()))?;
 
                             if let TType::Str(n) = r_name.ttype {
@@ -268,6 +268,7 @@ impl Parser {
                                 bug!("UNEXPECTED_STRING")
                             }
                         }
+                        self.advance(TType::RParen)?;
                         Expr::Load(names)
                     }
                     TType::Def => {

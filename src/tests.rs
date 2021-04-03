@@ -35,13 +35,10 @@ mod test {
 
         #[test]
         fn declaration() -> Result<()> {
-            let code = "(def foo 99)(def bar foo)";
+            let code = r#"(load "lib/core/bool.orn")(def foo 99)(def bar foo)(assert_eq foo bar)(assert_eq foo 99)"#;
             let tokens = Lexer::new(code).proc_tokens()?;
             let expressions = Parser::new(tokens).parse()?;
-            let scopes = Interpreter::new(expressions).interpret()?;
-            assert_eq!(scopes[0]["foo"], Value::Integer(99));
-            assert_eq!(scopes[0]["bar"], scopes[0]["foo"]);
-
+            Interpreter::new(expressions).interpret(false)?;
             Ok(())
         }
     }
