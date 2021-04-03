@@ -50,6 +50,14 @@ mod test {
             Interpreter::new(expressions).interpret(false)?;
             Ok(())
         }
+        #[test]
+        fn pattern_matching() -> Result<()> {
+            let code = r#"(load "lib/core/bool.orn")(enum List (Cons x next) Nil) (def foo (Cons 9 Nil)) (assert_eq (match foo ((Cons x y) (and (= x 9) (= y Nil)))) True)"#;
+            let tokens = Lexer::new(code).proc_tokens()?;
+            let expressions = Parser::new(tokens).parse()?;
+            Interpreter::new(expressions).interpret(false)?;
+            Ok(())
+        }
 
     }
 
