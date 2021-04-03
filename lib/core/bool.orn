@@ -20,4 +20,16 @@
 		(True (match rhs
 			(True True)
 			(False False)))
-		(False False)))))
+		(False False))))
+
+(def or (lambda (lhs rhs)
+	(match lhs
+		(True True)
+		(False (match rhs
+			(True True)
+			(False False))))))
+
+(def assert_eq (lambda (lhs rhs)
+	(match (= lhs rhs)
+		(True ())
+		(False (panic (format "Assertion failed: `" lhs " /= " rhs "`."))))))
