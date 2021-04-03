@@ -4,7 +4,7 @@ use crate::{
     parser::{Parser, Expr, Literal, Pattern},
     OrionError, Result,
 };
-use std::{path::Path, fs, collections::HashMap, env};
+use std::{cmp::Ordering, path::Path, fs, collections::HashMap, env};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -33,6 +33,28 @@ impl Interpreter {
             variants: vec![],
         }
     }
+    fn get_val_type(&self, val: &Value) -> String {
+        match val {
+            Value::Integer(_) => "Integer".to_string(),
+            Value::Single(_) => "Single".to_string(),
+            Value::String(_) => "String".to_string(),
+            Value::Lambda(_, _,_) => "Lambda".to_string(),
+            Value::Unit => "Unit".to_string(),
+            Value::Constr(idx, _) => {
+                self.name_idx.iter().find_map(|(_, (i, master))| if idx == i { Some ( master.to_string() ) } else { None }).unwrap()
+
+            }
+            Value::Tuple(vals) => {
+                let mut t = "(".to_string();
+
+                for val in vals {
+                    t.push_str(&self.get_val_type(&val));
+                }
+
+                format!("{})", t)
+            }
+        }
+    }
     fn get_lit_val(&self, val: &Value) -> String {
         match val {
             Value::Integer(i) => format!("{}", i),
@@ -43,30 +65,30 @@ impl Interpreter {
             Value::Tuple(vals) => format!(
                 "({})",
                 vals.iter()
-                    .map(|v| self.get_lit_val(&v))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            Value::Constr(idx, vals) => {
-                let name = self
-                    .name_idx
-                    .iter()
-                    .find_map(|(name, (i, _))| if *i == *idx { Some(name) } else { None })
-                    .unwrap();
+                .map(|v| self.get_lit_val(&v))
+                .collect::<Vec<_>>()
+                .join(", ")
+                ),
+                Value::Constr(idx, vals) => {
+                    let name = self
+                        .name_idx
+                        .iter()
+                        .find_map(|(name, (i, _))| if *i == *idx { Some(name) } else { None })
+                        .unwrap();
 
-                if vals.is_empty() {
-                    format!("{}", name)
-                } else {
-                    format!(
-                        "({} {})",
-                        name,
-                        vals.iter()
+                    if vals.is_empty() {
+                        format!("{}", name)
+                    } else {
+                        format!(
+                            "({} {})",
+                            name,
+                            vals.iter()
                             .map(|v| self.get_lit_val(v))
                             .collect::<Vec<String>>()
                             .join(" ")
-                    )
+                            )
+                    }
                 }
-            }
         }
     }
     pub fn interpret(&mut self, repl: bool) -> Result<Value> {
@@ -120,19 +142,19 @@ impl Interpreter {
         arg: &String,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
         body: &Box<Expr>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         Ok(Value::Lambda(
-            custom_scope.unwrap_or(&self.scopes).clone(),
-            arg.to_string(),
-            (**body).clone(),
-        ))
+                custom_scope.unwrap_or(&self.scopes).clone(),
+                arg.to_string(),
+                (**body).clone(),
+                ))
     }
     fn eval_call(
         &mut self,
         function: &Box<Expr>,
         argument: &Box<Expr>,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         let arg = self.eval_expr(&**argument, custom_scope)?;
 
         // TEMPORARY, JUST FOR TESTING
@@ -167,7 +189,7 @@ impl Interpreter {
                         .as_str(),
                     _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
                 }
-            )
+                )
         }
     }
     fn eval_enum(&mut self, name: &String, variants: &HashMap<String, u8>) -> Result<Value> {
@@ -176,7 +198,7 @@ impl Interpreter {
                 return error!(
                     "Attempted to redefine an existing enum variant: {}.",
                     variant
-                );
+                    );
             }
 
             let length = self.variants.len();
@@ -198,7 +220,7 @@ impl Interpreter {
                     "This enum variant takes {} values but {} were supplied.",
                     self.variants[idx],
                     args.len()
-                )
+                    )
             } else {
                 let mut values = vec![];
 
@@ -223,10 +245,10 @@ impl Interpreter {
         &mut self,
         var: &String,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         for scope in match custom_scope {
             Some(s) => s.iter().rev(),
-            None => self.scopes.iter().rev(),
+                None => self.scopes.iter().rev(),
         } {
             if scope.contains_key(var) {
                 return Ok(scope[var].clone());
@@ -240,7 +262,7 @@ impl Interpreter {
         patternized: &Pattern,
         pattern: &Pattern,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Option<HashMap<String, Value>> {
+        ) -> Option<HashMap<String, Value>> {
         let mut to_ret = HashMap::new();
 
         let val = match self.unpatternize(patternized, custom_scope) {
@@ -318,7 +340,7 @@ impl Interpreter {
         to_match: &Expr,
         couples: &Vec<(Pattern, Expr)>,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         let to_match = self.eval_expr(to_match, custom_scope)?;
 
         let patternized = self.patternize(&to_match)?;
@@ -341,7 +363,7 @@ impl Interpreter {
         &mut self,
         pat: &Pattern,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         Ok(match pat {
             Pattern::Literal(lit) => match lit {
                 Literal::Integer(i) => Value::Integer(*i),
@@ -400,7 +422,7 @@ impl Interpreter {
                             None
                         }
                     })
-                    .unwrap();
+                .unwrap();
                 let mut patterned = vec![];
 
                 for param in params {
@@ -454,7 +476,7 @@ impl Interpreter {
         &mut self,
         expr: &Expr,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
-    ) -> Result<Value> {
+        ) -> Result<Value> {
         match expr {
             Expr::Def(name, value) => self.eval_def(name, value),
             Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
@@ -466,6 +488,83 @@ impl Interpreter {
             Expr::Constr(name, args) => self.eval_constructor(name, args),
             Expr::Tuple(content) => self.eval_tuple(content),
             Expr::Var(var) => self.eval_var(var, custom_scope),
+            Expr::Add(lh, rh) => {
+                let lhs = self.eval_expr(&**lh, custom_scope)?;
+                let rhs = self.eval_expr(&**rh, custom_scope)?;
+
+                match lhs {
+                    Value::Integer(lh) => match rhs {
+                        Value::Integer(rh) => Ok(Value::Integer(lh + rh)),
+                        _ => error!("Attempted to add {} to {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    Value::Single(lh) => match rhs {
+                        Value::Single(rh) => Ok(Value::Single(lh + rh)),
+                        _ => error!("Attempted to add {} to {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    _ => error!("Expected Single or Integer, found {}.", self.get_val_type(&lhs)),
+                }
+            }
+            Expr::Div(lh, rh) => {
+                let lhs = self.eval_expr(&**lh, custom_scope)?;
+                let rhs = self.eval_expr(&**rh, custom_scope)?;
+
+                match lhs {
+                    Value::Integer(lh) => match rhs {
+                        Value::Integer(rh) => if rh == 0 {
+                            Ok(Value::Single(std::f32::INFINITY))
+                        } else {
+                            Ok(Value::Integer(lh / rh))
+                        },
+                        _ => error!("Attempted to divide {} by {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    Value::Single(lh) => match rhs {
+                        Value::Single(rh) => if rh == 0. {
+                            Ok(Value::Single(std::f32::INFINITY))
+                        } else {
+                            Ok(Value::Single(lh / rh))
+                        },
+                        _ => error!("Attempted to divide {} by {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    _ => error!("Expected Single or Integer, found {}.", self.get_val_type(&lhs)),
+                }
+
+            }
+            Expr::Opp(val) => {
+                let val = self.eval_expr(val,custom_scope)?;
+
+                match val {
+                    Value::Integer(i) => Ok(Value::Integer(0 - i)),
+                    Value::Single(r) => Ok(Value::Single(0. - r)),
+                    _ => error!("Expected Single or Integer, found {}.", self.get_val_type(&val)),
+                }
+            }
+            Expr::Cmp(lh, rh) => {
+                let lhs = self.eval_expr(&**lh, custom_scope)?;
+                let rhs = self.eval_expr(&**rh, custom_scope)?;
+
+                match lhs {
+                    Value::Integer(lh) => match rhs {
+                        Value::Integer(rh) => Ok(Value::Integer(match lh.cmp(&rh) {
+                            Ordering::Less => 0,
+                            Ordering::Equal => 1,
+                            Ordering::Greater => 2,
+                        })),
+                        _ => error!("Attempted to compare {} with {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    Value::Single(lh) => match rhs {
+                        Value::Single(rh) => Ok(Value::Integer(match lh.partial_cmp(&rh).unwrap() {
+                            Ordering::Less => 0,
+                            Ordering::Equal => 1,
+                            Ordering::Greater => 2,
+                        })),
+                        _ => error!("Attempted to compare {} with {}.", self.get_val_type(&lhs), self.get_val_type(&rhs)),
+                    }
+                    _ => error!("Expected Single or Integer, found {}.", self.get_val_type(&lhs)),
+                }
+
+            }
+
+
         }
     }
 }

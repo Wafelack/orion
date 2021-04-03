@@ -14,6 +14,12 @@ pub enum TType {
     Lambda,
     Match,
     Load,
+
+    // Builtins
+    Add,
+    Opp,
+    Div,
+    Cmp,
 }
 
 impl TType {
@@ -164,6 +170,12 @@ impl Lexer {
             "," => self.add_token(TType::Tuple),
             "match" => self.add_token(TType::Match),
             "load" => self.add_token(TType::Load),
+
+            // Add
+            "_add" => self.add_token(TType::Add),
+            "_opp" => self.add_token(TType::Opp),
+            "_div" => self.add_token(TType::Div),
+            "_cmp" => self.add_token(TType::Cmp),
             _ => self.add_token(TType::Ident(raw)),
         }
     }

@@ -17,6 +17,12 @@ pub enum Expr {
     Tuple(Vec<Expr>),
     Load(Vec<String>),
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
+
+    // Builtins
+    Add(Box<Expr>, Box<Expr>),
+    Div(Box<Expr>, Box<Expr>),
+    Opp(Box<Expr>),
+    Cmp(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -113,10 +119,8 @@ impl Parser {
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Pattern::Constr(v.to_string(), vec![])
-                } else if first_char(&v).is_ascii_lowercase() || v.as_str() == "_" {
-                    Pattern::Var(v.to_string())
                 } else {
-                    return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
+                    Pattern::Var(v.to_string())
                 }
             }
             TType::LParen => {
@@ -193,16 +197,44 @@ impl Parser {
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
                     Expr::Constr(v.to_string(), vec![])
-                } else if first_char(&v).is_ascii_lowercase() || v.as_str() == "_" {
-                    Expr::Var(v.to_string())
                 } else {
-                    return error!("{}:{} | Invalid variable name: {}.", root.line, root.col, v);
+                    Expr::Var(v.to_string())
                 }
             }
             TType::LParen => {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
+                    TType::Add => {
+                        let to_ret = Expr::Add(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+                    }
+                    TType::Div => {
+                        let to_ret = Expr::Div(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+                    }
+                    TType::Cmp => {
+                        let to_ret = Expr::Cmp(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+
+                    }
+                    TType::Opp => {
+                        let to_ret = Expr::Opp(Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+                    }
+
                     TType::Load => {
                         let mut names = vec![];
 
@@ -225,7 +257,7 @@ impl Parser {
                             bug!("UNEXPECTED_NON_IDENTIFIER");
                         };
 
-                        if !first_char(&name).is_ascii_lowercase() {
+                        if first_char(&name).is_ascii_uppercase() {
                             return error!(
                                 "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
@@ -368,15 +400,11 @@ impl Parser {
                         if let TType::Ident(x) = &subroot.ttype {
                             if first_char(x).is_ascii_uppercase() {
                                 Expr::Constr(x.to_string(), args)
-                            } else if first_char(&x).is_ascii_lowercase() {
+                            } else {
                                 args.into_iter().fold(func, |root, elem| {
                                     Expr::Call(Box::new(root), Box::new(elem))
                                 })
-                            } else {
-                                return error!(
-                                    "{}:{} | Invalid variable name: {}.",
-                                    subroot.line, subroot.col, x
-                                    );
+
                             }
                         } else {
                             args.into_iter().fold(func, |root, elem| {
