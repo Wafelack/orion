@@ -23,6 +23,7 @@ pub enum Expr {
     Format(Vec<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
+    Mul(Box<Expr>, Box<Expr>),
     Opp(Box<Expr>),
     Cmp(Box<Expr>, Box<Expr>),
 }
@@ -71,7 +72,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-            )
+                )
         } else {
             Ok(popped)
         }
@@ -82,7 +83,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-            )
+                )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -104,9 +105,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-        {
-            toret.push(self.advance(expected.clone())?);
-        }
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
@@ -165,7 +166,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Expected an Enum Variant.",
                                 subroot.line, subroot.col
-                            );
+                                );
                         }
                     }
                     _ => {
@@ -174,7 +175,7 @@ impl Parser {
                             subroot.line,
                             subroot.col,
                             subroot.ttype.get_type()
-                        )
+                            )
                     }
                 }
             }
@@ -184,7 +185,7 @@ impl Parser {
                     root.line,
                     root.col,
                     root.ttype.get_type()
-                )
+                    )
             }
         })
     }
@@ -215,7 +216,7 @@ impl Parser {
                         Expr::Panic(
                             format!("[{}:{}] Program panicked at: ", subroot.line, subroot.col),
                             Box::new(to_ret),
-                        )
+                            )
                     }
                     TType::Format => {
                         let mut to_fmt = vec![];
@@ -245,6 +246,15 @@ impl Parser {
                         }
                         to_ret
                     }
+                    TType::Mul => {
+                        let to_ret =
+                            Expr::Mul(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+                    }
+
                     TType::Cmp => {
                         let to_ret =
                             Expr::Cmp(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
@@ -273,7 +283,10 @@ impl Parser {
                                 bug!("UNEXPECTED_STRING")
                             }
                         }
-                        self.advance(TType::RParen)?;
+                        if !self.is_at_end() {
+
+                            self.advance(TType::RParen)?;
+                        }
                         Expr::Load(names)
                     }
                     TType::Def => {
@@ -288,7 +301,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
-                            );
+                                );
                         }
 
                         let value = self.parse_expr()?;
@@ -331,7 +344,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Enum names have to start with a uppercase letter.",
                                 r_name.line, r_name.col
-                            );
+                                );
                         }
 
                         let mut var_len = HashMap::new();
@@ -388,7 +401,7 @@ impl Parser {
                                     bug!("What is this thing doing here ?");
                                 }
                             })
-                            .collect::<Vec<_>>();
+                        .collect::<Vec<_>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -447,7 +460,7 @@ impl Parser {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                )
+                    )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })

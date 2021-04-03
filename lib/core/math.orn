@@ -1,0 +1,34 @@
+; (load "bool.orn")
+(load "lib/core/bool.orn")
+(enum Ordering
+	Less
+	Equal
+	Greater)
+
+(def cmp (lambda (lhs rhs)
+	(match (_cmp lhs rhs)
+		(0 Less)
+		(1 Equal)
+		(2 Greater))))
+
+(def < (lambda (lhs rhs)
+	(match (cmp lhs rhs)
+		(Less True)
+		(_ False))))
+
+(def > (lambda (lhs rhs)
+	(match (cmp lhs rhs)
+		(Greater True)
+		(_ False))))
+
+(def >= (lambda (lhs rhs)
+	(or (> lhs rhs) (= lhs rhs))))
+
+(def <= (lambda (lhs rhs)
+	(or (< lhs rhs) (= lhs rhs))))
+
+(def + (lambda (lhs rhs)
+	(_add lhs rhs)))
+
+(def - (lambda (lhs rhs)
+	(_add lhs (! rhs))))

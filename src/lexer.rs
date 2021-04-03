@@ -21,6 +21,7 @@ pub enum TType {
     Add,
     Opp,
     Div,
+    Mul,
     Cmp,
 }
 
@@ -177,8 +178,9 @@ impl Lexer {
             // Add
             "format" => self.add_token(TType::Format),
             "_add" => self.add_token(TType::Add),
-            "_opp" => self.add_token(TType::Opp),
-            "_div" => self.add_token(TType::Div),
+            "!" => self.add_token(TType::Opp),
+            "/" => self.add_token(TType::Div),
+            "*" => self.add_token(TType::Mul),
             "_cmp" => self.add_token(TType::Cmp),
             _ => self.add_token(TType::Ident(raw)),
         }

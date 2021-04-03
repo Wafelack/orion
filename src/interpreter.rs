@@ -536,6 +536,38 @@ impl Interpreter {
                     ),
                 }
             }
+            Expr::Mul(lh, rh) => {
+                let lhs = self.eval_expr(&**lh, custom_scope)?;
+                let rhs = self.eval_expr(&**rh, custom_scope)?;
+
+                match lhs {
+                    Value::Integer(lh) => match rhs {
+                        Value::Integer(rh) => {
+                                Ok(Value::Integer(lh * rh))
+                        }
+                        _ => error!(
+                            "Attempted to multiply {} by {}.",
+                            self.get_val_type(&lhs),
+                            self.get_val_type(&rhs)
+                        ),
+                    },
+                    Value::Single(lh) => match rhs {
+                        Value::Single(rh) => {
+                                Ok(Value::Single(lh / rh))
+                        }
+                        _ => error!(
+                            "Attempted to multiply {} by {}.",
+                            self.get_val_type(&lhs),
+                            self.get_val_type(&rhs)
+                        ),
+                    },
+                    _ => error!(
+                        "Expected Single or Integer, found {}.",
+                        self.get_val_type(&lhs)
+                    ),
+                }
+            }
+
             Expr::Div(lh, rh) => {
                 let lhs = self.eval_expr(&**lh, custom_scope)?;
                 let rhs = self.eval_expr(&**rh, custom_scope)?;
