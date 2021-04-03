@@ -287,6 +287,8 @@ impl Parser {
                             self.advance(TType::RParen)?;
                         }
 
+                        self.advance(TType::RParen)?;
+
                         Expr::Match(Box::new(to_match), couples)
                     }
                     TType::Enum => {

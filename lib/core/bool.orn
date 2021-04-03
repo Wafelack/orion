@@ -1,0 +1,23 @@
+(enum Bool
+	True
+	False)
+
+(def = (lambda (lhs rhs)
+	(match lhs
+		(rhs True)
+		(_ False))))
+
+(def not (lambda (val)
+	(match val
+		(True False)
+		(False True))))
+
+(def /= (lambda (lhs rhs)
+	(not (= lhs rhs))))
+
+(def and (lambda (lhs rhs)
+	(match lhs
+		(True (match rhs
+			(True True)
+			(False False)))
+		(False False)))))
