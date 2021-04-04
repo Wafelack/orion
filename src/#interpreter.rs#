@@ -236,7 +236,7 @@ impl Interpreter {
 
         Ok(Value::Unit)
     }
-    fn eval_constructor(&mut self, name: &String, args: &Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+    fn eval_constructor(&mut self, name: &String, args: &Vec<Expr>) -> Result<Value> {
         if !self.name_idx.contains_key(name) {
             error!("Attempted to use an undefined enum variant: {}.", name)
         } else {
@@ -252,7 +252,7 @@ impl Interpreter {
                 let mut values = vec![];
 
                 for arg in args {
-                    values.push(self.eval_expr(arg, custom_scope)?);
+                    values.push(self.eval_expr(arg, None)?);
                 }
 
                 Ok(Value::Constr(idx, values))
@@ -273,14 +273,10 @@ impl Interpreter {
         var: &String,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
-        let scopes = match custom_scope {
-            Some(s) => {
-                s
-            },
-            None => &self.scopes,
-        }.iter().rev();
-
-        for scope in scopes {
+        for scope in match custom_scope {
+            Some(s) => s.iter().rev(),
+                None => self.scopes.iter().rev(),
+        } {
             if scope.contains_key(var) {
                 if let Value::Quote(expr) = scope[var].clone() {
                     return self.eval_expr(&expr, custom_scope);
@@ -328,10 +324,13 @@ impl Interpreter {
                                 None => return None,
                             }
                         }
-                        return Some(to_ret);
+                        Some(to_ret)
+                    } else {
+                        None
                     }
+                } else {
+                    None
                 }
-                return None;
             }
             Pattern::Constr(name, patterns) => {
                 if let Pattern::Constr(vname, vpat) = patternized {
@@ -343,12 +342,16 @@ impl Interpreter {
                                     None => return None,
                                 }
                             }
-                            return Some(to_ret);
-                        } 
-                    
+                            Some(to_ret)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
                     }
+                } else {
+                    None
                 }
-                return None;
             }
             _ => match self.unpatternize(&pattern, custom_scope) {
                 Ok(v) => {
@@ -375,10 +378,8 @@ impl Interpreter {
         for (pat, expr) in couples {
             match self.match_and_bound(&patternized, &pat, custom_scope) {
                 Some(scopes) => {
-                    let mut new = match custom_scope {
-                        Some(s) => (*s).clone(),
-                        None => self.scopes.clone(),
-                    };
+                    let cloned = self.scopes.clone();
+                    let mut new = (*(custom_scope.clone().unwrap_or(&cloned))).clone();
                     new.push(scopes);
                     return self.eval_expr(expr, Some(&new));
                 }
@@ -521,7 +522,7 @@ impl Interpreter {
             }
             Expr::Lambda(arg, body) => self.eval_lambda(arg, custom_scope, body),
             Expr::Enum(name, variants) => self.eval_enum(name, variants),
-            Expr::Constr(name, args) => self.eval_constructor(name, args, custom_scope),
+            Expr::Constr(name, args) => self.eval_constructor(name, args),
             Expr::Tuple(content) => self.eval_tuple(content, custom_scope),
             Expr::Var(var) => self.eval_var(var, custom_scope),
             Expr::Panic(prefix, content) => {
