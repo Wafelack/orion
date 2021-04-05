@@ -21,6 +21,8 @@ Installation
 
 ### MacOS, BSD and GNU/Linux
 
+You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (installed in `/bin/sh`) and Git.
+
 ```
 $ git clone https://github.com/wafelack/orion.git
 $ cd orion/
@@ -32,7 +34,10 @@ $ make
 
 ### Windows
 
-Coming soon.
+* Download the latest archive in the release page.
+* Extract the archive.
+* Copy all the files in `C:/Program Files/Orion/`.
+* Add `C:/Program Files/Orion/` to your `PATH`.
 
 Roadmap
 -------
