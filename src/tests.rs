@@ -73,9 +73,19 @@ mod test {
             let mut interpreter = Interpreter::new(expressions);
             interpreter.interpret(false)?;
             interpreter.update_ast(Parser::new(Lexer::new("(ackermann 3 3)").proc_tokens()?).parse()?);
-            let start = Instant::now();
-            interpreter.interpret(false)?;
-            println!("Done in {}ms", start.elapsed().as_millis());
+
+            let mut vals = vec![];
+
+            for _ in 0..500 {
+                let start = Instant::now();
+                interpreter.interpret(false)?;
+                let elapsed = start.elapsed();
+                vals.push(elapsed.as_millis());
+            }
+            let summed = vals.iter().sum::<u128>() as u32;
+            vals.sort();
+            println!("Total: {}ms ; Average: {}ms ; Median : {}ms ; Amplitude: {}ms", summed, summed as f32 / vals.len() as f32, vals[vals.len() / 2], vals[vals.len() - 1] - vals[0]);
+
             Ok(())
 
         }
