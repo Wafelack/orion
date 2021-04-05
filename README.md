@@ -34,6 +34,14 @@ $ make
 
 Coming soon.
 
+Roadmap
+-------
+
+- [x] Lexing
+- [x] Parsing
+- [x] Evaluation
+- [x] Core functionnality
+- [ ] Standard library.
 
 Performances
 ------------
