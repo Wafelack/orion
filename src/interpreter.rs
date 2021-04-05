@@ -164,14 +164,6 @@ impl Interpreter {
         ) -> Result<Value> {
         let arg = self.eval_expr(&**argument, custom_scope)?;
 
-        // TEMPORARY, JUST FOR TESTING
-        if let Expr::Var(v) = &**function {
-            if v.as_str() == "print" {
-                println!("{}", self.get_lit_val(&arg));
-                return Ok(Value::Unit);
-            }
-        }
-
         let func = self.eval_expr(&**function, custom_scope)?;
 
         if let Value::Lambda(scopes, argument, body) = func.clone() {
@@ -503,6 +495,18 @@ impl Interpreter {
                 let valued = self.eval_expr(&**content, custom_scope)?;
                 eprintln!("{}{}", prefix, self.get_lit_val(&valued));
                 std::process::exit(1);
+            }
+            Expr::Printf(expressions) => {
+                let mut to_print = format!("");
+
+                for expr in expressions {
+                    let evaluated = self.eval_expr(&expr, custom_scope)?;
+                    to_print.push_str(&self.get_lit_val(&evaluated));
+                }
+
+                println!("{}", to_print);
+
+                Ok(Value::Unit)
             }
             Expr::Format(expressions) => {
                 let mut to_ret = format!("");

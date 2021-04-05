@@ -24,6 +24,7 @@ pub enum TType {
     Div,
     Mul,
     Cmp,
+    Printf,
 }
 
 impl TType {
@@ -178,6 +179,7 @@ impl Lexer {
 
             // Add
             "format" => self.add_token(TType::Format),
+            "printf" => self.add_token(TType::Printf),
             "+" => self.add_token(TType::Add),
             "-" => self.add_token(TType::Sub),
             "!" => self.add_token(TType::Opp),
