@@ -27,8 +27,8 @@ mod tests;
 use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
-use std::
-    process::exit;
+use clap::{App, Arg};
+use std::{process::exit, path::Path, fs};
 
 #[macro_export]
 macro_rules! bug {
@@ -113,9 +113,36 @@ under certain conditions;", env!("CARGO_PKG_VERSION"));
 
 fn try_main() -> Result<()> {
 
-    repl();
+    let matches = App::new("orion")
+                        .author(env!("CARGO_PKG_AUTHORS"))
+                        .version(env!("CARGO_PKG_VERSION"))
+                        .about("Orion is a purely functional lisp dialect.")
+                        .arg(Arg::with_name("file")
+                                .takes_value(true)
+                                .index(1)
+                                .help("The source file to pass to the interpreter"))
+                        .get_matches();
 
-    Ok(())
+    if let Some(path) = matches.value_of("file") {
+        if Path::new(path).exists() {
+            
+            let content = match fs::read_to_string(path) {
+                Ok(c) => c,
+                Err(e) => return error!("fatal: Failed to read file: {}.", e),
+            };
+
+            let tokens = Lexer::new(content).proc_tokens()?;
+            let ast = Parser::new(tokens).parse()?;
+            Interpreter::new(ast).interpret(false)?;
+            Ok(())
+        } else {
+            error!("fatal: File not found: {}.", path)
+        }
+    } else {
+        repl();
+        Ok(())
+    }
+
 }
 
 fn main() {
