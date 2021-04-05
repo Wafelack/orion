@@ -1,5 +1,5 @@
 [package]
-name = "orion-lang"
+name = "orion-cli"
 version = "1.0.0"
 authors = ["Wafelack <wafelack@protonmail.com>"]
 edition = "2018"
