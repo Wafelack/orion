@@ -26,10 +26,9 @@ mod tests;
 
 use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
-use std::{
-    io::{self, Write},
-    process::exit,
-};
+use rustyline::{error::ReadlineError, Editor};
+use std::
+    process::exit;
 
 #[macro_export]
 macro_rules! bug {
@@ -39,7 +38,7 @@ macro_rules! bug {
             $bug,
             file!(),
             line!()
-        )
+            )
     };
 }
 
@@ -52,49 +51,71 @@ fn print_err(e: OrionError) {
             "\x1b[0;31mOrion Error\x1b[0m"
         },
         e.0
-    );
+        );
+}
+
+fn repl() {
+    let mut interpreter = Interpreter::new(vec![]);
+
+    println!("Welcome to Orion {}.\n
+Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it
+under certain conditions;", env!("CARGO_PKG_VERSION"));
+
+    let mut rl = Editor::<()>::new();
+
+    loop {
+        let line = rl.readline("> ");
+
+        match line {
+            Ok(line) => {
+                rl.add_history_entry(line.as_str());
+                if line == "(quit)" {
+                    return;
+                }
+
+                let tokens = match Lexer::new(line.trim()).proc_tokens() {
+                    Ok(t) => t,
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
+                };
+                let ast = match Parser::new(tokens).parse() {
+                    Ok(ast) => ast,
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
+                };
+                interpreter.update_ast(ast);
+                match interpreter.interpret(true) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("; User break");
+            }
+            Err(ReadlineError::Eof) => return,
+            Err(_) => {
+                eprintln!("An error occured, please retry.");
+                continue;
+            }
+
+        }
+    }
 }
 
 fn try_main() -> Result<()> {
-    let mut interpreter = Interpreter::new(vec![]);
 
-    loop {
-        let mut buffer = String::new();
-        print!("Orion REPL> ");
-        io::stdout().flush().unwrap();
-        match io::stdin().read_line(&mut buffer) {
-            Ok(_) => {}
-            Err(_) => {
-                println!("Failed to read stream");
-                continue;
-            }
-        }
-        let tokens = match Lexer::new(&buffer).proc_tokens() {
-            Ok(toks) => toks,
-            Err(e) => {
-                print_err(e);
-                continue;
-            }
-        };
-        let ast = match Parser::new(tokens).parse() {
-            Ok(ast) => ast,
-            Err(e) => {
-                print_err(e);
-                continue;
-            }
-        };
+    repl();
 
-        interpreter.update_ast(ast);
-
-        match interpreter.interpret(true) {
-            Ok(_) => {}
-            Err(e) => {
-                print_err(e);
-                continue;
-            }
-        }
-        buffer.clear();
-    }
+    Ok(())
 }
 
 fn main() {

@@ -14,3 +14,4 @@ codegen-units = 1
 opt-level = 3
 
 [dependencies]
+rustyline = "7.1.0"
