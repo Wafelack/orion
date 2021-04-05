@@ -138,8 +138,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "orion-lang"
-version = "0.1.0"
+name = "orion-cli"
+version = "1.0.0"
 dependencies = [
  "clap",
  "rustyline",

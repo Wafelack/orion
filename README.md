@@ -34,10 +34,11 @@ $ make
 
 ### Windows
 
-* Download the latest archive in the release page.
-* Extract the archive.
-* Copy all the files in `C:/Program Files/Orion/`.
-* Add `C:/Program Files/Orion/` to your `PATH`.
+* Clone the project.
+* Build with cargo.
+* Copy `target/release/orion` to `C:/Program Files/Orion`.
+* Copy `lib/` to `C:/Program Files/Orion/`.
+* Add Orion to your `PATH`.
 
 Roadmap
 -------
