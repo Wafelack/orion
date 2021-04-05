@@ -1,0 +1,17 @@
+#!/bin/sh
+set -euo pipefail
+
+KERNEL=$(uname -a | awk '{print $1}')
+
+if [[ $KERNEL == "Darwin" ]]
+then
+	rm Makefile.gnu-linux
+	mv Makefile.macOS Makefile
+elif [[ $KERNEL == "Linux" ]]
+then
+	rm Makefile.macOS
+	mv Makefile.gnu-linux Makefile
+else
+	echo "Your kernel is unsupported. Please open an issue <https://github.com/Wafelack/orion/issues/new> to reclaim it."
+	exit 1
+fi
