@@ -27,4 +27,4 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --release --verbose # release needed for ackermann to don't overflow the stack
