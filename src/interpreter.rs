@@ -506,6 +506,12 @@ impl Interpreter {
             Expr::Literal(literal) => self.eval_literal(literal),
             Expr::Call(function, argument) => self.eval_call(function, argument, custom_scope),
             Expr::Load(params) => self.eval_load(params),
+            Expr::Begin(exprs) => {
+                self.scopes.push(HashMap::new());
+                let toret = self.eval_expressions(exprs);
+                self.scopes.pop();
+                toret
+            }
             Expr::Lambda(arg, body) => self.eval_lambda(arg, custom_scope, body),
             Expr::Enum(name, variants) => self.eval_enum(name, variants),
             Expr::Constr(name, args) => self.eval_constructor(name, args),

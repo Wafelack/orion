@@ -35,6 +35,7 @@ pub enum TType {
     Match,
     Load,
     Panic,
+    Begin,
 
     // Builtins
     Format,
@@ -199,6 +200,7 @@ impl Lexer {
 
             // Add
             "format" => self.add_token(TType::Format),
+            "begin" => self.add_token(TType::Begin),
             "printf" => self.add_token(TType::Printf),
             "+" => self.add_token(TType::Add),
             "-" => self.add_token(TType::Sub),

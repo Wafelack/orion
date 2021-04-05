@@ -38,6 +38,7 @@ pub enum Expr {
     Load(Vec<String>),
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
     Panic(String, Box<Expr>),
+    Begin(Vec<Expr>),
 
     // Builtins
     Format(Vec<Expr>),
@@ -354,6 +355,15 @@ impl Parser {
                         }
 
                         Expr::Def(name, Box::new(value))
+                    }
+                    TType::Begin => {
+                        let mut expressions = vec![];
+
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            expressions.push(self.parse_expr()?);
+                        }
+
+                        Expr::Begin(expressions)
                     }
                     TType::Match => {
                         let to_match = self.parse_expr()?;
