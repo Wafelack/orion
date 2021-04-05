@@ -22,6 +22,7 @@ pub enum Expr {
     // Builtins
     Format(Vec<Expr>),
     Add(Box<Expr>, Box<Expr>),
+    Sub(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
     Opp(Box<Expr>),
@@ -233,6 +234,14 @@ impl Parser {
                     TType::Add => {
                         let to_ret =
                             Expr::Add(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
+                        if !self.is_at_end() {
+                            self.advance(TType::RParen)?;
+                        }
+                        to_ret
+                    }
+                    TType::Sub => {
+                        let to_ret = 
+                            Expr::Sub(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
                         if !self.is_at_end() {
                             self.advance(TType::RParen)?;
                         }

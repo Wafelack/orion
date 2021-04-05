@@ -6,6 +6,7 @@ mod test {
         parser::Parser,
         Result,
     };
+    use std::time::Instant;
 
     #[test]
     fn lexing() -> Result<()> {
@@ -15,17 +16,17 @@ mod test {
         assert_eq!(
             tokens,
             vec![
-                Token::new(TType::LParen, 1, 1),
-                Token::new(TType::RParen, 2, 1),
-                Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
-                Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
-                Token::new(TType::Number(4), 22, 1),
-                Token::new(TType::Float(9.1), 26, 1),
-                Token::new(TType::Lambda, 33, 1),
-                Token::new(TType::Lambda, 40, 1),
-                Token::new(TType::Def, 44, 1),
+            Token::new(TType::LParen, 1, 1),
+            Token::new(TType::RParen, 2, 1),
+            Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
+            Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
+            Token::new(TType::Number(4), 22, 1),
+            Token::new(TType::Float(9.1), 26, 1),
+            Token::new(TType::Lambda, 33, 1),
+            Token::new(TType::Lambda, 40, 1),
+            Token::new(TType::Def, 44, 1),
             ]
-        );
+            );
 
         Ok(())
     }
@@ -57,6 +58,26 @@ mod test {
             let expressions = Parser::new(tokens).parse()?;
             Interpreter::new(expressions).interpret(false)?;
             Ok(())
+        }
+
+        #[test]
+        fn ackermann() -> Result<()> {
+            let code = r#"
+(def ackermann (lambda (m n)
+  (match (, m n)
+    ((, 0 _) (+ n 1))
+    ((, _ 0) (ackermann (- m 1) 1))
+    (_ (ackermann (- m 1) (ackermann m (- n 1)))))))"#;
+            let tokens = Lexer::new(code).proc_tokens()?;
+            let expressions = Parser::new(tokens).parse()?;
+            let mut interpreter = Interpreter::new(expressions);
+            interpreter.interpret(false)?;
+            interpreter.update_ast(Parser::new(Lexer::new("(ackermann 3 3)").proc_tokens()?).parse()?);
+            let start = Instant::now();
+            interpreter.interpret(false)?;
+            println!("Done in {}ms", start.elapsed().as_millis());
+            Ok(())
+
         }
     }
 

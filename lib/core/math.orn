@@ -26,9 +26,3 @@
 
 (def <= (lambda (lhs rhs)
 	(or (< lhs rhs) (= lhs rhs))))
-
-(def + (lambda (lhs rhs)
-	(_add lhs rhs)))
-
-(def - (lambda (lhs rhs)
-	(_add lhs (! rhs))))
