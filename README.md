@@ -38,7 +38,7 @@ $ make
 * Build with cargo.
 * Copy `target/release/orion` to `C:/Program Files/Orion`.
 * Copy `lib/` to `C:/Program Files/Orion/`.
-* Add Orion to your `PATH`.
+* Add `C:/Program Files/Orion` to your `PATH`.
 
 Roadmap
 -------
