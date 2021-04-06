@@ -47,6 +47,7 @@ Roadmap
 - [x] Parsing
 - [x] Evaluation
 - [x] Core functionnality
+- [ ] Documentation
 - [ ] Standard library.
 
 Differences between Orion and Orion++
