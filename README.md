@@ -59,7 +59,7 @@ Orion is functional and imperative, has mutation, and an enormous builtin part.
 Code Structure
 --------------
 
-<img width="500px" src="assets/orion-logo.png">
+<img width="500px" src="assets/code_structure.png">
 
 Performances
 ------------
