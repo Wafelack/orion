@@ -616,7 +616,7 @@ impl Interpreter {
                     },
                     Value::Single(lh) => match rhs {
                         Value::Single(rh) => {
-                            Ok(Value::Single(lh / rh))
+                            Ok(Value::Single(lh * rh))
                         }
                         _ => error!(
                             "Attempted to multiply {} by {}.",
