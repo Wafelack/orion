@@ -31,3 +31,8 @@
 	(match (= lhs rhs)
 		(True ())
 		(False (panic (format "Assertion failed: `" lhs " /= " rhs "`."))))))
+
+(def if (λ (cond if_expr else_expr)
+	(match cond
+		(True if_expr)
+		(False else_expr))))
