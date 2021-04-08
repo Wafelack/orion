@@ -39,6 +39,7 @@ pub enum Expr {
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
     Panic(String, Box<Expr>),
     Begin(Vec<Expr>),
+    Quote(Box<Expr>),
 
     // Builtins
     Format(Vec<Expr>),
@@ -226,6 +227,9 @@ impl Parser {
                 } else {
                     Expr::Var(v.to_string())
                 }
+            }
+            TType::Quote => {
+                Expr::Quote(Box::new(self.parse_expr()?))
             }
             TType::LParen => {
                 let subroot = self.pop()?;

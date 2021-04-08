@@ -34,6 +34,7 @@ pub enum Value {
     Lambda(Vec<HashMap<String, Value>>, String, Expr),
     Unit,
     Constr(usize, Vec<Value>),
+    Quote(Expr),
     Tuple(Vec<Value>),
 }
 
@@ -55,6 +56,7 @@ impl Interpreter {
     }
     fn get_val_type(&self, val: &Value) -> String {
         match val {
+            Value::Quote(_) => "Quote".to_string(),
             Value::Integer(_) => "Integer".to_string(),
             Value::Single(_) => "Single".to_string(),
             Value::String(_) => "String".to_string(),
@@ -85,6 +87,7 @@ impl Interpreter {
     fn get_lit_val(&self, val: &Value) -> String {
         match val {
             Value::Integer(i) => format!("{}", i),
+            Value::Quote(expr) => format!("'{:?}", expr),
             Value::Single(f) => format!("{}", f),
             Value::String(s) => format!("{}", s),
             Value::Lambda(_, x, _) => format!("λ{}", x),
@@ -275,7 +278,11 @@ impl Interpreter {
                 None => self.scopes.iter().rev(),
         } {
             if scope.contains_key(var) {
-                return Ok(scope[var].clone());
+                if let Value::Quote(expr) = scope[var].clone() {
+                    return self.eval_expr(&expr, custom_scope);
+                } else {
+                    return Ok(scope[var].clone());
+                }
             }
         }
 
@@ -454,8 +461,8 @@ impl Interpreter {
 
                 Pattern::Constr(named, patterned)
             }
-            Value::Lambda(_, _, _) => {
-                return error!("Expected Constructor, Tuple or Literal, found Lambda.")
+            x => {
+                return error!("Expected Constructor, Tuple or Literal, found {}.", self.get_val_type(x));
             }
         })
     }
@@ -501,6 +508,7 @@ impl Interpreter {
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
         match expr {
+            Expr::Quote(expr) => Ok(Value::Quote((**expr).clone())),
             Expr::Def(name, value) => self.eval_def(name, value),
             Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
             Expr::Literal(literal) => self.eval_literal(literal),

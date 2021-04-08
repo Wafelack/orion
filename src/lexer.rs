@@ -28,6 +28,7 @@ pub enum TType {
     Number(i32),
     Float(f32),
     Ident(String),
+    Quote,
     Def,
     Enum,
     Tuple,
@@ -143,6 +144,7 @@ impl Lexer {
                 self.column = 0;
                 self.line += 1;
             }
+            '\'' => self.add_token(TType::Quote),
             '"' => self.string()?,
             ';' => {
                 while !self.is_at_end() && self.peek() != '\n' {
