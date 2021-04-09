@@ -54,6 +54,7 @@ Differences Between Orion And Orion++
 -------------------------------------
 
 Orion++ is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
+
 Orion is functional and imperative, has mutation, and an enormous builtin part.
 
 Code Structure
