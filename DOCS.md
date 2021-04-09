@@ -27,7 +27,7 @@ Syntax Definition
 ```ebnf
 literal := Integer | String | Single | Unit
 pattern := literal | Constructor | Tuple | identifier
-expression := literal | Constructor | Tuple | identifier | builtin | keyword
+expression := literal | Constructor | Tuple | identifier | builtin | keyword | Quote
 ```
 
 Defining Constants
@@ -50,7 +50,7 @@ Lambdas
 
 Syntax: `'(' ('λ' | 'lambda') '(' identifier* ')' expression)`.
 
-The `lambda` keyword takes one or more arguments, enclosed by parentheses and a body.
+The `lambda` keyword takes zero or more arguments, enclosed by parentheses and a body.
 
 **Note:** Orion has currying for the lambdas, it means that `(λ (x y) (+ x y))` will be converted into `(λ (x) (λ (y) (+ x y)))`.
 
@@ -60,3 +60,19 @@ Examples:
 (λ (x y) (* x y))
 (λ (x y z) (+ x (+ y z)))
 ```
+
+Tuples
+------
+
+Syntax: `'(' ',' expression* ')'`.
+
+The `,` keyword takes zero or more arguments.
+
+Examples:
+```scheme
+(, 4 5 6)
+(, "a" 42 3.1415826535897932)
+(, "a" (, 4 5 6)) ; Yes, tuples can contain tuples as well.
+```
+
+
