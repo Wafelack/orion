@@ -77,6 +77,14 @@ Speed is not Orion's main goal, but here are some benchmarks.
 |**Python**| 1.1e-4ms | **2.24e-7ms** | 2.12e-7 | 3.77e-7ms   |
 
 
+Acknowledgments
+---------------
+
+* Lexer, parser, interpreter and documentation: Wafelack <wafelack@protonmail.com>
+* CI: Kreyren <kreyren@fsfe.org>
+
+Special thanks to [@Mesabloo](https://github.com/mesabloo) and [@felko](https://github.com/felko) for support and help about implementation details.
+
 License
 -------
 
