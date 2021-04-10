@@ -1,153 +1,137 @@
-Documentation
-=============
+The Orion Reference
+================
 
-This is not a real documentation, but more of a tutorial to learn the language syntax.
+This "book" goes through all the Orion concepts and stands at the main documentation of the language.
 
-For now, there isn't a big standard library, but you can define yourself your methods in Orion.
-
-Data Types
-----------
-
-In orion there are several data types, as listed in the table below:
-
-| Data type | Explanation              | Example |
-|-----------|--------------------------|---------|
-|  Integer  | A signed 32 bits integer |   `42`  |
-|  Single   | A single precision floating point number | `3.1415926535897932` |
-|  String   | An UTF-8 character string | `"Hello, World !"` |
-|  Tuples   | A finite sequence of elements. | `(, 4 5 6)` | 
-|  Lambda   | A lambda abstraction | `(λ (x) y)` |
-|   Unit    | An empty constructor | `()` |
-|  Constructor | An enum variant constructor | `(Just 88)` |
-|    Quote   | An expression which evaluation is delayed | `'(print "bar")` |
-
-Syntax Definition
+Hello, World !
 -----------------
 
-```ebnf
-literal := Integer | String | Single | Unit
-pattern := literal | Constructor | Tuple | identifier
-expression := literal | Constructor | Tuple | identifier | builtin | keyword | Quote
-```
+Staying classic, here is a `Hello, World !` in Orion:
 
-Defining Constants
-------------------
-
-Syntax: `'(' 'define' identifier expression ')'`.
-
-The `define` keyword is used with an identifier and an expression as the constant value.
-
-Examples: 
 ```scheme
-(define foo 99)
-(define bar "Hello")
-(define moo bar)
-(define bruh (, foo bar moo))
+(printf "Hello, World !")
 ```
 
-Lambdas
--------
+Let's break down this program:
+- `printf`: A function call, highlighted with the parentheses.
+- `"Hello, World !"`: A string literal.
 
-Syntax: `'(' ('λ' | 'lambda') '(' identifier* ')' expression)`.
+Fundamentals
+-----------------
 
-The `lambda` keyword takes zero or more arguments, enclosed by parentheses and a body.
+This part will show you the basics of Orion programming, *id est*:
+- [Prefixed notation](#prefixed-notation)
+- [Basic data types](#basic-data-types)
+- [Defining a constant](#defining-a-constant)
+- [Lambdas](#lambdas)
+- [Control flow](#control-flow)
 
-**Note:** Orion has currying for the lambdas, it means that `(λ (x y) (+ x y))` will be converted into `(λ (x) (λ (y) (+ x y)))`.
+### Prefixed notation
 
-Examples: 
+Orion, as it is a Lisp dialect, uses prefixed notation. It means that the mathematical expression `3 + 5` will be written `(+ 3 5)` in Orion ; and `3 + 5 + 6` is written `(+ 4 (+ 5 6))`.
+
+### Basic data types
+
+There are 4 basic data types, and we will introduce 4 other types later.
+Those types are as following:
+| Type | Description |
+|-------|-------------
+| Integer | A 32 bits signed number (part of the Z set)
+| Single  | A 32 bits floating point integer (part of the R set) |
+| String | An immutable, fixed length, character string |
+| Unit   | An empty thing. |
+
+**Note:** You cannot add a Single with an Integer.
+
+How to use those types:
 ```scheme
-(λ (x) (printf x))
-(λ (x y) (* x y))
-(λ (x y z) (+ x (+ y z)))
+5 ;; An Integer
+3.1415926535897932 ;; A Single
+"Hello, World !" ;; A String
+() ;; The Unit
 ```
+### Defining a constant
 
-Tuples
-------
+You can define a constant with the `define` keyword followed by an identifier (the constant name) and an expression.
 
-Syntax: `'(' ',' expression* ')'`.
-
-The `,` keyword takes zero or more arguments.
+**Tip:** In Orion, an expression can be anything.
 
 Examples:
 ```scheme
-(, 4 5 6)
-(, "a" 42 3.1415826535897932)
-(, "a" (, 4 5 6)) ; Yes, tuples can contain tuples as well.
+(define a 99)
+(define b 3.1415)
+(define c "Hello")
+(define d ())
+(define e a) ;; e is not a reference to a, it only contains a's value.
+(define f (define a)) ;; `define` returns Unit, so you can do that.
 ```
 
-Enums
------
+### Lambdas
 
-Syntax: `'(' 'enum' identifier '(' identifier identifier* ')' ')'`.
+#### A quick introduction to lambda calculus
 
-Enums are used to define datatypes with multiple variants, that can contain various data.
+Lambda calculus[¹](#links) is a formal system to express computation based on function abstraction and application.
 
-They are composed of an enum name and of one or more variants.
+If you really don't like maths (even if the following thing is not that tricky to understand), here is the TL;DR (but you are missing something): Lambdas are a way to apply an expression to a value.
 
-**Tip:** If the enum variant has no data, you can ommit the parenteheses. Example: `Nothing <=> (Nothing)`.
+In mathematics, a lambda is noted `λ𝑥.𝑀`, where 𝑥 is the variable and 𝑀 is the expression.
+With `𝘧 = λ𝑥.𝑥+1`, the lambda application of `𝘧` to the number 5 is noted `𝘧  5` and means `𝘧[𝑥:=5]` (All bound occurrences of 𝑥 replaced with the number 5).
 
-Examples:
+#### Currying
+
+As seen in the previous part, lambdas can only take one argument, but there is a way to write multiple argument lambdas, that is known as currying[²](#links). It permits to write `λ𝑥𝘺.𝘺𝑥` instead of `λ𝑥.(λ𝘺.𝘺𝑥)`.
+
+#### And in Orion ?
+
+Lambda notation in Orion and in math are almost the same. To create a lambda in Orion, you will write:
 ```scheme
-(enum Maybe
-	(Just x)
-	Nothing) ;; Equivalent to (Nothing)
-
-(enum List
-	(Cons x next)
-	Nil)
+(λ (x) (+ x 1))
 ```
-
-Constructors
-------------
-
-Syntax: `'(' identifier expression* ')'`.
-
-A variant constructor is defined with the variant name and zero or more expressions.
-
-**Tip:** If the enum variant has no data, you can ommit the parenteheses. Example: `Nothing <=> (Nothing)`.
-
-Examples:
+Currying also applies in Orion, you can define a multiple arguments lambda too, with the following syntax:
 ```scheme
-(Just 99)
-(Just (Just 99))
-Nothing
+(λ (x y) (+ x y))
 ```
 
-Quotes
-------
+#### Calling lambdas
 
-Syntax: `'\'' expression`.
-
-A quote is defined with a quote symbol (`'`) followed by an epxression.
-
-It is used to delay an expression evaluation to call.
+Lambdas are called using prefixed-notation, with the syntax `(function arguments...)`.
 
 Example:
 ```scheme
-(define foo '(printf "Hello, World !"))
-foo ;; `Hello, World !` is displayed now, because we evaluate just now.
+(define f (λ (x) (+ x 1)))
+(f 5) ;; 6
 ```
 
-Pattern Matching
-----------------
+### Control flow
 
-Syntax: `'(' 'match' expression ('(' pattern expression ')')* ')'`.
+Control flow in Orion is permitted by the `match` keyword, with pattern matching.
 
-Match is used to process pattern matching, if the pattern is matched, the expressions is evaluated.
+Pattern matching, as the name describes, matches an expression with patterns, and if it matches, it evaluates the expression associated with the pattern.
 
-Examples:
+Patterns can be variables, literals (Singles, Integers, Strings or Unit), Constructors or Tuples (we'll see those two later, in the [Advanced Topics section](#advanced-topics).
+
+The syntax of a "pattern line" is `(pattern expression)`.
+Example:
 ```scheme
-(define a (Just 42))
-
+(define a 9)
 (match a
-	((Just x) (printf x))) ;; x is not in the upper scope, therefore this pattern matches all Just constructors and adds the value in the scope.
-
-(define b 45105010501)
-(match b
-	(x (printf x))) ;; x matches any value, because it is not in scope
+	(9 (printf "It is nine !")))
 ```
 
-Contributing
-------------
+If you run this code, you should see `It is nine !` appear on screen.
 
-This tutorial is probably not very clear, if you have improvements ideas, feel free to make a pull request with your improvements.
+Pattern matching brings another interesting thing: if a pattern is a  variable that does not exist in the current scope, that means that the pattern matches any value, and it is created in the execution scope.
+Example:
+```scheme
+(define a 9)
+(match a
+	(b (printf "A is " b))) ;; b does not exist in scope
+				;; Therefore it matches any value
+				;; It is created in the expression scope and its value
+				;; is bound to a.
+```
+
+# Links
+
+1. https://en.wikipedia.org/wiki/Lambda_calculus
+2. https://en.wikipedia.org/wiki/Currying
