@@ -50,6 +50,18 @@ Roadmap
 - [ ] Documentation
 - [ ] Standard library.
 
+Quick example
+-------------
+
+Fibonnaci suite:
+```scheme
+(load "core/math.orn")
+(def fibo (λ (n) 
+	(match (< n 2) 
+		(True n) 
+		(_ (+ (fibo (- n 1)) (fibo (- n 2)))))))
+```
+
 Differences Between Orion And Orion++
 -------------------------------------
 
