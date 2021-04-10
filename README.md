@@ -62,7 +62,7 @@ Fibonnaci suite:
 		(_ (+ (fibo (- n 1)) (fibo (- n 2)))))))
 ```
 
-Differences Between Older Orion and Actual Orion
+Differences Between Older Orion and Newer Orion
 -------------------------------------
 
 The current Orion is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
