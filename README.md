@@ -50,7 +50,7 @@ Roadmap
 - [ ] Documentation
 - [ ] Standard library.
 
-Quick example
+Quick Example
 -------------
 
 Fibonnaci suite:
@@ -62,14 +62,12 @@ Fibonnaci suite:
 		(_ (+ (fibo (- n 1)) (fibo (- n 2)))))))
 ```
 
-Differences Between Orion And Orion++
+Differences Between Older Orion and Actual Orion
 -------------------------------------
 
-*Note: Orion++ refers to the current Orion version, and simply "Orion" refers to the previous version (0.1.0)*
+The current Orion is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
 
-Orion++ is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
-
-Orion is functional and imperative, has mutation, and an enormous builtin part.
+The older Orion was functional and imperative, had mutation, and an enormous builtin part.
 
 Code Structure
 --------------
@@ -86,8 +84,8 @@ Speed is not Orion's main goal, but here are some benchmarks.
 | Language |  Total  | Average | Median | Amplitude |
 |----------|---------|---------|--------|-----------|
 |   **Nixt**   | 63145ms |  **126ms**  |  121ms |   134ms   |
-|**Orion** |  4398ms |   **8ms**   |   8ms  |  13ms         |
-|__**Orion++**__ | 42529ms |   **85.058ms**  | 85ms | 21ms  |   
+|**Older Orion** |  4398ms |   **8ms**   |   8ms  |  13ms         |
+|__**Newer Orion**__ | 42529ms |   **85.058ms**  | 85ms | 21ms  |   
 |**Python**| 258.46ms | **0.516ms** | 0.482ms | 0.541ms   |
 
 
