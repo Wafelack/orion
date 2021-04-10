@@ -3,6 +3,23 @@ The Orion Reference
 
 This "book" goes through all the Orion concepts and stands at the main documentation of the language.
 
+Index
+-------
+
+- [Hello, World !](#hello-world-)
+- [Fundamentals](#fundamentals)
+	- [Prefixed notation](#prefixed-notation)
+	- [Basic data types](#basic-data-types)
+	- [Defining a constant](#defining-a-constant)
+	- [Lambdas](#lambdas)
+		- [A quick introduction to lambda calculus](#a-quick-introduction-to-lambda-calculus)
+		- [Currying](#currying)
+		- [And in Orion ?](#and-in-orion-)
+		- [Calling lambdas](#calling-lambdas)
+	- [Control flow](#control-flow)
+- [Advanced topics](#advanced-topics)
+	- [Tuples](#tuples)
+
 Hello, World !
 -----------------
 
@@ -20,7 +37,7 @@ Fundamentals
 -----------------
 
 This part will show you the basics of Orion programming, *id est*:
-- [Prefixed notation](#prefixed-notation)
+- [Prefixed notation](#prefixed-notation) 
 - [Basic data types](#basic-data-types)
 - [Defining a constant](#defining-a-constant)
 - [Lambdas](#lambdas)
@@ -43,27 +60,27 @@ Those types are as following:
 
 **Note:** You cannot add a Single with an Integer.
 
-How to use those types:
+How to use those types: 
 ```scheme
 5 ;; An Integer
 3.1415926535897932 ;; A Single
 "Hello, World !" ;; A String
-() ;; The Unit
+() ;; The Unit 
 ```
 ### Defining a constant
 
-You can define a constant with the `define` keyword followed by an identifier (the constant name) and an expression.
+You can define a constant with the `def` keyword followed by an identifier (the constant name) and an expression.
 
 **Tip:** In Orion, an expression can be anything.
 
-Examples:
+Examples: 
 ```scheme
-(define a 99)
-(define b 3.1415)
-(define c "Hello")
-(define d ())
-(define e a) ;; e is not a reference to a, it only contains a's value.
-(define f (define a)) ;; `define` returns Unit, so you can do that.
+(def a 99)
+(def b 3.1415)
+(def c "Hello")
+(def d ())
+(def e a) ;; e is not a reference to a, it only contains a's value.
+(def f (def a)) ;; `def` returns Unit, so you can do that.
 ```
 
 ### Lambdas
@@ -98,7 +115,7 @@ Lambdas are called using prefixed-notation, with the syntax `(function arguments
 
 Example:
 ```scheme
-(define f (λ (x) (+ x 1)))
+(def f (λ (x) (+ x 1)))
 (f 5) ;; 6
 ```
 
@@ -111,9 +128,9 @@ Pattern matching, as the name describes, matches an expression with patterns, an
 Patterns can be variables, literals (Singles, Integers, Strings or Unit), Constructors or Tuples (we'll see those two later, in the [Advanced Topics section](#advanced-topics).
 
 The syntax of a "pattern line" is `(pattern expression)`.
-Example:
+Example: 
 ```scheme
-(define a 9)
+(def a 9)
 (match a
 	(9 (printf "It is nine !")))
 ```
@@ -123,7 +140,7 @@ If you run this code, you should see `It is nine !` appear on screen.
 Pattern matching brings another interesting thing: if a pattern is a  variable that does not exist in the current scope, that means that the pattern matches any value, and it is created in the execution scope.
 Example:
 ```scheme
-(define a 9)
+(def a 9)
 (match a
 	(b (printf "A is " b))) ;; b does not exist in scope
 				;; Therefore it matches any value
@@ -131,7 +148,33 @@ Example:
 				;; is bound to a.
 ```
 
-# Links
+Advanced topics
+--------------------
+
+### Tuples
+
+Tuples are ordered, fixed size collections of data. They are made using the `,` function with zero or more values in arguments.
+Example:
+```scheme
+(def foo (, "a" 5 2.817))
+```
+
+Tuples can also be matched in pattern matching, and their content too.
+Example: 
+```scheme
+(def some_tuple (, 5 6 7))
+
+(match some_tuple
+	((, 5 x 7) (printf x " is between 5 and 7 in this tuple !")) ;; Matched because the
+								     ;; x matches any value.
+	((, 5 x y) (printf "A 5 followed by " x " and " y)))
+```
+
+
+
+Links
+-------
 
 1. https://en.wikipedia.org/wiki/Lambda_calculus
-2. https://en.wikipedia.org/wiki/Currying
+2. https://en.wikipedia.org/wiki/Currying 
+
