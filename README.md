@@ -73,8 +73,8 @@ Speed is not Orion's main goal, but here are some benchmarks.
 |----------|---------|---------|--------|-----------|
 |   **Nixt**   | 63145ms |  **126ms**  |  121ms |   134ms   |
 |**Orion** |  4398ms |   **8ms**   |   8ms  |  13ms         |
-|__**Orion++**__ | 42529ms |   **85.058ms**  | 85ms | 21ms        |   
-|**Python**| 1.1e-4ms | **2.24e-7ms** | 2.12e-7 | 3.77e-7ms   |
+|__**Orion++**__ | 42529ms |   **85.058ms**  | 85ms | 21ms  |   
+|**Python**| 258.46ms | **0.516ms** | 0.482ms | 0.541ms   |
 
 
 Acknowledgments
