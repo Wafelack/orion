@@ -1,1 +1,2 @@
 *.orn linguist-language=lisp
+*.orn diff=lisp
