@@ -75,4 +75,79 @@ Examples:
 (, "a" (, 4 5 6)) ; Yes, tuples can contain tuples as well.
 ```
 
+Enums
+-----
 
+Syntax: `'(' 'enum' identifier '(' identifier identifier* ')' ')'`.
+
+Enums are used to define datatypes with multiple variants, that can contain various data.
+
+They are composed of an enum name and of one or more variants.
+
+**Tip:** If the enum variant has no data, you can ommit the parenteheses. Example: `Nothing <=> (Nothing)`.
+
+Examples:
+```scheme
+(enum Maybe
+	(Just x)
+	Nothing) ;; Equivalent to (Nothing)
+
+(enum List
+	(Cons x next)
+	Nil)
+```
+
+Constructors
+------------
+
+Syntax: `'(' identifier expression* ')'`.
+
+A variant constructor is defined with the variant name and zero or more expressions.
+
+**Tip:** If the enum variant has no data, you can ommit the parenteheses. Example: `Nothing <=> (Nothing)`.
+
+Examples:
+```scheme
+(Just 99)
+(Just (Just 99))
+Nothing
+```
+
+Quotes
+------
+
+Syntax: `'\'' expression`.
+
+A quote is defined with a quote symbol (`'`) followed by an epxression.
+
+It is used to delay an expression evaluation to call.
+
+Example:
+```scheme
+(define foo '(printf "Hello, World !"))
+foo ;; `Hello, World !` is displayed now, because we evaluate just now.
+```
+
+Pattern Matching
+----------------
+
+Syntax: `'(' 'match' expression ('(' pattern expression ')')* ')'`.
+
+Match is used to process pattern matching, if the pattern is matched, the expressions is evaluated.
+
+Examples:
+```scheme
+(define a (Just 42))
+
+(match a
+	((Just x) (printf x))) ;; x is not in the upper scope, therefore this pattern matches all Just constructors and adds the value in the scope.
+
+(define b 45105010501)
+(match b
+	(x (printf x))) ;; x matches any value, because it is not in scope
+```
+
+Contributing
+------------
+
+This tutorial is probably not very clear, if you have improvements ideas, feel free to make a pull request with your improvements.
