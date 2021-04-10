@@ -80,8 +80,8 @@ Speed is not Orion's main goal, but here are some benchmarks.
 Acknowledgments
 ---------------
 
-* Lexer, parser, interpreter and documentation: Wafelack <wafelack@protonmail.com>
-* CI: Kreyren <kreyren@fsfe.org>
+* Lexer, parser, interpreter and documentation: Wafelack \<wafelack@protonmail.com>
+* CI: Kreyren \<kreyren@fsfe.org>
 
 Special thanks to [@Mesabloo](https://github.com/mesabloo) and [@felko](https://github.com/felko) for support and help about implementation details.
 
