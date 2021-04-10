@@ -1,4 +1,4 @@
-(load "bool.orn")
+(load "core/bool.orn")
 (enum Ordering
 	Less
 	Equal

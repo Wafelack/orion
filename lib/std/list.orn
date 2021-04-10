@@ -1,4 +1,4 @@
-(load "lib/std/maybe.orn")
+(load "std/maybe.orn")
 
 (enum List
 	(Cons x next)
