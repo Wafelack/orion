@@ -73,7 +73,7 @@ How to use those types:
 ```
 ### Defining a constant
 
-You can define a constant with the `def` keyword followed by an identifier (the constant name) and an expression.
+You can def a constant with the `def` keyword followed by an identifier (the constant name) and an expression.
 
 **Tip:** In Orion, an expression can be anything.
 
@@ -108,7 +108,7 @@ Lambda notation in Orion and in math are almost the same. To create a lambda in 
 ```scheme
 (λ (x) (+ x 1))
 ```
-Currying also applies in Orion, you can define a multiple arguments lambda too, with the following syntax:
+Currying also applies in Orion, you can def a multiple arguments lambda too, with the following syntax:
 ```scheme
 (λ (x y) (+ x y))
 ```
@@ -206,17 +206,17 @@ Example:
 	(Just x)
 	Nothing)
 
-(define a (Just 99))
-(define b Nothing)
+(def a (Just 99))
+(def b Nothing)
 ```
 
 ### Quotes
 
 In Orion, Quotes are used to delay evaluation to variable call. To create a quote, you just have to prefix an expression with a quote (`'`).
-Be careful, quoted expression will only be evaluated if they are contained in a variable that is called.
+Be careful, quoted expressions will only be evaluated if they are contained in a variable that is called.
 Example:
 ```scheme
-(define print_statement '(printf "Hello, World !"))
+(def print_statement '(printf "Hello, World !"))
 print_statement ;; `Hello, World !` will only be displayed now, because the expression hasn't been evaluated before.
 ```
 
