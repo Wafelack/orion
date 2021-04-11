@@ -1,7 +1,7 @@
 The Orion Reference
 ================
 
-This "book" goes through all the Orion concepts and stands at the main documentation of the language.
+This "book" goes through all the Orion concepts and stands as the main documentation of the language.
 
 Index
 -------
@@ -19,9 +19,13 @@ Index
 	- [Control flow](#control-flow)
 - [Advanced topics](#advanced-topics)
 	- [Tuples](#tuples)
+	- [Enums](#enums)
+		- [Creating an enum](#creating-an-enum)
+		- [Enum constructors](#enum-constructors)
+	- [Quotes](#quotes)
 
 Hello, World !
------------------
+--------------
 
 Staying classic, here is a `Hello, World !` in Orion:
 
@@ -34,7 +38,7 @@ Let's break down this program:
 - `"Hello, World !"`: A string literal.
 
 Fundamentals
------------------
+------------
 
 This part will show you the basics of Orion programming, *id est*:
 - [Prefixed notation](#prefixed-notation) 
@@ -45,7 +49,7 @@ This part will show you the basics of Orion programming, *id est*:
 
 ### Prefixed notation
 
-Orion, as it is a Lisp dialect, uses prefixed notation. It means that the mathematical expression `3 + 5` will be written `(+ 3 5)` in Orion ; and `3 + 5 + 6` is written `(+ 4 (+ 5 6))`.
+Orion, as it is a Lisp dialect, uses prefixed notation. It means that the mathematical expression `3 + 5` will be written `(+ 3 5)` in Orion ; and `3 + 5 + 6` is written `(+ 4 (+ 5 6))`. The syntax for every function call is `(function_call args...)`.
 
 ### Basic data types
 
@@ -132,7 +136,7 @@ Example:
 ```scheme
 (def a 9)
 (match a
-	(9 (printf "It is nine !")))
+	(9 (printf "It is nine !"))) ;; Matched because a == 9
 ```
 
 If you run this code, you should see `It is nine !` appear on screen.
@@ -149,7 +153,12 @@ Example:
 ```
 
 Advanced topics
---------------------
+---------------
+
+This part will show you the ""advanced"" topics of Orion programming, *id est*:
+- [Tuples](#tuples) 
+- [Enums](#enums)
+- [Quotes](#quotes)
 
 ### Tuples
 
@@ -167,10 +176,49 @@ Example:
 (match some_tuple
 	((, 5 x 7) (printf x " is between 5 and 7 in this tuple !")) ;; Matched because the
 								     ;; x matches any value.
-	((, 5 x y) (printf "A 5 followed by " x " and " y)))
+	((, 5 x y) (printf "A 5 followed by " x " and " y))) ;; Does not match because the previous pattern was matched
+							     ;; But if it was first, it would be matched, because
+							     ;; x and y match any value.
 ```
 
+### Enums
 
+#### Creating an enum
+
+Enums are data types with zero or more data-containing states. Those states are called variants, and each of them can contain from 0 to 255 values.
+Example:
+```scheme
+(enum Maybe
+	(Just x) ;; Just is a variant, and it contains one value
+	Nothing) ;; If the variant does not contain any value,
+		 ;; the parentheses around it can be ommited.
+		 ;; We could have wrote this (Nothing)
+```
+
+#### Enum constructors
+
+Enum constructors are initialized with the enum variant name and the values corresponding to the variant's data: you will get an error if the supplied areguments aren't corresponding to the variant's number of arguments.
+
+**Note:** The rule for empty variants notation also applies for constructors.
+Example:
+```scheme
+(enum Maybe
+	(Just x)
+	Nothing)
+
+(define a (Just 99))
+(define b Nothing)
+```
+
+### Quotes
+
+In Orion, Quotes are used to delay evaluation to variable call. To create a quote, you just have to prefix an expression with a quote (`'`).
+Be careful, quoted expression will only be evaluated if they are contained in a variable that is called.
+Example:
+```scheme
+(define print_statement '(printf "Hello, World !"))
+print_statement ;; `Hello, World !` will only be displayed now, because the expression hasn't been evaluated before.
+```
 
 Links
 -------
