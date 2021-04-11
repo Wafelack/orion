@@ -73,7 +73,7 @@ How to use those types:
 ```
 ### Defining a constant
 
-You can def a constant with the `def` keyword followed by an identifier (the constant name) and an expression.
+You can define a constant with the `def` keyword followed by an identifier (the constant name) and an expression.
 
 **Tip:** In Orion, an expression can be anything.
 
