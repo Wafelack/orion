@@ -40,6 +40,11 @@ $ make
 * Copy `lib/` to `C:/Program Files/Orion/`.
 * Add `C:/Program Files/Orion` to your `PATH`.
 
+Documentation
+-------------
+
+The language reference is located in [DOCS.md](DOCS.md).
+
 Roadmap
 -------
 
@@ -47,7 +52,7 @@ Roadmap
 - [x] Parsing
 - [x] Evaluation
 - [x] Core functionnality
-- [ ] Documentation
+- [x] Documentation
 - [ ] Standard library.
 
 Quick Example
