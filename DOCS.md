@@ -6,7 +6,7 @@ This "book" goes through all the Orion concepts and stands as the main documenta
 Index
 -------
 
-- [A basic function !](#a-basic-function)
+- [A basic function](#a-basic-function)
 - [Fundamentals](#fundamentals)
 	- [Prefixed notation](#prefixed-notation)
 	- [Basic data types](#basic-data-types)
@@ -37,9 +37,9 @@ Here is one of the most basic functions, that will introduce you to the main con
 ```
 
 Let's break down this program:
-- `def factorial`: Definition of a constant named `factorial`
+- `def factorial`: Definition of a constant named `factorial`.
 - `λ (n)`: Creation of a lambda taking one argument, `n`.
-- `match n`: Pattern matching
+- `match n`: Pattern matching expression beginning, matching patterns to the value of `n`.
 - `(0 1)`: A pattern matching arm, with a pattern, `0` and an expression, `1`.
 - `_`: A pattern that matches any value.
 - `(* n (factorial (- n 1)))`: Some nested function calls.
