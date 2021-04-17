@@ -6,7 +6,7 @@ This "book" goes through all the Orion concepts and stands as the main documenta
 Index
 -------
 
-- [Hello, World !](#hello-world-)
+- [A basic function !](#a-basic-function)
 - [Fundamentals](#fundamentals)
 	- [Prefixed notation](#prefixed-notation)
 	- [Basic data types](#basic-data-types)
@@ -24,18 +24,25 @@ Index
 		- [Enum constructors](#enum-constructors)
 	- [Quotes](#quotes)
 
-Hello, World !
+A basic function
 --------------
 
-Staying classic, here is a `Hello, World !` in Orion:
+Here is one of the most basic functions, that will introduce you to the main concept of the language: recursion.
 
 ```scheme
-(printf "Hello, World !")
+(def factorial (λ (n)
+	(match n
+		(0 1)
+		(_ (* n (factorial (- n 1))))))
 ```
 
 Let's break down this program:
-- `printf`: A function call, highlighted with the parentheses.
-- `"Hello, World !"`: A string literal.
+- `def factorial`: Definition of a constant named `factorial`
+- `λ (n)`: Creation of a lambda taking one argument, `n`.
+- `match n`: Pattern matching
+- `(0 1)`: A pattern matching arm, with a pattern, `0` and an expression, `1`.
+- `_`: A pattern that matches any value.
+- `(* n (factorial (- n 1)))`: Some nested function calls.
 
 Fundamentals
 ------------
