@@ -17,7 +17,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{interpreter::{Interpreter, Value}, OrionError, error, bug, Result, parser::{Pattern, Expr, Literal}};
-use std::{path::Path, fs::OpenOptions, io::Write};
+use std::{path::Path, fs::OpenOptions, io::{Write, self}};
 
 impl Interpreter {
     pub fn put_str(&mut self, args: Vec<Value>) -> Result<Value> {
@@ -28,6 +28,19 @@ impl Interpreter {
         println!("{}", self.get_lit_val(&args[0]));
         Ok(Value::Unit)
     }
+
+    pub fn get_line(&mut self, _: Vec<Value>) -> Result<Value> {
+        let mut buffer = String::new();
+        io::stdout().flush().unwrap();
+        match io::stdin().read_line(&mut buffer) {
+            Ok(_) => {}
+            Err(e) => return error!("Failed to get line: {}.", e),
+        }
+
+        Ok(Value::String(buffer.trim().to_string()))
+
+    }
+
     pub fn write(&mut self, args: Vec<Value>) -> Result<Value> {
         let file = if let Value::String(of) = &args[1] {
             of

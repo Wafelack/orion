@@ -215,6 +215,7 @@ impl Lexer {
         self.register_builtin("putStr");
         self.register_builtin("putStrLn");
         self.register_builtin("write");
+        self.register_builtin("getLine");
 
         self.register_builtin("+");
         self.register_builtin("-");
