@@ -21,23 +21,22 @@ use std::collections::HashMap;
 
 impl Interpreter {
     pub fn add(&mut self, args: Vec<Value>) -> Result<Value> {
-
         if let Value::Single(mut x0) = args[0] {
-            for elem in args {
+           for elem in args.into_iter().skip(1) {
                 if let Value::Single(x) = elem {
                     x0 += x;
                 } else {
-                    return error!("Expected a SIngke, found a {}.", self.get_val_type(&elem));
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
                 }
             }
 
             Ok(Value::Single(x0))
         } else if let Value::Integer(mut z0) = args[0] { 
-            for elem in args {
+            for elem in args.into_iter().skip(1) {
                 if let Value::Integer(z) = elem {
                     z0 += z;
                 } else {
-                    return error!("Expected a SIngke, found a {}.", self.get_val_type(&elem));
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
                 }
             }
 
@@ -45,7 +44,83 @@ impl Interpreter {
         } else {
             error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
         }
+    }
 
+    pub fn sub(&mut self, args: Vec<Value>) -> Result<Value> {
+        if let Value::Single(mut x0) = args[0] {
+           for elem in args.into_iter().skip(1) {
+                if let Value::Single(x) = elem {
+                    x0 -= x;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
 
+            Ok(Value::Single(x0))
+        } else if let Value::Integer(mut z0) = args[0] { 
+            for elem in args.into_iter().skip(1) {
+                if let Value::Integer(z) = elem {
+                    z0 -= z;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
+
+            Ok(Value::Integer(z0))
+        } else {
+            error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+
+    pub fn mul(&mut self, args: Vec<Value>) -> Result<Value> {
+        if let Value::Single(mut x0) = args[0] {
+            for elem in args.into_iter().skip(1) {
+                if let Value::Single(x) = elem {
+                    x0 *= x;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
+
+            Ok(Value::Single(x0))
+        } else if let Value::Integer(mut z0) = args[0] { 
+            for elem in args.into_iter().skip(1) {
+                if let Value::Integer(z) = elem {
+                    z0 *= z;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
+
+            Ok(Value::Integer(z0))
+        } else {
+            error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+
+    pub fn div(&mut self, args: Vec<Value>) -> Result<Value> {
+        if let Value::Single(mut x0) = args[0] {
+            for elem in args.into_iter().skip(1) {
+                if let Value::Single(x) = elem {
+                    x0 /= x;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
+
+            Ok(Value::Single(x0))
+        } else if let Value::Integer(mut z0) = args[0] { 
+            for elem in args.into_iter().skip(1) {
+                if let Value::Integer(z) = elem {
+                    z0 /= z;
+                } else {
+                    return error!("Expected a Single, found a {}.", self.get_val_type(&elem));
+                }
+            }
+
+            Ok(Value::Integer(z0))
+        } else {
+            error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
+        }
     }
 }

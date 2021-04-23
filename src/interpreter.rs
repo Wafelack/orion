@@ -142,6 +142,9 @@ impl Interpreter {
     pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
 
         self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
+        self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
+        self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
+        self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
             
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
