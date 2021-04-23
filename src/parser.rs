@@ -19,7 +19,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{
-    bug, error,
+    bug, error, table,
     lexer::{TType, Token},
     OrionError, Result,
 };
@@ -443,4 +443,154 @@ impl Parser {
 
         Ok(self.output.clone())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::lexer::Lexer;
+
+    #[test]
+    fn variables() -> Result<()> {
+        let tokens = Lexer::new("foo").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Var("foo".to_string())]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn call() -> Result<()> {
+        let tokens = Lexer::new("(foobar 4 5)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Call(Box::new(Expr::Call(Box::new(Expr::Var("foobar".to_string())), Box::new(Expr::Literal(Literal::Integer(4))))), Box::new(Expr::Literal(Literal::Integer(5))))]);
+
+        Ok(())
+    }
+
+
+    #[test]
+    fn literal() -> Result<()> {
+        let tokens = Lexer::new("\"foo\" 42 3.1415926535897932 ()").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Literal(Literal::String("foo".to_string())), Expr::Literal(Literal::Integer(42)), Expr::Literal(Literal::Single(3.1415926535897932)), Expr::Literal(Literal::Unit)]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn lambda() -> Result<()> {
+        let tokens = Lexer::new("(λ (x y) 5)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Lambda("x".to_string(), Box::new(Expr::Lambda("y".to_string(), Box::new(Expr::Literal(Literal::Integer(5))))))]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn def() -> Result<()> {
+        let tokens = Lexer::new("(def foo 5)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Def("foo".to_string(), Box::new(Expr::Literal(Literal::Integer(5))))]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn constr() -> Result<()> {
+        let tokens = Lexer::new("(Just a)Nothing").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Constr("Just".to_string(), vec![Expr::Var("a".to_string())]), Expr::Constr("Nothing".to_string(), vec![])]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn r#enum() -> Result<()> {
+        let tokens = Lexer::new("(enum Maybe (Just x) Nil)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Enum("Maybe".to_string(), table!{"Just".to_string() => 1u8, "Nil".to_string() => 0u8})]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn tuple() -> Result<()> {
+        let tokens = Lexer::new("(, a b c)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Tuple(vec![Expr::Var("a".to_string()), Expr::Var("b".to_string()), Expr::Var("c".to_string())])]);
+
+        Ok(())
+    }
+    
+    #[test]
+    fn load() -> Result<()> {
+        let tokens = Lexer::new("(load \"foo\" \"bar\")").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Load(vec!["foo".to_string(), "bar".to_string()])]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn r#match() -> Result<()> {
+        let tokens = Lexer::new("(match foo (bar x)(_ 9))").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Match(Box::new(Expr::Var("foo".to_string())), vec![(Pattern::Var("bar".to_string()), Expr::Var("x".to_string())), (Pattern::Var("_".to_string()), Expr::Literal(Literal::Integer(9)))])]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn r#panic() -> Result<()> {
+        let tokens = Lexer::new("(panic a)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Panic("[1:1] Program panicked at: ".to_string(), Box::new(Expr::Var("a".to_string())))]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn begin() -> Result<()> {
+        let tokens = Lexer::new("(begin a b c)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Begin(vec![Expr::Var("a".to_string()), Expr::Var("b".to_string()), Expr::Var("c".to_string())])]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn quote() -> Result<()> {
+        let tokens = Lexer::new("'a").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Quote(Box::new(Expr::Var("a".to_string())))]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn builtins() -> Result<()> {
+        let tokens = Lexer::new("(format 5 a)").proc_tokens()?;
+        let ast = Parser::new(tokens).parse()?;
+
+        assert_eq!(ast, vec![Expr::Builtin("format".to_string(), vec![Expr::Literal(Literal::Integer(5)), Expr::Var("a".to_string())])]);
+
+        Ok(())
+    }
+
+
+
 }

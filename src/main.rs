@@ -28,7 +28,7 @@ use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
 use clap::{App, Arg};
-use std::{process::exit, path::Path, fs};
+use std::{collections::HashMap, process::exit, path::Path, fs};
 
 #[macro_export]
 macro_rules! bug {
@@ -39,6 +39,21 @@ macro_rules! bug {
             file!(),
             line!()
             )
+    };
+}
+
+#[macro_export]
+macro_rules! table {
+    {$($key:expr => $value:expr),+} => {
+        {
+            let mut map = HashMap::new();
+
+            $(
+                map.insert($key, $value);
+             )*
+
+                map
+        }
     };
 }
 
@@ -114,18 +129,18 @@ fn repl() {
 fn try_main() -> Result<()> {
 
     let matches = App::new("orion")
-                        .author(env!("CARGO_PKG_AUTHORS"))
-                        .version(env!("CARGO_PKG_VERSION"))
-                        .about("Orion is a purely functional lisp dialect.")
-                        .arg(Arg::with_name("file")
-                                .takes_value(true)
-                                .index(1)
-                                .help("The source file to pass to the interpreter"))
-                        .get_matches();
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .about("Orion is a purely functional lisp dialect.")
+        .arg(Arg::with_name("file")
+             .takes_value(true)
+             .index(1)
+             .help("The source file to pass to the interpreter"))
+        .get_matches();
 
     if let Some(path) = matches.value_of("file") {
         if Path::new(path).exists() {
-            
+
             let content = match fs::read_to_string(path) {
                 Ok(c) => c,
                 Err(e) => return error!("fatal: Failed to read file: {}.", e),
