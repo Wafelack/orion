@@ -1,14 +1,19 @@
 (load "std/maybe.orn")
 
 (enum List
-	(Cons x next)
-	Nil)
+      (Cons x next)
+      Nil)
 
 (def append (λ (list element)
-	(Cons element list)))
+              (Cons element list)))
+
+(def fill (λ (n x)
+           (match x
+                  (0 (Cons n Nil))
+                  (_ (Cons n (- x 1))))))
 
 (def head (λ (list)
-	(match list
-		((Cons x Nil) (Just x))
-		((Cons _ next) (head next))
-		(Nil Nothing))))
+            (match list
+                   ((Cons x Nil) (Just x))
+                   ((Cons _ next) (head next))
+                   (Nil Nothing))))

@@ -1,3 +1,8 @@
 (enum Maybe
 	(Just x)
 	Nothing)
+
+(def and_then (λ (optionnal callback)
+                (match optionnal
+                       (Nothing Nothing)
+                       ((Maybe x) (callback x)))))
