@@ -1,5 +1,6 @@
 pub mod arithmetic;
 pub mod io;
+pub mod string;
 
 use std::ops::RangeInclusive;
 

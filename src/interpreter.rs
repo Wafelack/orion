@@ -152,6 +152,8 @@ impl Interpreter {
         self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
         self.register_builtin("write", Self::write, ArgsLength::Fixed(2));
         self.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
+
+        self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
             
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
