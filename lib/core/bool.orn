@@ -2,6 +2,9 @@
 	True
 	False)
 
+(def #t True)
+(def #f False)
+
 (def = (lambda (lhs rhs)
 	(match lhs
 		(rhs True)
