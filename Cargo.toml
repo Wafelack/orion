@@ -1,12 +1,12 @@
 [package]
-name = "orion-cli"
+name = "orion-lang"
 version = "1.0.0"
 authors = ["Wafelack <wafelack@protonmail.com>"]
 edition = "2018"
 repository = "https://github.com/wafelack/orion"
 readme = "https://github.com/wafelack/orion/blob/master/README.md"
 description = "Orion is a high level, purely functional Lisp dialect."
-homepage = "https://orion.wafelack.fr"
+documentation = "https://github.com/wafelack/orion/blob/master/DOCS.md"
 license = "GPL-3.0"
 keywords = ["lisp", "functional", "fp", "language"]
 

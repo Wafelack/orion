@@ -4,7 +4,7 @@ use std::ops::RangeInclusive;
 
 pub enum ArgsLength {
     OrMore(usize),
-    Range(RangeInclusive<usize>),
+    Range(usize, usize),
     Fixed(usize),    
 }
 
@@ -12,13 +12,13 @@ impl ArgsLength {
     pub fn display(&self) -> String {
         match self {
             Self::OrMore(u) => format!("{} or more", u),
-            Self::Range(r) => {
+            Self::Range(a, b) => {
                 let mut toret = String::new();
 
-                for el in r.into_iter() {
-                    if el == *r.start() {
+                for el in *a..=*b {
+                    if el == *a {
                         toret.push_str(&format!("{}", el));
-                    } else if el == *r.end() {
+                    } else if el == *b {
                         toret.push_str(&format!(" or {}", el));
                     } else {
                         toret.push_str(&format!(", {}", el));
@@ -35,7 +35,7 @@ impl ArgsLength {
     pub fn contains(&self, length: usize) -> bool {
         match self  {
             Self::OrMore(u) => length >= *u,
-            Self::Range(r) => r.contains(&length),
+            Self::Range(a, b) => (*a..=*b).contains(&length),
             Self::Fixed(u) => *u == length,
         }
     }

@@ -42,7 +42,7 @@ pub struct Interpreter {
     pub scopes: Vec<HashMap<String, Value>>,
     pub name_idx: HashMap<String, (usize, String)>,
     pub variants: Vec<u8>,
-    builtins: HashMap<String, (fn(&mut Interpreter, Vec<Expr>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, ArgsLength)>,
+    builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>) -> Result<Value>, ArgsLength)>,
 }
 
 impl Interpreter {
@@ -55,7 +55,7 @@ impl Interpreter {
             builtins: HashMap::new(),
         }
     }
-    fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Expr>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, length: ArgsLength) {
+    fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Value>) -> Result<Value>, length: ArgsLength) {
         self.builtins.insert(builtin.to_string(), (callback, length));
     }
     pub fn get_val_type(&self, val: &Value) -> String {
@@ -141,7 +141,7 @@ impl Interpreter {
     }
     pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
 
-        self.register_builtin("+", Self::add, ArgsLength::MoreThan(2));
+        self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
             
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
@@ -155,9 +155,13 @@ impl Interpreter {
     }
     pub fn eval_builtin(&mut self, name: String, args: Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if self.builtins.contains_key(&name) {
-            let length = self.builtins[&name].1;
-            if !length.contains(args.len()) {
-                self.builtins[&name].0(self, args, custom_scope)
+            let length = &self.builtins[&name].1;
+            if length.contains(args.len()) {
+                let mut argv = vec![];
+                for arg in args {
+                    argv.push(self.eval_expr(&arg, custom_scope)?);
+                }
+                self.builtins[&name].0(self, argv)
             } else {
                 error!("Builtin `{}` takes {} arguments, but {} arguments were supplied.", name, length.display(), args.len())
             }

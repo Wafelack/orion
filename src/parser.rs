@@ -238,6 +238,8 @@ impl Parser {
                             args.push(self.parse_expr()?);
                         }
 
+                        self.advance(TType::RParen)?;
+
                         Expr::Builtin(b.to_string(), args)
                     }
                     TType::Load => {
