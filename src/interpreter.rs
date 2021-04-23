@@ -7,9 +7,7 @@
  *
  *  Orion is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
+ *  the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
  *  Orion is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,7 +22,7 @@ use crate::{
     parser::{Expr, Literal, Parser, Pattern},
     OrionError, Result,
 };
-use std::{cmp::Ordering, collections::HashMap, env, fs, path::Path};
+use std::{fs::{OpenOptions}, io::{Write}, cmp::Ordering, collections::HashMap, env, fs, path::Path};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -529,15 +527,25 @@ impl Interpreter {
                 eprintln!("{}{}", prefix, self.get_lit_val(&valued));
                 std::process::exit(1);
             }
-            Expr::Printf(expressions) => {
-                let mut to_print = format!("");
+            Expr::Display(to_display, of) => {
+                let to_display = self.eval_expr(&**to_display, custom_scope)?;
+                let of = self.eval_expr(&**of, custom_scope)?;
 
-                for expr in expressions {
-                    let evaluated = self.eval_expr(&expr, custom_scope)?;
-                    to_print.push_str(&self.get_lit_val(&evaluated));
+                let of = if let Value::String(of) = of {
+                    of
+                } else {
+                    return error!("Expected an argument of type String, found one of type {}.", self.get_val_type(&of));
+                };
+
+                let mut output = match OpenOptions::new().append(true).open(of) {
+                    Ok(f) => f,
+                    Err(e) => return error!("Failed to open file for writing: {}", e),
+                };
+
+                match output.write_all(self.get_lit_val(&to_display).as_bytes()) {
+                    Ok(_) => {},
+                    Err(e) => return error!("Failed to write output file: {}", e),
                 }
-
-                println!("{}", to_print);
 
                 Ok(Value::Unit)
             }

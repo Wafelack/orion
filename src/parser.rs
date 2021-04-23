@@ -43,7 +43,7 @@ pub enum Expr {
 
     // Builtins
     Format(Vec<Expr>),
-    Printf(Vec<Expr>),
+    Display(Box<Expr>, Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
@@ -245,17 +245,14 @@ impl Parser {
                             Box::new(to_ret),
                             )
                     }
-                    TType::Printf => {
-                        let mut to_fmt = vec![];
-                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                            to_fmt.push(self.parse_expr()?);
-                        }
-
+                    TType::Display => {
+                        let to_display = self.parse_expr()?;
+                        let of = self.parse_expr()?;
                         if !self.is_at_end() {
                             self.advance(TType::RParen)?;
                         }
 
-                        Expr::Printf(to_fmt)
+                        Expr::Display(Box::new(to_display), Box::new(of))
 
                     }
                     TType::Format => {
