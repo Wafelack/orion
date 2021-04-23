@@ -17,7 +17,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{interpreter::{Interpreter, Value}, OrionError, error, bug, Result, parser::{Pattern, Expr, Literal}};
-use std::collections::HashMap;
+use std::{path::Path, fs::OpenOptions, io::Write};
 
 impl Interpreter {
     pub fn put_str(&mut self, args: Vec<Value>) -> Result<Value> {
@@ -28,5 +28,28 @@ impl Interpreter {
         println!("{}", self.get_lit_val(&args[0]));
         Ok(Value::Unit)
     }
+    pub fn write(&mut self, args: Vec<Value>) -> Result<Value> {
+        let file = if let Value::String(of) = &args[1] {
+            of
+        } else {
+            return error!("Expected a String, found a {}.", self.get_val_type(&args[1]));
+        };
+
+        if !Path::new(file).exists() {
+            return error!("File `{}` does not exist.", file);
+        }
+        
+        let written = match {match OpenOptions::new().append(true).open(file) {
+            Ok(f) => f,
+            Err(e) => return error!("Failed to open `{}`: {}.", file, e),
+        }}.write(self.get_lit_val(&args[0]).as_bytes()) {
+            Ok(u) => u,
+            Err(e) => return error!("Failed to write `{}`: {}.", file, e),
+        };
+
+
+        Ok(Value::Integer(written as i32))
+    }
+
 
 }
