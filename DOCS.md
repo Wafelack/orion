@@ -29,7 +29,7 @@ A basic function
 
 Here is one of the most basic functions, that will introduce you to the main concept of the language: recursion.
 
-```scheme
+```clojure
 (def factorial (λ (n)
 	(match n
 		(0 1)
@@ -72,7 +72,7 @@ Those types are as following:
 **Note:** You cannot add a Single with an Integer.
 
 How to use those types: 
-```scheme
+```clojure
 5 ;; An Integer
 3.1415926535897932 ;; A Single
 "Hello, World !" ;; A String
@@ -85,7 +85,7 @@ You can define a constant with the `def` keyword followed by an identifier (the 
 **Tip:** In Orion, an expression can be anything.
 
 Examples: 
-```scheme
+```clojure
 (def a 99)
 (def b 3.1415)
 (def c "Hello")
@@ -112,11 +112,11 @@ As seen in the previous part, lambdas can only take one argument, but there is a
 #### And in Orion ?
 
 Lambda notation in Orion and in math are almost the same. To create a lambda in Orion, you will write:
-```scheme
+```clojure
 (λ (x) (+ x 1))
 ```
 Currying also applies in Orion, you can def a multiple arguments lambda too, with the following syntax:
-```scheme
+```clojure
 (λ (x y) (+ x y))
 ```
 
@@ -125,7 +125,7 @@ Currying also applies in Orion, you can def a multiple arguments lambda too, wit
 Lambdas are called using prefixed-notation, with the syntax `(function arguments...)`.
 
 Example:
-```scheme
+```clojure
 (def f (λ (x) (+ x 1)))
 (f 5) ;; 6
 ```
@@ -150,7 +150,7 @@ If you run this code, you should see `It is nine !` appear on screen.
 
 Pattern matching brings another interesting thing: if a pattern is a  variable that does not exist in the current scope, that means that the pattern matches any value, and it is created in the execution scope.
 Example:
-```scheme
+```clojure
 (def a 9)
 (match a
 	(b (printf "A is " b))) ;; b does not exist in scope
@@ -171,13 +171,13 @@ This part will show you the ""advanced"" topics of Orion programming, *id est*:
 
 Tuples are ordered, fixed size collections of data. They are made using the `,` function with zero or more values in arguments.
 Example:
-```scheme
+```clojure
 (def foo (, "a" 5 2.817))
 ```
 
 Tuples can also be matched in pattern matching, and their content too.
 Example: 
-```scheme
+```clojure
 (def some_tuple (, 5 6 7))
 
 (match some_tuple
@@ -194,7 +194,7 @@ Example:
 
 Enums are data types with zero or more data-containing states. Those states are called variants, and each of them can contain from 0 to 255 values.
 Example:
-```scheme
+```clojure
 (enum Maybe
 	(Just x) ;; Just is a variant, and it contains one value
 	Nothing) ;; If the variant does not contain any value,
@@ -208,7 +208,7 @@ Enum constructors are initialized with the enum variant name and the values corr
 
 **Note:** The rule for empty variants notation also applies for constructors.
 Example:
-```scheme
+```clojure
 (enum Maybe
 	(Just x)
 	Nothing)
@@ -222,7 +222,7 @@ Example:
 In Orion, Quotes are used to delay evaluation to variable call. To create a quote, you just have to prefix an expression with a quote (`'`).
 Be careful, quoted expressions will only be evaluated if they are contained in a variable that is called.
 Example:
-```scheme
+```clojure
 (def print_statement '(printf "Hello, World !"))
 print_statement ;; `Hello, World !` will only be displayed now, because the expression hasn't been evaluated before.
 ```
