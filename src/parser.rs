@@ -19,7 +19,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{
-    bug, error, table,
+    bug, error,
     lexer::{TType, Token},
     OrionError, Result,
 };

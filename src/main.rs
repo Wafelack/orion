@@ -31,7 +31,7 @@ use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
 use clap::{App, Arg};
-use std::{collections::HashMap, process::exit, path::Path, fs};
+use std::{process::exit, path::Path, fs};
 
 #[macro_export]
 macro_rules! bug {

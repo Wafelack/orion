@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{interpreter::{Interpreter, Value}, OrionError, error, bug, Result, parser::{Pattern, Expr, Literal}};
+use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result, parser::{Pattern, Expr, Literal}};
 use std::collections::HashMap;
 
 impl Interpreter {

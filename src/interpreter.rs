@@ -17,13 +17,13 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{
-    bug, error,
+    error,
     lexer::Lexer,
-    parser::{Expr, Literal, Parser, Pattern},
+    parser::{Expr, Literal, Parser},
     builtins::ArgsLength,
     OrionError, Result,
 };
-use std::{fs::OpenOptions, io::Write, cmp::Ordering, collections::HashMap, env, fs, path::Path};
+use std::{collections::HashMap, env, fs, path::Path};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
