@@ -38,15 +38,7 @@ pub enum TType {
     Panic,
     Begin,
 
-    // Builtins
-    Format,
-    Add,
-    Sub,
-    Opp,
-    Div,
-    Mul,
-    Cmp,
-    Display,
+    Builtin(String),
 }
 
 impl TType {
@@ -128,8 +120,8 @@ impl Lexer {
         self.advance(); // Closing "
 
         self.add_token(TType::Str(
-            apply_ansi_codes(&self.input[self.start + 1..self.current - 1])
-        ));
+                apply_ansi_codes(&self.input[self.start + 1..self.current - 1])
+                ));
 
         Ok(())
     }
@@ -199,17 +191,16 @@ impl Lexer {
             "match" => self.add_token(TType::Match),
             "load" => self.add_token(TType::Load),
             "panic" => self.add_token(TType::Panic),
-
-            // Add
-            "format" => self.add_token(TType::Format),
             "begin" => self.add_token(TType::Begin),
-            "display" => self.add_token(TType::Display),
-            "+" => self.add_token(TType::Add),
-            "-" => self.add_token(TType::Sub),
-            "!" => self.add_token(TType::Opp),
-            "/" => self.add_token(TType::Div),
-            "*" => self.add_token(TType::Mul),
-            "_cmp" => self.add_token(TType::Cmp),
+
+            "format" => self.add_token(TType::Builtin("format".to_string())),
+            "display" => self.add_token(TType::Builtin("display".to_string())),
+            "+" => self.add_token(TType::Builtin("+".to_string())),
+            "-" => self.add_token(TType::Builtin("-".to_string())),
+            "!" => self.add_token(TType::Builtin("!".to_string())),
+            "/" => self.add_token(TType::Builtin("/".to_string())),
+            "*" => self.add_token(TType::Builtin("*".to_string())),
+            "_cmp" => self.add_token(TType::Builtin("_cmp".to_string())),
             _ => self.add_token(TType::Ident(raw)),
         }
     }
@@ -232,4 +223,33 @@ fn apply_ansi_codes(input: &str) -> String {
         .replace("\\0", "\0")
         .replace("\\\\", "\\")
         .to_string()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn lexing() -> Result<()> {
+        let mut lexer = Lexer::new("()\"Foo Bar\"TrueFalse 4 9.1 lambda λ def");
+        let tokens = lexer.proc_tokens()?;
+
+        assert_eq!(
+            tokens,
+            vec![
+            Token::new(TType::LParen, 1, 1),
+            Token::new(TType::RParen, 2, 1),
+            Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
+            Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
+            Token::new(TType::Number(4), 22, 1),
+            Token::new(TType::Float(9.1), 26, 1),
+            Token::new(TType::Lambda, 33, 1),
+            Token::new(TType::Lambda, 40, 1),
+            Token::new(TType::Def, 44, 1),
+            ]
+            );
+
+        Ok(())
+    }
+
 }

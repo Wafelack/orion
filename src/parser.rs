@@ -42,14 +42,7 @@ pub enum Expr {
     Quote(Box<Expr>),
 
     // Builtins
-    Format(Vec<Expr>),
-    Display(Box<Expr>, Box<Expr>),
-    Add(Box<Expr>, Box<Expr>),
-    Sub(Box<Expr>, Box<Expr>),
-    Div(Box<Expr>, Box<Expr>),
-    Mul(Box<Expr>, Box<Expr>),
-    Opp(Box<Expr>),
-    Cmp(Box<Expr>, Box<Expr>),
+    Builtin(String, Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -122,7 +115,7 @@ impl Parser {
             .and_then(|t| Some(t.clone()))
     }
     fn is_at_end(&self) -> bool {
-        self.input.len() != 1 && self.current + 1 >= self.input.len()
+        self.input.len() != 1 && self.current >= self.input.len()
     }
     fn advance_many(&mut self, expected: TType) -> Result<Vec<Token>> {
         let mut toret = vec![];
@@ -161,9 +154,7 @@ impl Parser {
                             args.push(self.parse_pattern()?);
                         }
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         Pattern::Tuple(args)
                     }
@@ -172,10 +163,7 @@ impl Parser {
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             args.push(self.parse_pattern()?);
                         }
-
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         if let TType::Ident(x) = &subroot.ttype {
                             if first_char(x).is_ascii_uppercase() {
@@ -237,85 +225,21 @@ impl Parser {
                 match &subroot.ttype {
                     TType::Panic => {
                         let to_ret = self.parse_expr()?;
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
                         Expr::Panic(
                             format!("[{}:{}] Program panicked at: ", subroot.line, subroot.col),
                             Box::new(to_ret),
                             )
                     }
-                    TType::Display => {
-                        let to_display = self.parse_expr()?;
-                        let of = self.parse_expr()?;
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                    TType::Builtin(b) => {
+                        let mut args = vec![];
 
-                        Expr::Display(Box::new(to_display), Box::new(of))
-
-                    }
-                    TType::Format => {
-                        let mut to_fmt = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
-                            to_fmt.push(self.parse_expr()?);
+                            args.push(self.parse_expr()?);
                         }
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-
-                        Expr::Format(to_fmt)
+                        Expr::Builtin(b.to_string(), args)
                     }
-                    TType::Add => {
-                        let to_ret =
-                            Expr::Add(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-                    TType::Sub => {
-                        let to_ret = 
-                            Expr::Sub(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-                    TType::Div => {
-                        let to_ret =
-                            Expr::Div(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-                    TType::Mul => {
-                        let to_ret =
-                            Expr::Mul(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-
-                    TType::Cmp => {
-                        let to_ret =
-                            Expr::Cmp(Box::new(self.parse_expr()?), Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-                    TType::Opp => {
-                        let to_ret = Expr::Opp(Box::new(self.parse_expr()?));
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
-                        to_ret
-                    }
-
                     TType::Load => {
                         let mut names = vec![];
 
@@ -328,10 +252,7 @@ impl Parser {
                                 bug!("UNEXPECTED_STRING")
                             }
                         }
-                        if !self.is_at_end() {
-
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
                         Expr::Load(names)
                     }
                     TType::Def => {
@@ -351,9 +272,7 @@ impl Parser {
 
                         let value = self.parse_expr()?;
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         Expr::Def(name, Box::new(value))
                     }
@@ -435,9 +354,7 @@ impl Parser {
                             }
                         }
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         Expr::Enum(name, var_len)
                     }
@@ -462,9 +379,7 @@ impl Parser {
                         for arg in args.into_iter().rev() {
                             body = Expr::Lambda(arg.to_string(), Box::new(body));
                         }
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
                         body
                     }
                     TType::Tuple => {
@@ -473,9 +388,7 @@ impl Parser {
                             args.push(self.parse_expr()?);
                         }
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         Expr::Tuple(args)
                     }
@@ -489,9 +402,7 @@ impl Parser {
                             args.push(self.parse_expr()?);
                         }
 
-                        if !self.is_at_end() {
-                            self.advance(TType::RParen)?;
-                        }
+                        self.advance(TType::RParen)?;
 
                         if let TType::Ident(x) = &subroot.ttype {
                             if first_char(x).is_ascii_uppercase() {
