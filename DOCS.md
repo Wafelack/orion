@@ -140,7 +140,7 @@ Patterns can be variables, literals (Singles, Integers, Strings or Unit), Constr
 
 The syntax of a "pattern line" is `(pattern expression)`.
 Example: 
-```scheme
+```clojure
 (def a 9)
 (match a
 	(9 (printf "It is nine !"))) ;; Matched because a == 9
