@@ -128,7 +128,7 @@ impl Lexer {
         self.advance(); // Closing "
 
         self.add_token(TType::Str(
-            self.input[self.start + 1..self.current - 1].to_string(),
+            apply_ansi_codes(&self.input[self.start + 1..self.current - 1])
         ));
 
         Ok(())
@@ -221,4 +221,15 @@ impl Lexer {
 
         Ok(self.output.clone())
     }
+}
+
+fn apply_ansi_codes(input: &str) -> String {
+    input
+        .replace("\\x1b", "\x1b")
+        .replace("\\n", "\n")
+        .replace("\\r", "\r")
+        .replace("\\t", "\t")
+        .replace("\\0", "\0")
+        .replace("\\\\", "\\")
+        .to_string()
 }

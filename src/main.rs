@@ -57,11 +57,11 @@ fn print_err(e: OrionError) {
 fn repl() {
     let mut interpreter = Interpreter::new(vec![]);
 
-    println!("; Welcome to Orion {}.\n
-; Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
-; This program comes with ABSOLUTELY NO WARRANTY.
-; This is free software, and you are welcome to redistribute it
-; under certain conditions.", env!("CARGO_PKG_VERSION"));
+    println!(";; Welcome to Orion {}.\n
+;; Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
+;; This program comes with ABSOLUTELY NO WARRANTY.
+;; This is free software, and you are welcome to redistribute it
+;; under certain conditions.", env!("CARGO_PKG_VERSION"));
 
     let mut rl = Editor::<()>::new();
 
