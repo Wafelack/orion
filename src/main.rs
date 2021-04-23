@@ -25,6 +25,7 @@ mod parser;
 mod lambda;
 mod patterns;
 mod constructors;
+mod builtins;
 
 use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};

@@ -76,6 +76,7 @@ pub struct Lexer {
     line: usize,
     start: usize,
     column: usize,
+    builtins: Vec<String>
 }
 
 impl Lexer {
@@ -87,6 +88,7 @@ impl Lexer {
             column: 0,
             line: 1,
             start: 0,
+            builtins: vec![],
         }
     }
     fn is_at_end(&self) -> bool {
@@ -154,6 +156,9 @@ impl Lexer {
 
         Ok(())
     }
+    fn register_builtin(&mut self, builtin: impl ToString) {
+        self.builtins.push(builtin.to_string());
+    }
     fn number(&mut self) {
         while !self.is_at_end() && self.peek().is_digit(10) {
             self.advance();
@@ -183,28 +188,36 @@ impl Lexer {
 
         let raw = self.input[self.start..self.current].to_string();
 
-        match raw.as_str() {
-            "def" => self.add_token(TType::Def),
-            "enum" => self.add_token(TType::Enum),
-            "lambda" => self.add_token(TType::Lambda),
-            "," => self.add_token(TType::Tuple),
-            "match" => self.add_token(TType::Match),
-            "load" => self.add_token(TType::Load),
-            "panic" => self.add_token(TType::Panic),
-            "begin" => self.add_token(TType::Begin),
+        if self.builtins.contains(&raw) {
+            self.add_token(TType::Builtin(raw));
+        } else {
+            match raw.as_str() {
+                "def" => self.add_token(TType::Def),
+                "enum" => self.add_token(TType::Enum),
+                "lambda" => self.add_token(TType::Lambda),
+                "," => self.add_token(TType::Tuple),
+                "match" => self.add_token(TType::Match),
+                "load" => self.add_token(TType::Load),
+                "panic" => self.add_token(TType::Panic),
+                "begin" => self.add_token(TType::Begin),
 
-            "format" => self.add_token(TType::Builtin("format".to_string())),
-            "display" => self.add_token(TType::Builtin("display".to_string())),
-            "+" => self.add_token(TType::Builtin("+".to_string())),
-            "-" => self.add_token(TType::Builtin("-".to_string())),
-            "!" => self.add_token(TType::Builtin("!".to_string())),
-            "/" => self.add_token(TType::Builtin("/".to_string())),
-            "*" => self.add_token(TType::Builtin("*".to_string())),
-            "_cmp" => self.add_token(TType::Builtin("_cmp".to_string())),
-            _ => self.add_token(TType::Ident(raw)),
+                _ => self.add_token(TType::Ident(raw)),
+            }
+
         }
+
     }
     pub fn proc_tokens(&mut self) -> Result<Vec<Token>> {
+
+        self.register_builtin("format");
+        self.register_builtin("display");
+        self.register_builtin("+");
+        self.register_builtin("-");
+        self.register_builtin("!");
+        self.register_builtin("/");
+        self.register_builtin("*");
+        self.register_builtin("_cmp");
+
         while !self.is_at_end() {
             self.proc_token()?;
             self.start = self.current;
@@ -231,7 +244,7 @@ mod test {
 
     #[test]
     fn lexing() -> Result<()> {
-        let mut lexer = Lexer::new("()\"Foo Bar\"TrueFalse 4 9.1 lambda λ def");
+        let mut lexer = Lexer::new("()\"Foo Bar\"TrueFalse 4 9.1 lambda λ def format '");
         let tokens = lexer.proc_tokens()?;
 
         assert_eq!(
@@ -246,6 +259,8 @@ mod test {
             Token::new(TType::Lambda, 33, 1),
             Token::new(TType::Lambda, 40, 1),
             Token::new(TType::Def, 44, 1),
+            Token::new(TType::Builtin("format".to_string()), 48, 1),
+            Token::new(TType::Quote, 55, 1)
             ]
             );
 
