@@ -145,6 +145,8 @@ impl Interpreter {
         self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
         self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
         self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
+        self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
+        self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
             
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
