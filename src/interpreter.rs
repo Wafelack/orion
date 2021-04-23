@@ -22,7 +22,7 @@ use crate::{
     parser::{Expr, Literal, Parser, Pattern},
     OrionError, Result,
 };
-use std::{fs::{OpenOptions}, io::{Write}, cmp::Ordering, collections::HashMap, env, fs, path::Path};
+use std::{fs::OpenOptions, io::Write, cmp::Ordering, collections::HashMap, env, fs, path::Path};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -38,9 +38,10 @@ pub enum Value {
 
 pub struct Interpreter {
     input: Vec<Expr>,
-    scopes: Vec<HashMap<String, Value>>,
-    name_idx: HashMap<String, (usize, String)>,
-    variants: Vec<u8>,
+    pub scopes: Vec<HashMap<String, Value>>,
+    pub name_idx: HashMap<String, (usize, String)>,
+    pub variants: Vec<u8>,
+    builtins: HashMap<String, fn(&mut Interpreter, Vec<Expr>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>>,
 }
 
 impl Interpreter {
@@ -50,9 +51,13 @@ impl Interpreter {
             scopes: vec![HashMap::new()],
             name_idx: HashMap::new(),
             variants: vec![],
+            builtins: HashMap::new(),
         }
     }
-    fn get_val_type(&self, val: &Value) -> String {
+    fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Expr>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>) {
+        self.builtins.insert(builtin.to_string(), callback);
+    }
+    pub fn get_val_type(&self, val: &Value) -> String {
         match val {
             Value::Quote(_) => "Quote".to_string(),
             Value::Integer(_) => "Integer".to_string(),
@@ -82,13 +87,13 @@ impl Interpreter {
             }
         }
     }
-    fn get_lit_val(&self, val: &Value) -> String {
+    pub fn get_lit_val(&self, val: &Value) -> String {
         match val {
             Value::Integer(i) => format!("{}", i),
             Value::Quote(expr) => format!("'{:?}", expr),
             Value::Single(f) => format!("{}", f),
             Value::String(s) => format!("{}", s),
-            Value::Lambda(_, x, _) => format!("λ{}", x),
+            Value::Lambda(_, x, _) => format!("<#lambda {}>", x),
             Value::Unit => "()".to_string(),
             Value::Tuple(vals) => format!(
                 "({})",
@@ -133,7 +138,7 @@ impl Interpreter {
     pub fn update_ast(&mut self, ast: Vec<Expr>) {
         self.input = ast;
     }
-    fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
+    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
                 return Ok(self.eval_expr(expr, None)?);
@@ -144,8 +149,15 @@ impl Interpreter {
 
         Ok(Value::Unit) // Should not be called
     }
-    fn eval_def(&mut self, name: &String, value: &Expr) -> Result<Value> {
-        let valued = self.eval_expr(value, None)?;
+    pub fn eval_builtin(&mut self, name: String, args: Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if self.builtins.contains_key(&name) {
+            self.builtins[&name](&mut self, args, custom_scope)
+        } else {
+            error!("Builtin {} is not registered !", name)
+        }
+    }
+    pub fn eval_def(&mut self, name: &String, value: &Expr, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        let valued = self.eval_expr(value, custom_scope)?;
 
         if self.scopes.last().unwrap().contains_key(name) {
             error!("Literal is already in scope: {}.", name)
@@ -157,7 +169,7 @@ impl Interpreter {
             Ok(Value::Unit)
         }
     }
-    fn eval_literal(&mut self, literal: &Literal) -> Result<Value> {
+    pub fn eval_literal(&mut self, literal: &Literal) -> Result<Value> {
         match literal {
             Literal::Integer(i) => Ok(Value::Integer(*i)),
             Literal::Single(f) => Ok(Value::Single(*f)),
@@ -165,108 +177,7 @@ impl Interpreter {
             Literal::Unit => Ok(Value::Unit),
         }
     }
-    fn eval_lambda(
-        &mut self,
-        arg: &String,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        body: &Box<Expr>,
-        ) -> Result<Value> {
-        Ok(Value::Lambda(
-                custom_scope.unwrap_or(&self.scopes).clone(),
-                arg.to_string(),
-                (**body).clone(),
-                ))
-    }
-    fn eval_call(
-        &mut self,
-        function: &Box<Expr>,
-        argument: &Box<Expr>,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        ) -> Result<Value> {
-        let arg = self.eval_expr(&**argument, custom_scope)?;
-
-        let func = self.eval_expr(&**function, custom_scope)?;
-
-        if let Value::Lambda(scopes, argument, body) = func.clone() {
-            let mut new_scopes = scopes;
-            new_scopes.push(HashMap::new());
-
-            new_scopes.last_mut().unwrap().insert(argument, arg);
-
-            if let Expr::Var(name) = &**function {
-                new_scopes.last_mut().unwrap().insert(name.to_string(), func);
-            }
-
-            self.eval_expr(&body, Some(&new_scopes))
-        } else {
-            error!(
-                "Attempted to use an expression of type {} as a Function.",
-                match func {
-                    Value::Integer(_) => "Integer",
-                    Value::String(_) => "String",
-                    Value::Unit => "Unit",
-                    Value::Single(_) => "Single",
-                    Value::Constr(idx, _) => self
-                        .name_idx
-                        .iter()
-                        .find_map(|(k, v)| if (*v).0 == idx { Some(k) } else { None })
-                        .unwrap()
-                        .as_str(),
-                    _ => bug!("PREVIOUSLY_MATCHED_EXPRESSION_TRIGGERED_MATCH_ARM"),
-                }
-                )
-        }
-    }
-    fn eval_enum(&mut self, name: &String, variants: &HashMap<String, u8>) -> Result<Value> {
-        for (variant, containing) in variants {
-            if self.name_idx.contains_key(variant) {
-                return error!(
-                    "Attempted to redefine an existing enum variant: {}.",
-                    variant
-                    );
-            }
-
-            let length = self.variants.len();
-            self.name_idx
-                .insert(variant.to_string(), (length, name.to_string()));
-            self.variants.push(*containing);
-        }
-
-        Ok(Value::Unit)
-    }
-    fn eval_constructor(&mut self, name: &String, args: &Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        if !self.name_idx.contains_key(name) {
-            error!("Attempted to use an undefined enum variant: {}.", name)
-        } else {
-            let idx = self.name_idx[name].0;
-
-            if args.len() as u8 != self.variants[idx] {
-                error!(
-                    "This enum variant takes {} values but {} were supplied.",
-                    self.variants[idx],
-                    args.len()
-                    )
-            } else {
-                let mut values = vec![];
-
-                for arg in args {
-                    values.push(self.eval_expr(arg, custom_scope)?);
-                }
-
-                Ok(Value::Constr(idx, values))
-            }
-        }
-    }
-    fn eval_tuple(&mut self, content: &Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        let mut vals = vec![];
-
-        for field in content {
-            vals.push(self.eval_expr(field, custom_scope)?);
-        }
-
-        Ok(Value::Tuple(vals))
-    }
-    fn eval_var(
+    pub fn eval_var(
         &mut self,
         var: &String,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
@@ -290,180 +201,7 @@ impl Interpreter {
 
         error!("Literal not in scope: {}.", var)
     }
-    fn match_and_bound(
-        &mut self,
-        patternized: &Pattern,
-        pattern: &Pattern,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        ) -> Option<HashMap<String, Value>> {
-        let mut to_ret = HashMap::new();
-
-        let val = match self.unpatternize(patternized, custom_scope) {
-            Ok(v) => v,
-            _ => bug!("UNEXPECTED_ERROR"),
-        };
-
-        match pattern {
-            Pattern::Var(v) => match self.eval_var(v, custom_scope) {
-                Ok(v) => {
-                    if v == val {
-                        Some(to_ret)
-                    } else {
-                        None
-                    }
-                }
-                _ => {
-                    to_ret.insert(v.to_string(), val);
-                    Some(to_ret)
-                }
-            },
-            Pattern::Tuple(patterns) => {
-                if let Pattern::Tuple(vpat) = patternized {
-                    if vpat.len() == patterns.len() {
-                        for i in 0..vpat.len() {
-                            match self.match_and_bound(&vpat[i], &patterns[i], custom_scope) {
-                                Some(sc) => to_ret.extend(sc),
-                                None => return None,
-                            }
-                        }
-                        return Some(to_ret);
-                    }
-                }
-                return None;
-            }
-            Pattern::Constr(name, patterns) => {
-                if let Pattern::Constr(vname, vpat) = patternized {
-                    if vname == name {
-                        if vpat.len() == patterns.len() {
-                            for i in 0..vpat.len() {
-                                match self.match_and_bound(&vpat[i], &patterns[i], custom_scope) {
-                                    Some(sc) => to_ret.extend(sc),
-                                    None => return None,
-                                }
-                            }
-                            return Some(to_ret);
-                        } 
-                    
-                    }
-                }
-                return None;
-            }
-            _ => match self.unpatternize(&pattern, custom_scope) {
-                Ok(v) => {
-                    if v == val {
-                        Some(to_ret)
-                    } else {
-                        None
-                    }
-                }
-                _ => bug!("UNEXPECTED_ERROR"),
-            },
-        }
-    }
-    fn eval_match(
-        &mut self,
-        to_match: &Expr,
-        couples: &Vec<(Pattern, Expr)>,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        ) -> Result<Value> {
-        let to_match = self.eval_expr(to_match, custom_scope)?;
-
-        let patternized = self.patternize(&to_match)?;
-
-        for (pat, expr) in couples {
-            match self.match_and_bound(&patternized, &pat, custom_scope) {
-                Some(scopes) => {
-                    let mut new = match custom_scope {
-                        Some(s) => (*s).clone(),
-                        None => self.scopes.clone(),
-                    };
-                    new.push(scopes);
-                    return self.eval_expr(expr, Some(&new));
-                }
-                None => continue,
-            }
-        }
-
-        error!("No pattern can be matched.")
-    }
-    fn unpatternize(
-        &mut self,
-        pat: &Pattern,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
-        ) -> Result<Value> {
-        Ok(match pat {
-            Pattern::Literal(lit) => match lit {
-                Literal::Integer(i) => Value::Integer(*i),
-                Literal::Single(f) => Value::Single(*f),
-                Literal::String(s) => Value::String(s.to_string()),
-                Literal::Unit => Value::Unit,
-            },
-            Pattern::Var(v) => self.eval_var(&v, custom_scope)?,
-            Pattern::Tuple(vals) => {
-                let mut valued = vec![];
-
-                for val in vals {
-                    valued.push(self.unpatternize(val, custom_scope)?);
-                }
-                Value::Tuple(valued)
-            }
-            Pattern::Constr(variant, params) => {
-                if !self.name_idx.contains_key(variant) {
-                    return error!("Attempted to use an undefined enum variant: {}.", &variant);
-                }
-
-                let idx = *&self.name_idx[variant].0;
-
-                let mut fields = vec![];
-                for param in params {
-                    fields.push(self.unpatternize(param, custom_scope)?);
-                }
-
-                Value::Constr(idx, fields)
-            }
-        })
-    }
-    fn patternize(&mut self, val: &Value) -> Result<Pattern> {
-        Ok(match val {
-            Value::Integer(i) => Pattern::Literal(Literal::Integer(*i)),
-            Value::Single(f) => Pattern::Literal(Literal::Single(*f)),
-            Value::String(s) => Pattern::Literal(Literal::String(s.to_string())),
-            Value::Unit => Pattern::Literal(Literal::Unit),
-            Value::Tuple(vals) => {
-                let mut patterned = vec![];
-
-                for val in vals {
-                    patterned.push(self.patternize(val)?);
-                }
-
-                Pattern::Tuple(patterned)
-            }
-            Value::Constr(idx, params) => {
-                let named = self
-                    .name_idx
-                    .iter()
-                    .find_map(|(k, (val, _))| {
-                        if *val == *idx {
-                            Some(k.to_string())
-                        } else {
-                            None
-                        }
-                    })
-                .unwrap();
-                let mut patterned = vec![];
-
-                for param in params {
-                    patterned.push(self.patternize(param)?);
-                }
-
-                Pattern::Constr(named, patterned)
-            }
-            x => {
-                return error!("Expected Constructor, Tuple or Literal, found {}.", self.get_val_type(x));
-            }
-        })
-    }
-    fn eval_load(&mut self, params: &Vec<String>) -> Result<Value> {
+    pub fn eval_load(&mut self, params: &Vec<String>) -> Result<Value> {
         let lib_link = match env::var("ORION_LIB") {
             Ok(v) => v,
             _ => if cfg!(windows) {
@@ -499,14 +237,14 @@ impl Interpreter {
         Ok(Value::Unit)
     }
 
-    fn eval_expr(
+    pub fn eval_expr(
         &mut self,
         expr: &Expr,
         custom_scope: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
         match expr {
             Expr::Quote(expr) => Ok(Value::Quote((**expr).clone())),
-            Expr::Def(name, value) => self.eval_def(name, value),
+            Expr::Def(name, value) => self.eval_def(name, value, custom_scope),
             Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
             Expr::Literal(literal) => self.eval_literal(literal),
             Expr::Call(function, argument) => self.eval_call(function, argument, custom_scope),
@@ -527,213 +265,7 @@ impl Interpreter {
                 eprintln!("{}{}", prefix, self.get_lit_val(&valued));
                 std::process::exit(1);
             }
-            Expr::Display(to_display, of) => {
-                let to_display = self.eval_expr(&**to_display, custom_scope)?;
-                let of = self.eval_expr(&**of, custom_scope)?;
-
-                let of = if let Value::String(of) = of {
-                    of
-                } else {
-                    return error!("Expected an argument of type String, found one of type {}.", self.get_val_type(&of));
-                };
-
-                let mut output = match OpenOptions::new().append(true).open(of) {
-                    Ok(f) => f,
-                    Err(e) => return error!("Failed to open file for writing: {}", e),
-                };
-
-                match output.write_all(self.get_lit_val(&to_display).as_bytes()) {
-                    Ok(_) => {},
-                    Err(e) => return error!("Failed to write output file: {}", e),
-                }
-
-                Ok(Value::Unit)
-            }
-            Expr::Format(expressions) => {
-                let mut to_ret = format!("");
-
-                for expr in expressions {
-                    let evaluated = self.eval_expr(&expr, custom_scope)?;
-                    to_ret.push_str(&self.get_lit_val(&evaluated));
-                }
-
-                Ok(Value::String(to_ret))
-            }
-            Expr::Sub(lh, rh) => {
-                let lhs = self.eval_expr(&**lh, custom_scope)?;
-                let rhs = self.eval_expr(&**rh, custom_scope)?;
-
-                match lhs {
-                    Value::Integer(lh) => match rhs {
-                        Value::Integer(rh) => Ok(Value::Integer(lh - rh)),
-                        _ => error!(
-                            "Attempted to substract {} from {}.",
-                            self.get_val_type(&rhs),
-                            self.get_val_type(&lhs),
-                            ),
-                    },
-                    Value::Single(lh) => match rhs {
-                        Value::Single(rh) => Ok(Value::Single(lh - rh)),
-                        _ => error!(
-                            "Attempted to substract {} from {}.",
-                            self.get_val_type(&rhs),
-                            self.get_val_type(&lhs),
-                            ),
-                    },
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&lhs)
-                        ),
-                }
-
-            }
-            Expr::Add(lh, rh) => {
-                let lhs = self.eval_expr(&**lh, custom_scope)?;
-                let rhs = self.eval_expr(&**rh, custom_scope)?;
-
-                match lhs {
-                    Value::Integer(lh) => match rhs {
-                        Value::Integer(rh) => Ok(Value::Integer(lh + rh)),
-                        _ => error!(
-                            "Attempted to add {} to {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    Value::Single(lh) => match rhs {
-                        Value::Single(rh) => Ok(Value::Single(lh + rh)),
-                        _ => error!(
-                            "Attempted to add {} to {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&lhs)
-                        ),
-                }
-            }
-            Expr::Mul(lh, rh) => {
-                let lhs = self.eval_expr(&**lh, custom_scope)?;
-                let rhs = self.eval_expr(&**rh, custom_scope)?;
-
-                match lhs {
-                    Value::Integer(lh) => match rhs {
-                        Value::Integer(rh) => {
-                            Ok(Value::Integer(lh * rh))
-                        }
-                        _ => error!(
-                            "Attempted to multiply {} by {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    Value::Single(lh) => match rhs {
-                        Value::Single(rh) => {
-                            Ok(Value::Single(lh * rh))
-                        }
-                        _ => error!(
-                            "Attempted to multiply {} by {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&lhs)
-                        ),
-                }
-            }
-
-            Expr::Div(lh, rh) => {
-                let lhs = self.eval_expr(&**lh, custom_scope)?;
-                let rhs = self.eval_expr(&**rh, custom_scope)?;
-
-                match lhs {
-                    Value::Integer(lh) => match rhs {
-                        Value::Integer(rh) => {
-                            if rh == 0 {
-                                Ok(Value::Single(std::f32::INFINITY))
-                            } else {
-                                Ok(Value::Integer(lh / rh))
-                            }
-                        }
-                        _ => error!(
-                            "Attempted to divide {} by {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    Value::Single(lh) => match rhs {
-                        Value::Single(rh) => {
-                            if rh == 0. {
-                                Ok(Value::Single(std::f32::INFINITY))
-                            } else {
-                                Ok(Value::Single(lh / rh))
-                            }
-                        }
-                        _ => error!(
-                            "Attempted to divide {} by {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&lhs)
-                        ),
-                }
-            }
-            Expr::Opp(val) => {
-                let val = self.eval_expr(val, custom_scope)?;
-
-                match val {
-                    Value::Integer(i) => Ok(Value::Integer(0 - i)),
-                    Value::Single(r) => Ok(Value::Single(0. - r)),
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&val)
-                        ),
-                }
-            }
-            Expr::Cmp(lh, rh) => {
-                let lhs = self.eval_expr(&**lh, custom_scope)?;
-                let rhs = self.eval_expr(&**rh, custom_scope)?;
-
-                match lhs {
-                    Value::Integer(lh) => match rhs {
-                        Value::Integer(rh) => Ok(Value::Integer(match lh.cmp(&rh) {
-                            Ordering::Less => 0,
-                            Ordering::Equal => 1,
-                            Ordering::Greater => 2,
-                        })),
-                        _ => error!(
-                            "Attempted to compare {} with {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    Value::Single(lh) => match rhs {
-                        Value::Single(rh) => {
-                            Ok(Value::Integer(match lh.partial_cmp(&rh).unwrap() {
-                                Ordering::Less => 0,
-                                Ordering::Equal => 1,
-                                Ordering::Greater => 2,
-                            }))
-                        }
-                        _ => error!(
-                            "Attempted to compare {} with {}.",
-                            self.get_val_type(&lhs),
-                            self.get_val_type(&rhs)
-                            ),
-                    },
-                    _ => error!(
-                        "Expected Single or Integer, found {}.",
-                        self.get_val_type(&lhs)
-                        ),
-                }
-            }
+            Expr::Builtin(builtin, args) => self.eval_builtin(builtin.to_string(), args.clone(), custom_scope)
         }
     }
 }

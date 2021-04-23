@@ -22,7 +22,9 @@ mod errors;
 mod interpreter;
 mod lexer;
 mod parser;
-mod tests;
+mod lambda;
+mod patterns;
+mod constructors;
 
 use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
@@ -114,7 +116,7 @@ fn repl() {
                 }
             }
             Err(ReadlineError::Interrupted) => {
-                println!("; User break");
+                println!(";; User break");
             }
             Err(ReadlineError::Eof) => return,
             Err(_) => {
