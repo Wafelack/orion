@@ -110,6 +110,6 @@ Evaluate a condition and do something if it is true, and something different if 
 #### Arguments
 
 * `cond :: Bool`    : The condition to evaluate
-* `if_expr :: Quote`: The quote to evaluate if `cond` is `True`.
+* `then :: Quote`   : The quote to evaluate if `cond` is `True`.
 * `else :: Quote`   : The quote to evaluate if `cond` is `False`.
 

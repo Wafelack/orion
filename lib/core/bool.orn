@@ -55,7 +55,7 @@
 		(True ())
 		(False (panic (format "Assertion failed: `" lhs " /= " rhs "`."))))))
 
-(def if (λ (cond if_expr else_expr)
+(def if (λ (cond then else)
 	(match cond
-		(True if_expr)
-		(False else_expr))))
+		(True (unquote then))
+		(False (unquote else)))))
