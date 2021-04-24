@@ -46,3 +46,10 @@
   (match start
          (end Nil)
          (_ (Cons start (range (+ start 1) end))))))
+
+(def _length (λ (list acc)
+               (match (cdn list)
+                      (Nothing acc)
+                      ((Just x) (_length x (+ acc 1))))))
+(def length (λ (list)
+              (_length list 0)))
