@@ -1,5 +1,5 @@
-Core Library Documentation
-==========================
+Bool
+====
 
 Enumerations
 ------------
@@ -40,7 +40,7 @@ Functions
 
 `(=) :: Value -> Value -> Bool`
 
-Test equality between two values
+Test structural equality between two values
 
 #### Arguments
 

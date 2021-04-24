@@ -20,31 +20,27 @@
 
 (load "core/bool.orn")
 (enum Ordering
-	Less
-	Equal
-	Greater)
+      Less
+      Equal
+      Greater)
 
 (def cmp (lambda (lhs rhs)
-	(match (_cmp lhs rhs)
-		(0 Less)
-		(1 Equal)
-		(2 Greater))))
+                 (match (_cmp lhs rhs)
+                        (0 Less)
+                        (1 Equal)
+                        (2 Greater))))
 
 (def < (lambda (lhs rhs)
-	(match (cmp lhs rhs)
-		(Less True)
-		(_ False))))
+               (= (cmp lhs rhs) Less)))
 
 (def > (lambda (lhs rhs)
-	(match (cmp lhs rhs)
-		(Greater True)
-		(_ False))))
+               (= (cmp lhs rhs) Greater)))
 
 (def >= (lambda (lhs rhs)
-	(or (> lhs rhs) (= lhs rhs))))
+                (or (> lhs rhs) (= lhs rhs))))
 
 (def <= (lambda (lhs rhs)
-	(or (< lhs rhs) (= lhs rhs))))
+                (or (< lhs rhs) (= lhs rhs))))
 
 (def % (λ (lhs rhs)
          (- lhs (* rhs (/ lhs rhs)))))
