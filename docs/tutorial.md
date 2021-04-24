@@ -1,10 +1,10 @@
-The Orion Reference
-================
+Tutorial
+========
 
 This "book" goes through all the Orion concepts and stands as the main documentation of the language.
 
 Index
--------
+-----
 
 - [A basic function](#a-basic-function)
 - [Fundamentals](#fundamentals)
@@ -25,7 +25,7 @@ Index
 	- [Quotes](#quotes)
 
 A basic function
---------------
+----------------
 
 Here is one of the most basic functions, that will introduce you to the main concept of the language: recursion.
 
