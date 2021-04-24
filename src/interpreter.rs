@@ -230,17 +230,7 @@ impl Interpreter {
     pub fn eval_load(&mut self, params: &Vec<String>) -> Result<Value> {
         let lib_link = match env::var("ORION_LIB") {
             Ok(v) => v,
-            _ => if cfg!(windows) {
-                "C:/Program Files/Orion/lib".to_string()
-            } else {
-                let home = match env::var("HOME") {
-                    Ok(h) => h,
-                    Err(_) => return error!("Cannot find $HOME variable."),
-                };
-
-                format!("{}/.orion/lib/", home)
-            }
-            .to_string(),
+            Err(_) => return error!("ORION_LIB variable not found.")
         };
 
         for param in params {
