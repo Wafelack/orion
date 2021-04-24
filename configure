@@ -2,15 +2,44 @@
 set -euo pipefail
 
 DONE='\033[0;32mdone\033[0m'
+SHELL_PATH=""
+SHELL_VAR=""
+FILE=""
+DONE_2=""
+
+case $SHELL in
+	"/bin/bash"|"/usr/bin/bash")
+		SHELL_PATH="PATH=\$(PREFIX)/bin:\$PATH"
+		SHELL_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
+		FILE="${HOME}/.bash_profile"
+		DONE_2="$DONE"
+		;;
+	"/bin/zsh"|"/usr/bin/zsh")
+		SHELL_PATH="PATH=\$(PREFIX)/bin:\$PATH"
+		SHELl_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
+		FILE="${HOME}/.zshrc"
+		DONE_2="$DONE"
+		;;
+	"/bin/fish"|"/usr/bin/fish")
+		SHELL_PATH="set PATH \$(PREFIX)/bin \\\$\$PATH"
+		SHELL_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
+		FILE="${HOME}/.config/fish/config.fish"
+		DONE_2="$DONE"
+		;;
+	*)
+		SHELL_PATH="\033[0;31mfailed\033[0m\nCannot automatically detect your shell.\nPlease add \$(PREFIX) to your PATH and set the ORION_LIB variable to \$(PREFIX)/\$(LIB)."
+		FILE="/dev/stdout"
+		;;
+esac
+
 
 echo -n "* Generating Makefile ... "
 cat > Makefile << EOF
 FILES := \$(shell find src/ -name *.rs)
 
-PREFIX := ${HOME}/.orion/
+PREFIX ?= ${HOME}/.orion
 TARGET := target/release/orion
 LIB    := lib/
-LINK   := /usr/local/bin/orion
 
 \$(TARGET) : \$(FILES)
 	cargo test
@@ -21,21 +50,27 @@ install : \$(TARGET) \$(LIB)
 	@mkdir -p \$(PREFIX)
 	@echo -e "$DONE"
 	@echo -n "* Copying Orion binary ... "
-	@cp \$(TARGET) \$(PREFIX)
+	@mkdir -p \$(PREFIX)/bin/
+	@cp \$(TARGET) \$(PREFIX)/bin/
 	@echo -e "$DONE"
 	@echo -n "* Copying Orion core and standard libraries ... "
-	@cp -r \$(LIB) \$(PREFIX)
+	@mkdir -p \$(PREFIX)/lib/
+	@cp -r \$(LIB) \$(PREFIX)/lib/orion/
 	@echo -e "$DONE"
-	@echo "Orion has been installed to \$(PREFIX). Please add this location in your PATH variable."
+	@echo -n "* Adding Orion to PATH ... "
+	@echo -e ${SHELL_PATH} >> ${FILE}
+	@echo -e "${DONE_2}"
+	@echo -n "* Setting ORION_LIB ... "
+	@echo -e ${SHELL_VAR} >> ${FILE}
+	@echo -e "${DONE_2}"
 
-link : install
-	@echo -n "* Linking \$(LINK) to \$(PREFIX)/orion ..."
-	@ln -s \$(PREFIX)/orion \$(LINK)
-	@echo -e "$DONE"
-	
 uninstall : \$(PREFIX)
-	@echo -n "* Removing Orion directory ... "
-	@rm -fr \$(PREFIX)
+	@echo -n "* Removing Orion binary ... "
+	@rm \$(PREFIX)/bin/orion
 	@echo -e "$DONE"
+	@echo -n "* Removing Orion library ... "
+	@rm -fr \$(PREFIX)/lib/orion/
+	@echo -e "$DONE"
+
 EOF
 echo -e $DONE
