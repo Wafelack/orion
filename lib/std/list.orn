@@ -37,3 +37,8 @@
                    ((Cons x Nil) (Just x))
                    ((Cons _ next) (head next))
                    (Nil Nothing))))
+
+(def range (lambda (start end)
+  (match start
+    (end Nil)
+    (_ (Cons start (range (+ start 1) end))))))
