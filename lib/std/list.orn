@@ -28,17 +28,21 @@
               (Cons element list)))
 
 (def fill (λ (n x)
-           (match x
-                  (0 (Cons n Nil))
-                  (_ (Cons n (- x 1))))))
+            (match x
+                   (0 (Cons n Nil))
+                   (_ (Cons n (- x 1))))))
 
-(def head (λ (list)
+(def car (λ (list)
             (match list
                    ((Cons x Nil) (Just x))
-                   ((Cons _ next) (head next))
+                   ((Cons x _) (Just x))
                    (Nil Nothing))))
+(def cdn (λ (list)
+           (match list
+                  ((Cons x next) (Just next))
+                  (Nil Nothing))))
 
-(def range (lambda (start end)
+(def range (λ (start end)
   (match start
-    (end Nil)
-    (_ (Cons start (range (+ start 1) end))))))
+         (end Nil)
+         (_ (Cons start (range (+ start 1) end))))))
