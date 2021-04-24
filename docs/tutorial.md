@@ -143,7 +143,7 @@ Example:
 ```clojure
 (def a 9)
 (match a
-	(9 (printf "It is nine !"))) ;; Matched because a == 9
+	(9 (putStrLn "It is nine !"))) ;; Matched because a == 9
 ```
 
 If you run this code, you should see `It is nine !` appear on screen.
@@ -153,7 +153,7 @@ Example:
 ```clojure
 (def a 9)
 (match a
-	(b (printf "A is " b))) ;; b does not exist in scope
+	(b (putStrLn (format "A is #v" b)))) ;; b does not exist in scope
 				;; Therefore it matches any value
 				;; It is created in the expression scope and its value
 				;; is bound to a.
@@ -181,9 +181,9 @@ Example:
 (def some_tuple (, 5 6 7))
 
 (match some_tuple
-	((, 5 x 7) (printf x " is between 5 and 7 in this tuple !")) ;; Matched because the
+	((, 5 x 7) (putStrLn (format "#v is between 5 and 7 in this tuple !" x))) ;; Matched because the
 								     ;; x matches any value.
-	((, 5 x y) (printf "A 5 followed by " x " and " y))) ;; Does not match because the previous pattern was matched
+	((, 5 x y) (putStrLn (format "A 5 followed by #v and #v." x y)))) ;; Does not match because the previous pattern was matched
 							     ;; But if it was first, it would be matched, because
 							     ;; x and y match any value.
 ```
@@ -223,7 +223,7 @@ In Orion, Quotes are used to delay evaluation to variable call. To create a quot
 Be careful, quoted expressions will only be evaluated if they are contained in a variable that is called.
 Example:
 ```clojure
-(def print_statement '(printf "Hello, World !"))
+(def print_statement '(putStrLn "Hello, World !"))
 print_statement ;; `Hello, World !` will only be displayed now, because the expression hasn't been evaluated before.
 ```
 
