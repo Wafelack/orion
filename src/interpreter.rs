@@ -42,7 +42,7 @@ pub struct Interpreter {
     pub scopes: Vec<HashMap<String, Value>>,
     pub name_idx: HashMap<String, (usize, String)>,
     pub variants: Vec<u8>,
-    builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>) -> Result<Value>, ArgsLength)>,
+    builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>,Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, ArgsLength)>,
 }
 
 impl Interpreter {
@@ -55,7 +55,7 @@ impl Interpreter {
             builtins: HashMap::new(),
         }
     }
-    fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Value>) -> Result<Value>, length: ArgsLength) {
+    fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Value>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, length: ArgsLength) {
         self.builtins.insert(builtin.to_string(), (callback, length));
     }
     pub fn get_val_type(&self, val: &Value) -> String {
@@ -126,20 +126,6 @@ impl Interpreter {
         }
     }
     pub fn interpret(&mut self, repl: bool) -> Result<Value> {
-        let toret = self.eval_expressions(&(self.input.clone()))?;
-        if repl {
-            let to_p = self.get_lit_val(&toret);
-
-            if to_p.as_str() != "()" {
-                println!("{}", to_p)
-            }
-        }
-        Ok(toret)
-    }
-    pub fn update_ast(&mut self, ast: Vec<Expr>) {
-        self.input = ast;
-    }
-    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> {
 
         self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
         self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
@@ -156,6 +142,22 @@ impl Interpreter {
 
         self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
 
+        self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
+
+        let toret = self.eval_expressions(&(self.input.clone()))?;
+        if repl {
+            let to_p = self.get_lit_val(&toret);
+
+            if to_p.as_str() != "()" {
+                println!("{}", to_p)
+            }
+        }
+        Ok(toret)
+    }
+    pub fn update_ast(&mut self, ast: Vec<Expr>) {
+        self.input = ast;
+    }
+    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> { 
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
                 return Ok(self.eval_expr(expr, None)?);
@@ -166,15 +168,15 @@ impl Interpreter {
 
         Ok(Value::Unit) // Should not be called
     }
-    pub fn eval_builtin(&mut self, name: String, args: Vec<Expr>, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+    pub fn eval_builtin(&mut self, name: String, args: Vec<Expr>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if self.builtins.contains_key(&name) {
             let length = &self.builtins[&name].1;
             if length.contains(args.len()) {
                 let mut argv = vec![];
                 for arg in args {
-                    argv.push(self.eval_expr(&arg, custom_scope)?);
+                    argv.push(self.eval_expr(&arg, ctx)?);
                 }
-                self.builtins[&name].0(self, argv)
+                self.builtins[&name].0(self, argv, ctx)
             } else {
                 error!("Builtin `{}` takes {} arguments, but {} arguments were supplied.", name, length.display(), args.len())
             }
@@ -182,8 +184,8 @@ impl Interpreter {
             error!("Builtin {} is not registered !", name)
         }
     }
-    pub fn eval_def(&mut self, name: &String, value: &Expr, custom_scope: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        let valued = self.eval_expr(value, custom_scope)?;
+    pub fn eval_def(&mut self, name: &String, value: &Expr, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        let valued = self.eval_expr(value, ctx)?;
 
         if self.scopes.last().unwrap().contains_key(name) {
             error!("Literal is already in scope: {}.", name)
@@ -206,9 +208,9 @@ impl Interpreter {
     pub fn eval_var(
         &mut self,
         var: &String,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+        ctx: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
-        let scopes = match custom_scope {
+        let scopes = match ctx {
             Some(s) => {
                 s
             },
@@ -217,11 +219,7 @@ impl Interpreter {
 
         for scope in scopes {
             if scope.contains_key(var) {
-                if let Value::Quote(expr) = scope[var].clone() {
-                    return self.eval_expr(&expr, custom_scope);
-                } else {
-                    return Ok(scope[var].clone());
-                }
+                return Ok(scope[var].clone());
             }
         }
 
@@ -259,14 +257,14 @@ impl Interpreter {
     pub fn eval_expr(
         &mut self,
         expr: &Expr,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+        ctx: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
         match expr {
             Expr::Quote(expr) => Ok(Value::Quote((**expr).clone())),
-            Expr::Def(name, value) => self.eval_def(name, value, custom_scope),
-            Expr::Match(to_match, couples) => self.eval_match(to_match, couples, custom_scope),
+            Expr::Def(name, value) => self.eval_def(name, value, ctx),
+            Expr::Match(to_match, couples) => self.eval_match(to_match, couples, ctx),
             Expr::Literal(literal) => self.eval_literal(literal),
-            Expr::Call(function, argument) => self.eval_call(function, argument, custom_scope),
+            Expr::Call(function, argument) => self.eval_call(function, argument, ctx),
             Expr::Load(params) => self.eval_load(params),
             Expr::Begin(exprs) => {
                 self.scopes.push(HashMap::new());
@@ -274,17 +272,17 @@ impl Interpreter {
                 self.scopes.pop();
                 toret
             }
-            Expr::Lambda(arg, body) => self.eval_lambda(arg, custom_scope, body),
+            Expr::Lambda(arg, body) => self.eval_lambda(arg, ctx, body),
             Expr::Enum(name, variants) => self.eval_enum(name, variants),
-            Expr::Constr(name, args) => self.eval_constructor(name, args, custom_scope),
-            Expr::Tuple(content) => self.eval_tuple(content, custom_scope),
-            Expr::Var(var) => self.eval_var(var, custom_scope),
+            Expr::Constr(name, args) => self.eval_constructor(name, args, ctx),
+            Expr::Tuple(content) => self.eval_tuple(content, ctx),
+            Expr::Var(var) => self.eval_var(var, ctx),
             Expr::Panic(prefix, content) => {
-                let valued = self.eval_expr(&**content, custom_scope)?;
+                let valued = self.eval_expr(&**content, ctx)?;
                 eprintln!("{}{}", prefix, self.get_lit_val(&valued));
                 std::process::exit(1);
             }
-            Expr::Builtin(builtin, args) => self.eval_builtin(builtin.to_string(), args.clone(), custom_scope)
+            Expr::Builtin(builtin, args) => self.eval_builtin(builtin.to_string(), args.clone(), ctx)
         }
     }
 }

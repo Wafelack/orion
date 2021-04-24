@@ -223,6 +223,8 @@ impl Lexer {
         self.register_builtin("*");
         self.register_builtin("_cmp");
 
+        self.register_builtin("unquote");
+
         while !self.is_at_end() {
             self.proc_token()?;
             self.start = self.current;

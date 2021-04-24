@@ -1,6 +1,7 @@
 pub mod arithmetic;
 pub mod io;
 pub mod string;
+pub mod misc;
 
 pub enum ArgsLength {
     OrMore(usize),

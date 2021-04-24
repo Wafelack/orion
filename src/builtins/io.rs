@@ -17,19 +17,19 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result};
-use std::{path::Path, fs::OpenOptions, io::{Write, self}};
+use std::{collections::HashMap, path::Path, fs::OpenOptions, io::{Write, self}};
 
 impl Interpreter {
-    pub fn put_str(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn put_str(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         print!("{}", self.get_lit_val(&args[0]));
         Ok(Value::Unit)
     }
-    pub fn put_str_ln(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn put_str_ln(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         println!("{}", self.get_lit_val(&args[0]));
         Ok(Value::Unit)
     }
 
-    pub fn get_line(&mut self, _: Vec<Value>) -> Result<Value> {
+    pub fn get_line(&mut self, _: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         let mut buffer = String::new();
         io::stdout().flush().unwrap();
         match io::stdin().read_line(&mut buffer) {
@@ -41,7 +41,7 @@ impl Interpreter {
 
     }
 
-    pub fn write(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn write(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         let file = if let Value::String(of) = &args[1] {
             of
         } else {

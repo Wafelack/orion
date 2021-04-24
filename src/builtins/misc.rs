@@ -20,28 +20,11 @@ use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result};
 use std::collections::HashMap;
 
 impl Interpreter {
-    pub fn format(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        let base_str = if let Value::String(s) = &args[0] {
-            s
+    pub fn unquote(&mut self, args: Vec<Value>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Quote(expr) = &args[0] {
+            self.eval_expr(&expr, ctx)
         } else {
-            return error!("Expected a String, found a {}.", self.get_val_type(&args[0]));
-        };
-
-        let formatter = "#v";
-
-        if base_str.matches(formatter).count() != args.len() - 1 {
-            return error!("Expected {} arguments, found {}.", base_str.matches(formatter).count() + 1, args.len());
+            error!("Expected a Quote, found a {}.", self.get_val_type(&args[0]))
         }
-
-        let mut toret = String::new();
-        let mut prev_pos = 0;
-        base_str.match_indices(formatter).enumerate().for_each(|(idx, (pos, _))| {
-            toret.push_str(&base_str[prev_pos..pos]);
-            toret.push_str(&self.get_lit_val(&args[idx + 1]));
-            prev_pos = pos + formatter.len();
-        });
-        toret.push_str(&base_str[prev_pos..]);
-        
-        Ok(Value::String(toret))
     }
 }

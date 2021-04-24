@@ -17,10 +17,10 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result};
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashMap};
 
 impl Interpreter {
-    pub fn add(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn add(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if let Value::Single(mut x0) = args[0] {
            for elem in args.into_iter().skip(1) {
                 if let Value::Single(x) = elem {
@@ -46,7 +46,7 @@ impl Interpreter {
         }
     }
 
-    pub fn sub(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn sub(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if let Value::Single(mut x0) = args[0] {
            for elem in args.into_iter().skip(1) {
                 if let Value::Single(x) = elem {
@@ -72,7 +72,7 @@ impl Interpreter {
         }
     }
 
-    pub fn mul(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn mul(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if let Value::Single(mut x0) = args[0] {
             for elem in args.into_iter().skip(1) {
                 if let Value::Single(x) = elem {
@@ -98,7 +98,7 @@ impl Interpreter {
         }
     }
 
-    pub fn div(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn div(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if let Value::Single(mut x0) = args[0] {
             for elem in args.into_iter().skip(1) {
                 if let Value::Single(x) = elem {
@@ -124,7 +124,7 @@ impl Interpreter {
         }
     }
 
-    pub fn opp(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn opp(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         if let Value::Integer(i) = args[0] {
             Ok(Value::Integer(-i))
         } else if let Value::Single(f) = args[0] {
@@ -134,7 +134,7 @@ impl Interpreter {
         }
     }
 
-    pub fn cmp(&mut self, args: Vec<Value>) -> Result<Value> {
+    pub fn cmp(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         let correspondance = vec![Ordering::Less, Ordering::Equal, Ordering::Greater];
 
         match &args[0] {
