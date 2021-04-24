@@ -45,3 +45,6 @@
 
 (def <= (lambda (lhs rhs)
 	(or (< lhs rhs) (= lhs rhs))))
+
+(def % (λ (lhs rhs)
+         (- lhs (* rhs (/ lhs rhs)))))
