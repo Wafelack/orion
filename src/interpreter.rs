@@ -145,9 +145,10 @@ impl Interpreter {
         self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
         self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
         self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
+        self.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
+        self.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
 
-        // Not that pure, but before trashtalking me, learn about how it is impossible to do
-        // something with a perfectly purely functional language
+        // Impure zone
         self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
         self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
         self.register_builtin("write", Self::write, ArgsLength::Fixed(2));

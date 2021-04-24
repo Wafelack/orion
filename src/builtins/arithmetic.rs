@@ -17,6 +17,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result};
+use std::cmp::Ordering;
 
 impl Interpreter {
     pub fn add(&mut self, args: Vec<Value>) -> Result<Value> {
@@ -122,4 +123,49 @@ impl Interpreter {
             error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
         }
     }
+
+    pub fn opp(&mut self, args: Vec<Value>) -> Result<Value> {
+        if let Value::Integer(i) = args[0] {
+            Ok(Value::Integer(-i))
+        } else if let Value::Single(f) = args[0] {
+            Ok(Value::Single(-f))
+        } else {
+            error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+
+    pub fn cmp(&mut self, args: Vec<Value>) -> Result<Value> {
+        let correspondance = vec![Ordering::Less, Ordering::Equal, Ordering::Greater];
+
+        match &args[0] {
+            Value::Single(lhs) => match args[1] {
+                Value::Single(rhs) => {
+                    let res = lhs.partial_cmp(&rhs).unwrap();
+
+                    Ok(Value::Integer(correspondance.into_iter().position(|x| x == res).unwrap() as i32))
+                }
+                _ => error!("Expected a Single, found a {}.", self.get_val_type(&args[1])),
+            }
+
+            Value::Integer(lhs) => match args[1] {
+                Value::Integer(rhs) => {
+                    let res = lhs.cmp(&rhs);
+
+                    Ok(Value::Integer(correspondance.into_iter().position(|x| x == res).unwrap() as i32))
+                }
+                _ => error!("Expected an Integer, found a {}.", self.get_val_type(&args[1])),
+            }
+            Value::String(lhs) => match &args[1] {
+                Value::String(rhs) => {
+                    let res = lhs.cmp(&rhs);
+
+                    Ok(Value::Integer(correspondance.into_iter().position(|x| x == res).unwrap() as i32))
+                }
+                _ => error!("Expected a String, found a {}.", self.get_val_type(&args[1])),
+            }
+            _ => error!("Expected a Single, a String or an Integer, found a {}.", self.get_val_type(&args[0])),
+
+        }
+    }
+
 }
