@@ -10,6 +10,7 @@ FILES := \$(shell find src/ -name *.rs)
 PREFIX := ${HOME}/.orion/
 TARGET := target/release/orion
 LIB    := lib/
+LINK   := /usr/local/bin/orion
 
 \$(TARGET) : \$(FILES)
 	cargo test
@@ -27,6 +28,11 @@ install : \$(TARGET) \$(LIB)
 	@echo -e "$DONE"
 	@echo "Orion has been installed to \$(PREFIX). Please add this location in your PATH variable."
 
+link : install
+	@echo -n "* Linking \$(LINK) to \$(PREFIX)/orion ..."
+	@ln -s \$(PREFIX)/orion \$(LINK)
+	@echo -e "$DONE"
+	
 uninstall : \$(PREFIX)
 	@echo -n "* Removing Orion directory ... "
 	@rm -fr \$(PREFIX)

@@ -234,7 +234,7 @@ impl Interpreter {
             } else {
                 let home = match env::var("HOME") {
                     Ok(h) => h,
-                    Err(e) => return error!("Cannot find $HOME variable."),
+                    Err(_) => return error!("Cannot find $HOME variable."),
                 };
 
                 format!("{}/.orion/lib/", home)
