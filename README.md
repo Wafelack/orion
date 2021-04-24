@@ -31,8 +31,7 @@ $ cd orion/
 $ chmod +x configure
 $ ./configure
 $ make
-$ make install
-# make link # Facultative, only if you want Orion linked in /usr/local/bin.
+$ make install PREFIX==/wherever/you/want/
 ```
 
 ### Windows
