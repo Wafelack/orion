@@ -47,9 +47,7 @@
          (end Nil)
          (_ (Cons start (range (+ start 1) end))))))
 
-(def _length (λ (list acc)
+(def length (λ (list) 
                (match (cdn list)
-                      (Nothing acc)
-                      ((Just x) (_length x (+ acc 1))))))
-(def length (λ (list)
-              (_length list 0)))
+                      (Nothing 0)
+                      ((Just x) (+ 1 (length x))))))
