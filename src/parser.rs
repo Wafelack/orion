@@ -96,7 +96,7 @@ impl Parser {
     }
     fn pop(&mut self) -> Result<Token> {
         if self.is_at_end() {
-            let previous = &self.input[self.current];
+            let previous = &self.input[self.current - 1];
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
