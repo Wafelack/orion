@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from time import time
 
 def ackermann(m: int, n: int):
