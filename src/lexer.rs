@@ -248,29 +248,98 @@ fn apply_ansi_codes(input: &str) -> String {
 mod test {
     use super::*;
 
+    fn get_ttypes(input: Vec<Token>) -> Vec<TType> {
+        input.into_iter().map(|t| t.ttype).collect::<Vec<_>>()
+    }
+
     #[test]
-    fn lexing() -> Result<()> {
-        let mut lexer = Lexer::new("()\"Foo Bar\"TrueFalse 4 9.1 lambda λ def format '");
-        let tokens = lexer.proc_tokens()?;
-
-        assert_eq!(
-            tokens,
-            vec![
-            Token::new(TType::LParen, 1, 1),
-            Token::new(TType::RParen, 2, 1),
-            Token::new(TType::Str("Foo Bar".to_owned()), 11, 1),
-            Token::new(TType::Ident("TrueFalse".to_owned()), 20, 1),
-            Token::new(TType::Number(4), 22, 1),
-            Token::new(TType::Float(9.1), 26, 1),
-            Token::new(TType::Lambda, 33, 1),
-            Token::new(TType::Lambda, 40, 1),
-            Token::new(TType::Def, 44, 1),
-            Token::new(TType::Builtin("format".to_string()), 48, 1),
-            Token::new(TType::Quote, 55, 1)
-            ]
-            );
-
+    fn parentheses() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("()").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::LParen, TType::RParen]);
         Ok(())
     }
 
+    #[test]
+    fn quote() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("'").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Quote]);
+        Ok(())
+    }
+
+    #[test]
+    fn numbers() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("42 3.1415926535897932").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Number(42), TType::Float(3.1415926535897932)]);
+        Ok(())
+    }
+
+    #[test]
+    fn string() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new(r#""Hello, World !""#).proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Str("Hello, World !".to_string())]);
+        Ok(())
+    }
+
+    #[test]
+    fn def() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("def").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Def]);
+        Ok(())
+    }
+
+    #[test]
+    fn r#enum() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("enum").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Enum]);
+        Ok(())
+    }
+
+    #[test]
+    fn tuple() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new(",").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Tuple]);
+        Ok(())
+    }
+
+    #[test]
+    fn lambda() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("λ lambda").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Lambda, TType::Lambda]);
+        Ok(())
+    }
+
+    #[test]
+    fn r#match() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("match").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Match]);
+        Ok(())
+    }
+
+    #[test]
+    fn panic() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("panic").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Panic]);
+        Ok(())
+    }
+
+    #[test]
+    fn begin() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("begin").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Begin]);
+        Ok(())
+    }
+
+    #[test]
+    fn load() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("load").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Load]);
+        Ok(())
+    }
+
+    #[test]
+    fn builtin() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new("format").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Builtin("format".to_string())]);
+        Ok(())
+    }
 }

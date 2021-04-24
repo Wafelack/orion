@@ -1,34 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bahs
 set -euo pipefail
 
-KERNEL=$(uname -a | awk '{print $1}')
-MAKEFILE="./Makefile"
-LOCAL="/usr"
 
-if [[ $KERNEL == "Darwin" ]]
-then
-	LOCAL="/usr/local"
-elif [[ $KERNEL != "Linux" ]]
-then
-	echo "Your kernel is unsupported. Please open an issue <https://github.com/Wafelack/orion/issues/new> to reclaim it."
-	exit 1
-fi
-
-cat > ${MAKEFILE} << EOF
-FILES=src/errors.rs src/interpreter.rs src/lexer.rs src/main.rs src/parser.rs src/tests.rs
-BINARY=target/release/orion
-LIB=lib/
-
-\$(BINARY) : \$(FILES)
-	cargo build --release
-install : \$(BINARY)
-	cp \$(BINARY) ${LOCAL}/bin/
-	mkdir -p ${LOCAL}/lib/orion/
-	cp -r \$(LIB)/* ${LOCAL}/lib/orion/
-	@printf "Orion and its library have been installed to the default location (${LOCAL}/lib/orion/).\nIf you want to use another location, move the ${LOCAL}/lib/orion folder to a new location and set the ORION_LIB variable to the new path."
-
-uninstall :
-	@printf "\033[1;33mWARNING\033[0m: This will uninstall orion at its default location. If you used another location, you will have to delete it manually.\n"
-	rm ${LOCAL}/bin/orion -rf ${LOCAL}/lib/orion/
-EOF
-echo "Makefile generated in ${MAKEFILE}"

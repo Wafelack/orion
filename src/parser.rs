@@ -285,6 +285,8 @@ impl Parser {
                             expressions.push(self.parse_expr()?);
                         }
 
+                        self.advance(TType::RParen)?;
+
                         Expr::Begin(expressions)
                     }
                     TType::Match => {
@@ -450,7 +452,7 @@ impl Parser {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::lexer::Lexer;
+    use crate::{lexer::Lexer, table};
 
     #[test]
     fn variables() -> Result<()> {
@@ -558,7 +560,7 @@ mod test {
         let tokens = Lexer::new("(panic a)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Panic("[1:1] Program panicked at: ".to_string(), Box::new(Expr::Var("a".to_string())))]);
+        assert_eq!(ast, vec![Expr::Panic("[1:6] Program panicked at: ".to_string(), Box::new(Expr::Var("a".to_string())))]);
 
         Ok(())
     }
