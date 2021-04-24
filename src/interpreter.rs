@@ -154,7 +154,7 @@ impl Interpreter {
         self.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
 
         self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
-            
+
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
                 return Ok(self.eval_expr(expr, None)?);
@@ -230,11 +230,14 @@ impl Interpreter {
         let lib_link = match env::var("ORION_LIB") {
             Ok(v) => v,
             _ => if cfg!(windows) {
-                "C:/Program Files/Orion/lib"
-            } else if cfg!(macos) {
-                "/usr/local/lib/orion"
+                "C:/Program Files/Orion/lib".to_string()
             } else {
-                "/usr/lib/orion"
+                let home = match env::var("HOME") {
+                    Ok(h) => h,
+                    Err(e) => return error!("Cannot find $HOME variable."),
+                };
+
+                format!("{}/.orion/lib/", home)
             }
             .to_string(),
         };
