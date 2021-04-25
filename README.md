@@ -25,7 +25,7 @@ Installation
 
 You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (installed in `/bin/sh`) and Git.
 
-```
+```bash
 $ git clone https://github.com/wafelack/orion.git
 $ cd orion/
 $ chmod +x configure
@@ -61,7 +61,7 @@ Quick Example
 -------------
 
 Fibonnaci suite:
-```scheme
+```clojure
 (load "core/math.orn")
 (def fibo (λ (n) 
 	(match (< n 2) 
