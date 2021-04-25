@@ -62,11 +62,11 @@ macro_rules! table {
 
 fn print_err(e: OrionError) {
     eprintln!(
-        "[{}] {}",
+        "{}{}",
         if cfg!(windows) {
-            "Orion Error"
+            "Error: "
         } else {
-            "\x1b[0;31mOrion Error\x1b[0m"
+            "\x1b[0;31mError: \x1b[0m"
         },
         e.0
         );

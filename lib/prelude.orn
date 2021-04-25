@@ -18,44 +18,12 @@
 ;;  You should have received a copy of the GNU General Public License
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
-(enum Bool
-	True
-	False)
+;; The Orion Programming Language prelude
+;; This file loads all the needed files automatically
+;; on interpreter startup.
 
-(def #t True)
-(def #f False)
+(load "core/bool.orn") ;; Boolean type
+(load "core/math.orn") ;; Basic arithmetic
 
-(def = (lambda (lhs rhs)
-	(match lhs
-		(rhs True)
-		(_ False))))
-
-(def not (lambda (val)
-	(match val
-		(True False)
-		(False True))))
-
-(def /= (lambda (lhs rhs)
-	(not (= lhs rhs))))
-
-(def and (lambda (lhs rhs)
-	(match lhs
-		(True (match rhs
-			(True True)
-			(False False)))
-		(False False))))
-
-(def or (lambda (lhs rhs)
-	(match lhs
-		(True True)
-		(False rhs))))
-
-(def assert_eq (lambda (lhs rhs)
-	(match (= lhs rhs)
-		(True ())
-		(False (panic (format "Assertion failed: #v /= #v.`" lhs rhs))))))
-
-(def if (λ (cond then else)
-	(match cond
-		(True (unquote then))
-		(False (unquote else)))))
+(load "std/list.orn")  ;; Lists
+(load "std/maybe.orn") ;; Optional type
