@@ -72,7 +72,7 @@ fn print_err(e: OrionError) {
         );
 }
 
-fn repl() {
+fn repl(no_prelude: bool) {
     let mut interpreter = Interpreter::new(vec![]);
 
     println!(";; Welcome to Orion {}.\n
@@ -108,7 +108,7 @@ fn repl() {
                     }
                 };
                 interpreter.update_ast(ast);
-                match interpreter.interpret(true) {
+                match interpreter.interpret(true, no_prelude) {
                     Ok(_) => {},
                     Err(e) => {
                         print_err(e);
@@ -139,6 +139,10 @@ fn try_main() -> Result<()> {
              .takes_value(true)
              .index(1)
              .help("The source file to pass to the interpreter"))
+        .arg(Arg::with_name("no-load-prelude")
+             .short("np")
+             .long("no-load-prelude")
+             .help("Do not load the prelude file"))
         .get_matches();
 
     if let Some(path) = matches.value_of("file") {
@@ -151,13 +155,13 @@ fn try_main() -> Result<()> {
 
             let tokens = Lexer::new(content).proc_tokens()?;
             let ast = Parser::new(tokens).parse()?;
-            Interpreter::new(ast).interpret(false)?;
+            Interpreter::new(ast).interpret(false, matches.is_present("no-load-prelude"))?;
             Ok(())
         } else {
             error!("fatal: File not found: {}.", path)
         }
     } else {
-        repl();
+        repl(matches.is_present("no-load-prelude"));
         Ok(())
     }
 

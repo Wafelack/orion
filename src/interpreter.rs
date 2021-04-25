@@ -127,7 +127,7 @@ impl Interpreter {
                 }
         }
     }
-    pub fn interpret(&mut self, repl: bool) -> Result<Value> {
+    pub fn interpret(&mut self, repl: bool, no_prelude: bool) -> Result<Value> {
 
         self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
         self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
@@ -147,7 +147,9 @@ impl Interpreter {
         self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
 
         // Prelude
-        self.eval_load(&vec!["prelude.orn".to_string()])?;
+        if !no_prelude {
+            self.eval_load(&vec!["prelude.orn".to_string()])?;
+        }
 
         let toret = self.eval_expressions(&(self.input.clone()))?;
         if repl {
