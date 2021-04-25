@@ -43,6 +43,7 @@ pub struct Interpreter {
     pub name_idx: HashMap<String, (usize, String)>,
     pub variants: Vec<u8>,
     builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>,Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, ArgsLength)>,
+    imported: Vec<String>,
 }
 
 impl Interpreter {
@@ -53,6 +54,7 @@ impl Interpreter {
             name_idx: HashMap::new(),
             variants: vec![],
             builtins: HashMap::new(),
+            imported: vec![],
         }
     }
     fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Value>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, length: ArgsLength) {
@@ -237,19 +239,25 @@ impl Interpreter {
         for param in params {
             let lib_path = &format!("{}/{}", lib_link, param);
 
-            let content = if Path::new(lib_path).exists() {
+            let (content, fname) = if Path::new(lib_path).exists() {
                 match fs::read_to_string(lib_path) {
-                    Ok(c) => c,
+                    Ok(c) => (c, lib_path),
                     _ => return error!("Failed to read file: {}.", lib_path),
                 }
             } else if Path::new(&param).exists() {
                 match fs::read_to_string(param) {
-                    Ok(c) => c,
-                    _ => return error!("Failed to read file: {}.", lib_path),
+                    Ok(c) => (c, param),
+                    _ => return error!("Failed to read file: {}.", &param),
                 }
             } else {
                 return error!("File not found: {}.", param);
             };
+
+            if !self.imported.contains(&fname) {
+                self.imported.push(fname.to_string());
+            } else {
+                continue;
+            }
 
             self.eval_expressions(&Parser::new(Lexer::new(content).proc_tokens()?).parse()?)?;
         }
