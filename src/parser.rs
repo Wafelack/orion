@@ -48,27 +48,27 @@ pub enum Expr {
 impl Expr {
     pub fn get_type(&self) -> String {
         format!("<#expr:{}>", match self {
-            Self::Var(_) => "var".to_string(),
+            Self::Var(s) => format!("constant({})", s),
             Self::Call(_, _) => "call".to_string(),
             Self::Lambda(_, _) => "lambda".to_string(),
             Self::Literal(l) => {
                 match l {
-                    Literal::Integer(_) => "integer",
-                    Literal::Single(_) => "single",
-                    Literal::String(_) => "string",
-                    Literal::Unit => "unit",
-                }.to_string()
+                    Literal::Integer(i) => format!("integer {}", i),
+                    Literal::Single(s) => format!("single {}", s),
+                    Literal::String(s) => format!("string \"{}\"", s),
+                    Literal::Unit => "unit".to_string(),
+                }
             }
-            Self::Def(_, _) => "constant_definition".to_string(),
-            Self::Constr(_, _) => "enum_constructor".to_string(),
-            Self::Enum(_, _) => "enum_definition".to_string(),
-            Self::Tuple(_) => "tuple".to_string(),
+            Self::Def(name, _) => format!("constant_definition({})", name),
+            Self::Constr(name, _) => format!("enum_constructor({})", name),
+            Self::Enum(name, _) => format!("enum_definition({})", name),
+            Self::Tuple(t) => format!("tuple{{{}}}", t.len()),
             Self::Load(_) => "load_procedure".to_string(),
             Self::Match(_, _) => "match_statement".to_string(),
             Self::Panic(_, _) => "panic_statement".to_string(),
             Self::Begin(_) => "block".to_string(),
-            Self::Quote(e) => format!("quote <- {}", e.get_type()),
-            Self::Builtin(n, _) => format!("builtin[{}]", n),
+            Self::Quote(e) => format!("Quote{}", e.get_type()),
+            Self::Builtin(n, _) => format!("builtin({})", n),
         })
     }
 }

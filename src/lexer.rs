@@ -67,6 +67,11 @@ impl Token {
     pub fn new(ttype: TType, col: usize, line: usize) -> Self {
         Self { line, ttype, col }
     }
+    pub fn display(&self) -> String {
+        let ttyped = self.ttype.get_type().to_ascii_lowercase().replace(" ", "_");
+
+        format!("<#token:{}{{{}:{}}}>", ttyped, self.line, self.col)
+    }
 }
 
 pub struct Lexer {

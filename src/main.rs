@@ -31,7 +31,7 @@ use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
 use clap::{App, Arg};
-use std::{process::exit, path::Path, fs};
+use std::{time::Instant, process::exit, path::Path, fs};
 
 #[macro_export]
 macro_rules! bug {
@@ -48,16 +48,16 @@ macro_rules! bug {
 #[macro_export]
 macro_rules! table {
     {$($key:expr => $value:expr),+} => {
-        {
-            let mut map = HashMap::new();
+                                           {
+                                               let mut map = HashMap::new();
 
-            $(
-                map.insert($key, $value);
-             )*
+                                               $(
+                                                   map.insert($key, $value);
+                                                )*
 
-                map
-        }
-    };
+                                                   map
+                                           }
+                                       };
 }
 
 fn print_err(e: OrionError) {
@@ -72,7 +72,7 @@ fn print_err(e: OrionError) {
         );
 }
 
-fn repl(no_prelude: bool) {
+fn repl(no_prelude: bool, debug: bool) {
     let mut interpreter = Interpreter::new(vec![]);
 
     println!(";; Welcome to Orion {}.\n
@@ -100,6 +100,15 @@ fn repl(no_prelude: bool) {
                         continue;
                     }
                 };
+
+                if debug {
+                    println!("Tokens\n======");
+                    tokens.iter().for_each(|t| {
+                        println!("{}", t.display());
+                    });
+                    println!();
+                }
+
                 let ast = match Parser::new(tokens).parse() {
                     Ok(ast) => ast,
                     Err(e) => {
@@ -107,13 +116,26 @@ fn repl(no_prelude: bool) {
                         continue;
                     }
                 };
+
+
+                if debug {
+                    println!("Syntax Tree\n===========");
+                    ast.iter().for_each(|e| println!("{}", e.get_type()));
+                }
+
                 interpreter.update_ast(ast);
+
+                let start = Instant::now();
                 match interpreter.interpret(true, no_prelude) {
                     Ok(_) => {},
                     Err(e) => {
                         print_err(e);
                         continue;
                     }
+                }
+                let elapsed = start.elapsed();
+                if debug {
+                    println!("\nDone in {}ms.", elapsed.as_millis());
                 }
             }
             Err(ReadlineError::Interrupted) => {
@@ -143,6 +165,10 @@ fn try_main() -> Result<()> {
              .short("np")
              .long("no-load-prelude")
              .help("Do not load the prelude file"))
+        .arg(Arg::with_name("debug")
+             .short("d")
+             .long("debug")
+             .help("Display debug information."))
         .get_matches();
 
     if let Some(path) = matches.value_of("file") {
@@ -154,14 +180,32 @@ fn try_main() -> Result<()> {
             };
 
             let tokens = Lexer::new(content).proc_tokens()?;
+            if matches.is_present("debug") {
+                println!("Tokens\n======");
+                tokens.iter().for_each(|t| {
+                    println!("{}", t.display());
+                });
+                println!();
+            }
+
             let ast = Parser::new(tokens).parse()?;
+
+            if matches.is_present("debug") {
+                println!("Syntax Tree\n===========");
+                ast.iter().for_each(|e| println!("{}", e.get_type()));
+            }
+            let start = Instant::now();
             Interpreter::new(ast).interpret(false, matches.is_present("no-load-prelude"))?;
+            let elapsed = start.elapsed();
+            if matches.is_present("debug") {
+                println!("\nDone in {}ms.", elapsed.as_millis());
+            }
             Ok(())
         } else {
             error!("fatal: File not found: {}.", path)
         }
     } else {
-        repl(matches.is_present("no-load-prelude"));
+        repl(matches.is_present("no-load-prelude"), matches.is_present("debug"));
         Ok(())
     }
 
