@@ -45,7 +45,7 @@ LIB    := lib/
 	cargo test
 	cargo build --release
 
-install : \$(TARGET) \$(LIB)
+update : \$(TARGET) \$(LIB) uninstall
 	@echo -n "* Creating Orion directory ... "
 	@mkdir -p \$(PREFIX)
 	@echo -e "$DONE"
@@ -57,6 +57,8 @@ install : \$(TARGET) \$(LIB)
 	@mkdir -p \$(PREFIX)/lib/
 	@cp -r \$(LIB) \$(PREFIX)/lib/orion/
 	@echo -e "$DONE"
+
+install : update
 	@echo -n "* Adding Orion to PATH ... "
 	@echo -e ${SHELL_PATH} >> ${FILE}
 	@echo -e "${DONE_2}"
@@ -66,7 +68,7 @@ install : \$(TARGET) \$(LIB)
 
 uninstall : \$(PREFIX)
 	@echo -n "* Removing Orion binary ... "
-	@rm \$(PREFIX)/bin/orion
+	@rm -fr \$(PREFIX)/bin/orion
 	@echo -e "$DONE"
 	@echo -n "* Removing Orion library ... "
 	@rm -fr \$(PREFIX)/lib/orion/
