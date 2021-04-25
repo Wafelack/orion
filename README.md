@@ -7,7 +7,7 @@ Orion
 
   <img width="150px" src="assets/orion-logo.png">
 
-  Orion is a high level, purely functional Lisp dialect written in Rust.
+  Orion is a high level, purely functional programming language with a LISP based syntax.
 
   ![GitHub Repo stars](https://img.shields.io/github/stars/wafelack/orion?color=%2320272c&style=for-the-badge)
   ![Continuous Build](https://img.shields.io/github/workflow/status/wafelack/orion/Continuous%20Build?style=for-the-badge)
