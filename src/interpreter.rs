@@ -151,7 +151,7 @@ impl Interpreter {
             self.eval_load(&vec!["prelude.orn".to_string()])?;
         }
 
-        let toret = self.eval_expressions(&(self.input.clone()))?;
+        let toret = self.eval_expressions(&(self.input.clone()), None)?;
         if repl {
             let to_p = self.get_lit_val(&toret);
 
@@ -164,12 +164,12 @@ impl Interpreter {
     pub fn update_ast(&mut self, ast: Vec<Expr>) {
         self.input = ast;
     }
-    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>) -> Result<Value> { 
+    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> { 
         for (idx, expr) in expressions.into_iter().enumerate() {
             if idx == expressions.len() - 1 {
-                return Ok(self.eval_expr(expr, None)?);
+                return Ok(self.eval_expr(expr, ctx)?);
             } else {
-                self.eval_expr(expr, None)?;
+                self.eval_expr(expr, ctx)?;
             }
         }
 
@@ -261,7 +261,7 @@ impl Interpreter {
                 continue;
             }
 
-            self.eval_expressions(&Parser::new(Lexer::new(content).proc_tokens()?).parse()?)?;
+            self.eval_expressions(&Parser::new(Lexer::new(content).proc_tokens()?).parse()?, None)?;
         }
 
         Ok(Value::Unit)
@@ -280,10 +280,9 @@ impl Interpreter {
             Expr::Call(function, argument) => self.eval_call(function, argument, ctx),
             Expr::Load(params) => self.eval_load(params),
             Expr::Begin(exprs) => {
-                self.scopes.push(HashMap::new());
-                let toret = self.eval_expressions(exprs);
-                self.scopes.pop();
-                toret
+                let mut new_scope = ctx.and_then(|c| Some(c.clone())).unwrap_or(self.scopes.clone());
+                new_scope.push(HashMap::new());
+                self.eval_expressions(exprs, ctx)
             }
             Expr::Lambda(arg, body) => self.eval_lambda(arg, ctx, body),
             Expr::Enum(name, variants) => self.eval_enum(name, variants),

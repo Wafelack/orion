@@ -125,6 +125,11 @@ fn repl(no_prelude: bool, debug: bool) {
 
                 interpreter.update_ast(ast);
 
+                if debug {
+                    println!("\nStdout\n======");
+                }
+
+
                 let start = Instant::now();
                 match interpreter.interpret(true, no_prelude) {
                     Ok(_) => {},
@@ -193,6 +198,9 @@ fn try_main() -> Result<()> {
             if matches.is_present("debug") {
                 println!("Syntax Tree\n===========");
                 ast.iter().for_each(|e| println!("{}", e.get_type()));
+            }
+            if matches.is_present("debug") {
+                println!("\nStdout\n======");
             }
             let start = Instant::now();
             Interpreter::new(ast).interpret(false, matches.is_present("no-load-prelude"))?;
