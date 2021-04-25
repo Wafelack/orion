@@ -24,13 +24,10 @@
       (Cons x next)
       Nil)
 
-(def append (λ (list element)
-              (Cons element list)))
-
 (def fill (λ (n x)
-            (match x
-                   (0 (Cons n Nil))
-                   (_ (Cons n (- x 1))))))
+            (match n
+                   (0 (Cons x Nil))
+                   (_ (Cons x (- n 1))))))
 
 (def car (λ (list)
             (match list
