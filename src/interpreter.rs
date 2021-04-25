@@ -144,6 +144,9 @@ impl Interpreter {
 
         self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
 
+        // Prelude
+        self.eval_load(&vec!["prelude.orn".to_string()])?;
+
         let toret = self.eval_expressions(&(self.input.clone()))?;
         if repl {
             let to_p = self.get_lit_val(&toret);
