@@ -45,6 +45,34 @@ pub enum Expr {
     Builtin(String, Vec<Expr>),
 }
 
+impl Expr {
+    pub fn get_type(&self) -> String {
+        format!("<#expr:{}>", match self {
+            Self::Var(_) => "var".to_string(),
+            Self::Call(_, _) => "call".to_string(),
+            Self::Lambda(_, _) => "lambda".to_string(),
+            Self::Literal(l) => {
+                match l {
+                    Literal::Integer(_) => "integer",
+                    Literal::Single(_) => "single",
+                    Literal::String(_) => "string",
+                    Literal::Unit => "unit",
+                }.to_string()
+            }
+            Self::Def(_, _) => "constant_definition".to_string(),
+            Self::Constr(_, _) => "enum_constructor".to_string(),
+            Self::Enum(_, _) => "enum_definition".to_string(),
+            Self::Tuple(_) => "tuple".to_string(),
+            Self::Load(_) => "load_procedure".to_string(),
+            Self::Match(_, _) => "match_statement".to_string(),
+            Self::Panic(_, _) => "panic_statement".to_string(),
+            Self::Begin(_) => "block".to_string(),
+            Self::Quote(e) => format!("quote <- {}", e.get_type()),
+            Self::Builtin(n, _) => format!("builtin[{}]", n),
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
     Integer(i32),

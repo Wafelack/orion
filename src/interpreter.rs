@@ -93,7 +93,7 @@ impl Interpreter {
     pub fn get_lit_val(&self, val: &Value) -> String {
         match val {
             Value::Integer(i) => format!("{}", i),
-            Value::Quote(expr) => format!("'{:?}", expr),
+            Value::Quote(expr) => format!("Quote{}", expr.get_type()),
             Value::Single(f) => format!("{}", f),
             Value::String(s) => format!("{}", s),
             Value::Lambda(_, x, _) => format!("<#lambda {}>", x),
