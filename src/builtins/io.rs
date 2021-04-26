@@ -21,12 +21,22 @@ use std::{collections::HashMap, path::Path, fs::OpenOptions, io::{Write, self}};
 
 impl Interpreter {
     pub fn put_str(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        print!("{}", self.get_lit_val(&args[0]));
-        Ok(Value::Unit)
+        if let Value::String(s) = &args[0] {
+            print!("{}", s);
+            Ok(Value::Unit)
+
+        } else {
+            error!("Expected a String, found a {}.", self.get_val_type(&args[0]))
+        }
     }
     pub fn put_str_ln(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        println!("{}", self.get_lit_val(&args[0]));
-        Ok(Value::Unit)
+        if let Value::String(s) = &args[0] {
+            println!("{}", s);
+            Ok(Value::Unit)
+
+        } else {
+            error!("Expected a String, found a {}.", self.get_val_type(&args[0]))
+        }
     }
 
     pub fn get_line(&mut self, _: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
@@ -51,7 +61,7 @@ impl Interpreter {
         if !Path::new(file).exists() {
             return error!("File `{}` does not exist.", file);
         }
-        
+
         let written = match {match OpenOptions::new().append(true).open(file) {
             Ok(f) => f,
             Err(e) => return error!("Failed to open `{}`: {}.", file, e),
@@ -63,6 +73,4 @@ impl Interpreter {
 
         Ok(Value::Integer(written as i32))
     }
-
-
 }
