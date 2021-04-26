@@ -45,7 +45,9 @@ $ make install PREFIX==/wherever/you/want/
 Documentation
 -------------
 
-The language reference is located in [DOCS.md](DOCS.md).
+You can find a small tutorial to get started with Orion [here](docs/tutorial.md).
+
+You can find the standard library, the core and the builtins documentation [here](docs/).
 
 Roadmap
 -------

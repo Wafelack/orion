@@ -42,7 +42,7 @@ pub struct Interpreter {
     pub scopes: Vec<HashMap<String, Value>>,
     pub name_idx: HashMap<String, (usize, String)>,
     pub variants: Vec<u8>,
-    builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>,Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, ArgsLength)>,
+    pub builtins: HashMap<String, (fn(&mut Interpreter, Vec<Value>,Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, ArgsLength)>,
     imported: Vec<String>,
 }
 
@@ -127,69 +127,8 @@ impl Interpreter {
                 }
         }
     }
-    pub fn interpret(&mut self, repl: bool, no_prelude: bool) -> Result<Value> {
-
-        self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
-        self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
-        self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
-        self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
-        self.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
-        self.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
-
-        // Impure zone
-        self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
-        self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
-        self.register_builtin("write", Self::write, ArgsLength::Fixed(2));
-        self.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
-
-        self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
-
-        self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
-
-        // Prelude
-        if !no_prelude {
-            self.eval_load(&vec!["prelude.orn".to_string()])?;
-        }
-
-        let toret = self.eval_expressions(&(self.input.clone()), None)?;
-        if repl {
-            let to_p = self.get_lit_val(&toret);
-
-            if to_p.as_str() != "()" {
-                println!("{}", to_p)
-            }
-        }
-        Ok(toret)
-    }
     pub fn update_ast(&mut self, ast: Vec<Expr>) {
         self.input = ast;
-    }
-    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> { 
-        for (idx, expr) in expressions.into_iter().enumerate() {
-            if idx == expressions.len() - 1 {
-                return Ok(self.eval_expr(expr, ctx)?);
-            } else {
-                self.eval_expr(expr, ctx)?;
-            }
-        }
-
-        Ok(Value::Unit) // Should not be called
-    }
-    pub fn eval_builtin(&mut self, name: String, args: Vec<Expr>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
-        if self.builtins.contains_key(&name) {
-            let length = &self.builtins[&name].1;
-            if length.contains(args.len()) {
-                let mut argv = vec![];
-                for arg in args {
-                    argv.push(self.eval_expr(&arg, ctx)?);
-                }
-                self.builtins[&name].0(self, argv, ctx)
-            } else {
-                error!("Builtin `{}` takes {} arguments, but {} arguments were supplied.", name, length.display(), args.len())
-            }
-        } else {
-            error!("Builtin {} is not registered !", name)
-        }
     }
     pub fn eval_def(&mut self, name: &String, value: &Expr, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         let valued = self.eval_expr(value, ctx)?;
@@ -297,4 +236,53 @@ impl Interpreter {
             Expr::Builtin(builtin, args) => self.eval_builtin(builtin.to_string(), args.clone(), ctx)
         }
     }
+
+    pub fn eval_expressions(&mut self, expressions: &Vec<Expr>, ctx: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> { 
+        for (idx, expr) in expressions.into_iter().enumerate() {
+            if idx == expressions.len() - 1 {
+                return Ok(self.eval_expr(expr, ctx)?);
+            } else {
+                self.eval_expr(expr, ctx)?;
+            }
+        }
+
+        Ok(Value::Unit) // Should not be called
+    }
+
+    pub fn interpret(&mut self, repl: bool, no_prelude: bool) -> Result<Value> {
+
+        self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
+        self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
+        self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
+        self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
+        self.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
+        self.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
+
+        // Impure zone
+        self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
+        self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
+        self.register_builtin("write", Self::write, ArgsLength::Fixed(2));
+        self.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
+
+        self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
+
+        self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
+
+        // Prelude
+        if !no_prelude {
+            self.eval_load(&vec!["prelude.orn".to_string()])?;
+        }
+
+        let toret = self.eval_expressions(&(self.input.clone()), None)?;
+        if repl {
+            let to_p = self.get_lit_val(&toret);
+
+            if to_p.as_str() != "()" {
+                println!("{}", to_p)
+            }
+        }
+        Ok(toret)
+    }
+
+
 }
