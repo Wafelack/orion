@@ -19,6 +19,7 @@
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
 (load "std/maybe.orn")
+(load "core/bool.orn")
 
 (enum List
       (Cons x next)
@@ -48,3 +49,7 @@
                (match (cdn list)
                       (Nothing 0)
                       ((Just x) (+ 1 (length x))))))
+(def empty? (λ (list)
+              (match list
+                     ((Cons _ _) #f)
+                     (Nil #t))))
