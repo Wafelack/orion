@@ -227,6 +227,12 @@ impl Lexer {
         self.register_builtin("/");
         self.register_builtin("*");
         self.register_builtin("_cmp");
+        self.register_builtin("cos");
+        self.register_builtin("sin");
+        self.register_builtin("tan");
+        self.register_builtin("acos");
+        self.register_builtin("asin");
+        self.register_builtin("atan");
 
         self.register_builtin("unquote");
 

@@ -257,6 +257,12 @@ impl Interpreter {
         self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
         self.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
         self.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
+        self.register_builtin("cos", Self::cos, ArgsLength::Fixed(1));
+        self.register_builtin("sin", Self::sin, ArgsLength::Fixed(1));
+        self.register_builtin("tan", Self::tan, ArgsLength::Fixed(1));
+        self.register_builtin("acos", Self::acos, ArgsLength::Fixed(1));
+        self.register_builtin("asin", Self::asin, ArgsLength::Fixed(1));
+        self.register_builtin("atan", Self::atan, ArgsLength::Fixed(1));
 
         // Impure zone
         self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));

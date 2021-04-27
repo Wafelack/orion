@@ -133,7 +133,49 @@ impl Interpreter {
             error!("Expected a Single or an Integer, found a {}.", self.get_val_type(&args[0]))
         }
     }
-
+    pub fn cos(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.cos()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+    pub fn sin(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.sin()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+    pub fn tan(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.tan()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+    
+    pub fn acos(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.acos()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+    pub fn asin(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.asin()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
+    pub fn atan(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
+        if let Value::Single(f) = args[0] {
+            Ok(Value::Single(f.atan()))
+        } else {
+            error!("Expected a Single, found a {}.", self.get_val_type(&args[0]))
+        }
+    }
     pub fn cmp(&mut self, args: Vec<Value>, _: Option<&Vec<HashMap<String, Value>>>) -> Result<Value> {
         let correspondance = vec![Ordering::Less, Ordering::Equal, Ordering::Greater];
 
