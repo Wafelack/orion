@@ -107,3 +107,20 @@ Returns the length of a List.
 ```clojure
 (length (Cons 3 (Cons 4 (Cons 5 (Cons 6 Nil))))) ;; 4
 ```
+
+### `empty?`
+
+`empty? :: List -> Bool`
+
+Returns True if `list` is `Nil`, False otherwise.
+
+#### Arguments
+
+* `list :: List`: The list to check.
+
+#### Example
+
+```clojure
+(empty? Nil) ;; True
+(empty? (Cons 4 Nil)) ;; False
+```
