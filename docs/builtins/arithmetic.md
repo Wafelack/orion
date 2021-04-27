@@ -71,7 +71,7 @@ Returns the opposite of a number.
 `_cmp`
 ------
 
-`(_cmp) :: Integer|Single|String -> Integer|Single|String -> Integer`
+`_cmp :: Integer|Single|String -> Integer|Single|String -> Integer`
 
 Compares two Integers/Strings/Singles.
 
@@ -85,4 +85,82 @@ Returns `2` if `lhs > rhs`.
 (_cmp 3 4) ;; 0
 (_cmp "a" "b") ;; 1
 (_cmp 3.1415 3.) ;; 2
+```
+
+`cos`
+-----
+
+`cos :: Single -> Single`
+
+Returns the cosine of an angle (in radians).
+
+### Example
+
+```clojure
+(cos 1.047198) ;; 0.49999955
+```
+
+`sin`
+-----
+
+`sin :: Single -> Single`
+
+Returns the sine of an angle (in radians).
+
+### Example
+
+```clojure
+(sin 0.5235988) ;; 0.5
+```
+
+`tan`
+-----
+
+`tan :: Single -> Single`
+
+Returns the sine of an angle (in radians).
+
+### Example
+
+```clojure
+(tan 0.7853982) ;; 1.
+```
+
+`acos`
+------
+
+`acos :: Single -> Single`
+
+Returns the arccosine of a number (in radians).
+
+### Example
+
+```clojure
+(acos 0.5) ;; 1.0471976
+```
+
+`asin`
+------
+
+`asin :: Single -> Single`
+
+Returns the arcsine of a number (in radians).
+
+### Example
+
+```clojure
+(asin 0.5) ;; 0.5235988
+```
+
+`atan`
+------
+
+`atan :: Single -> Single`
+
+Returns the arctangent of a number (in radians).
+
+### Example
+
+```clojure
+(atan 1.) ;; 0.7853982
 ```
