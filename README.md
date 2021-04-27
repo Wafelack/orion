@@ -9,10 +9,10 @@ Orion
 
   Orion is a high level, purely functional programming language with a LISP based syntax.
 
-  ![GitHub Repo stars](https://img.shields.io/github/stars/wafelack/orion?color=%2320272c&style=for-the-badge)
-  ![Continuous Build](https://img.shields.io/github/workflow/status/wafelack/orion/Continuous%20Build?style=for-the-badge)
-  ![Continuous Test](https://img.shields.io/github/workflow/status/wafelack/orion/Continuous%20Test?label=TEST&style=for-the-badge)
-  ![GitHub forks](https://img.shields.io/github/forks/wafelack/orion?color=%232c2120&style=for-the-badge)
+  ![GitHub Repo stars](https://img.shields.io/github/stars/orion-lang/orion?color=%2320272c&style=for-the-badge)
+  ![Continuous Build](https://img.shields.io/github/workflow/status/orion-lang/orion/Continuous%20Build?style=for-the-badge)
+  ![Continuous Test](https://img.shields.io/github/workflow/status/orion-lang/orion/Continuous%20Test?label=TEST&style=for-the-badge)
+  ![GitHub forks](https://img.shields.io/github/forks/orion-lang/orion?color=%232c2120&style=for-the-badge)
 
 </div>
 
@@ -26,7 +26,7 @@ Installation
 You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (installed in `/bin/sh`) and Git.
 
 ```bash
-$ git clone https://github.com/wafelack/orion.git
+$ git clone https://github.com/orion-lang/orion.git
 $ cd orion/
 $ chmod +x configure
 $ ./configure
