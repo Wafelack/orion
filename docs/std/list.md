@@ -124,3 +124,21 @@ Returns True if `list` is `Nil`, False otherwise.
 (empty? Nil) ;; True
 (empty? (Cons 4 Nil)) ;; False
 ```
+
+### `map`
+
+`map :: List -> (Value -> Value) -> List`
+
+Processes each element of a list in a function and gets the result.
+
+#### Arguments
+
+* `list :: List`: The list to process
+* `callback :: Value -> Value`: The callback to run on each element.
+
+#### Example
+
+```clojure
+(def foo (Cons 5 (Cons 6 (Cons 7 (Cons 8 Nil)))))
+(map foo (λ (x) (* x 2))) ;; (Cons 10 (Cons 12 (Cons 14 (Cons 16 Nil))))
+```
