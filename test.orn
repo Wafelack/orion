@@ -1,0 +1,3 @@
+#!/usr/bin/orion --no-load-prelude
+(load "lib/std/list.orn")
+(map (Cons 3 (Cons 4 (Cons 5 (Cons 6 Nil)))) (lambda (x) (* x 2)))

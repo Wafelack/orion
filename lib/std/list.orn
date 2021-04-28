@@ -53,3 +53,8 @@
               (match list
                      ((Cons _ _) #f)
                      (Nil #t))))
+
+(def map (λ (list callback)
+           (match list
+                  ((Cons x next) (Cons (callback x) (map next callback)))
+                  (Nil Nil))))
