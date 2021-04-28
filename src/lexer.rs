@@ -145,6 +145,13 @@ impl Lexer {
             }
             '\'' => self.add_token(TType::Quote),
             '"' => self.string()?,
+            '#' => if !self.is_at_end() && self.peek() == '!' && self.line == 1 {
+                while !self.is_at_end() && self.peek() != '\n' {
+                    self.advance();
+                }
+            } else {
+                self.identifier();
+            }
             ';' => {
                 while !self.is_at_end() && self.peek() != '\n' {
                     self.advance();
