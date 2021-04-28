@@ -126,8 +126,13 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     println!("\nStdout\n======");
                 }
                 
-                let instructions = Compiler::new(ast).compile()?;
-                println!("{:#?}", instructions);
+                let bytecode = Compiler::new(ast).compile()?;
+                println!("[INSTRUCTIONS]");
+                bytecode.instructions.into_iter().for_each(|i| println!("{:?}", i));
+                println!("\n[VARIABLES]");
+                bytecode.variables.into_iter().enumerate().for_each(|(idx, var)| println!("{}: {}", idx, var));
+                println!("\n[CONSTANTS]");
+                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("{}: {:?}", idx, constant));
 
                 /* 
                 let start = Instant::now();
