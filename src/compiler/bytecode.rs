@@ -5,6 +5,7 @@ pub enum Instruction {
     LoadConstant(u16),
     Def(u16),
     LoadVar(u16),
+    Call,
 }
 
 #[derive(Clone)]
