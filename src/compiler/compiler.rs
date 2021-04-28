@@ -45,6 +45,12 @@ impl Compiler {
                     Ok(vec![Instruction::LoadVar(self.output.variables.iter().position(|e| e == &name).unwrap() as u16)])
                 }
             }
+            Expr::Call(func, arg) => {
+                let mut to_ret = self.compile_expr(*func)?;
+                to_ret.extend(self.compile_expr(*arg)?);
+                to_ret.push(Instruction::Call);
+                Ok(to_ret)
+            }
             _ => todo!(),
         }
     }
