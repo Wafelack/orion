@@ -19,15 +19,12 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 mod errors;
-mod interpreter;
 mod lexer;
 mod parser;
-mod lambda;
-mod patterns;
-mod constructors;
-mod builtins;
+mod compiler;
+// mod builtins;
 
-use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
+use crate::{lexer::Lexer, parser::Parser, compiler::Compiler};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
 use clap::{App, Arg};
@@ -79,8 +76,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
 ;; This program comes with ABSOLUTELY NO WARRANTY.
 ;; This is free software, and you are welcome to redistribute it
 ;; under certain conditions.", env!("CARGO_PKG_VERSION"));
-    
-    let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
+    // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
 
     let mut rl = Editor::<()>::new();
 
@@ -124,25 +120,28 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     ast.iter().for_each(|e| println!("{}", e.get_type()));
                 }
 
-                interpreter.update_ast(ast);
+                // interpreter.update_ast(ast);
 
                 if debug {
                     println!("\nStdout\n======");
                 }
+                
+                let instructions = Compiler::new(ast).compile()?;
+                println!("{:#?}", instructions);
 
-
+                /* 
                 let start = Instant::now();
-                match interpreter.interpret(true) {
+                /* match interpreter.interpret(true) {
                     Ok(_) => {},
                     Err(e) => {
                         print_err(e);
                         continue;
                     }
-                }
+                } */
                 let elapsed = start.elapsed();
                 if debug {
                     println!("\nDone in {}ms.", elapsed.as_millis());
-                }
+                } */
             }
             Err(ReadlineError::Interrupted) => {
                 println!(";; User break");
@@ -208,7 +207,7 @@ fn try_main() -> Result<()> {
                 println!("\nStdout\n======");
             }
             let start = Instant::now();
-            Interpreter::new(ast, matches.is_present("no-load-prelude"), matches.is_present("quiet"))?.interpret(false)?;
+//            Interpreter::new(ast, matches.is_present("no-load-prelude"), matches.is_present("quiet"))?.interpret(false)?;
             let elapsed = start.elapsed();
             if matches.is_present("debug") {
                 println!("\nDone in {}ms.", elapsed.as_millis());
