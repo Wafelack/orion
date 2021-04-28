@@ -16,24 +16,104 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{interpreter::{Interpreter, Value}, OrionError, error, Result, parser::{Pattern, Expr, Literal}};
+use crate::{interpreter::{Interpreter, Value}, bug, OrionError, error, Result, parser::{Pattern, Expr, Literal}};
 use std::collections::HashMap;
 
 impl Interpreter {
+    pub fn match_and_bound(
+        &mut self,
+        patternized: &Pattern,
+        pattern: &Pattern,
+        ctx: Option<&Vec<HashMap<String, Value>>>,
+        mut to_ret: HashMap<String, Value>,
+        ) -> Option<HashMap<String, Value>> {
+
+        let val = match self.unpatternize(patternized, ctx) {
+            Ok(v) => v,
+            _ => bug!("UNEXPECTED_ERROR"),
+        };
+
+        match pattern {
+            Pattern::Var(v) => {
+
+                let mut new_ctx = match ctx {
+                    Some(c) => c.clone(),
+                    None => self.scopes.clone(),
+                };
+
+                new_ctx.push(to_ret.clone());
+
+                match self.eval_var(v, Some(&new_ctx)) {
+                    Ok(v) => {
+                        if v == val {
+                            Some(to_ret)
+                        } else {
+                            None
+                        }
+                    }
+                    _ => {
+                        to_ret.insert(v.to_string(), val);
+                        Some(to_ret)
+                    }
+                }
+            }
+            Pattern::Tuple(patterns) => {
+                if let Pattern::Tuple(vpat) = patternized {
+                    if vpat.len() == patterns.len() {
+                        for i in 0..vpat.len() {
+                            match self.match_and_bound(&vpat[i], &patterns[i], ctx, to_ret.clone()) {
+                                Some(sc) => to_ret.extend(sc),
+                                None => return None,
+                            }
+                        }
+                        return Some(to_ret);
+                    }
+                }
+                return None;
+            }
+            Pattern::Constr(name, patterns) => {
+                if let Pattern::Constr(vname, vpat) = patternized {
+                    if vname == name {
+                        if vpat.len() == patterns.len() {
+                            for i in 0..vpat.len() {
+                                match self.match_and_bound(&vpat[i], &patterns[i], ctx, to_ret.clone()) {
+                                    Some(sc) => to_ret.extend(sc),
+                                    None => return None,
+                                }
+                            }
+                            return Some(to_ret);
+                        } 
+
+                    }
+                }
+                return None;
+            }
+            _ => match self.unpatternize(&pattern, ctx) {
+                Ok(v) => {
+                    if v == val {
+                        Some(to_ret)
+                    } else {
+                        None
+                    }
+                }
+                _ => bug!("UNEXPECTED_ERROR"),
+            },
+        }
+    }
     pub fn eval_match(
         &mut self,
         to_match: &Expr,
         couples: &Vec<(Pattern, Expr)>,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+        ctx: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
-        let to_match = self.eval_expr(to_match, custom_scope)?;
+        let to_match = self.eval_expr(to_match, ctx)?;
 
         let patternized = self.patternize(&to_match)?;
 
         for (pat, expr) in couples {
-            match self.match_and_bound(&patternized, &pat, custom_scope) {
+            match self.match_and_bound(&patternized, &pat, ctx, HashMap::new()) {
                 Some(scopes) => {
-                    let mut new = match custom_scope {
+                    let mut new = match ctx {
                         Some(s) => (*s).clone(),
                         None => self.scopes.clone(),
                     };
@@ -49,7 +129,7 @@ impl Interpreter {
     pub fn unpatternize(
         &mut self,
         pat: &Pattern,
-        custom_scope: Option<&Vec<HashMap<String, Value>>>,
+        ctx: Option<&Vec<HashMap<String, Value>>>,
         ) -> Result<Value> {
         Ok(match pat {
             Pattern::Literal(lit) => match lit {
@@ -58,12 +138,12 @@ impl Interpreter {
                 Literal::String(s) => Value::String(s.to_string()),
                 Literal::Unit => Value::Unit,
             },
-            Pattern::Var(v) => self.eval_var(&v, custom_scope)?,
+            Pattern::Var(v) => self.eval_var(&v, ctx)?,
             Pattern::Tuple(vals) => {
                 let mut valued = vec![];
 
                 for val in vals {
-                    valued.push(self.unpatternize(val, custom_scope)?);
+                    valued.push(self.unpatternize(val, ctx)?);
                 }
                 Value::Tuple(valued)
             }
@@ -76,7 +156,7 @@ impl Interpreter {
 
                 let mut fields = vec![];
                 for param in params {
-                    fields.push(self.unpatternize(param, custom_scope)?);
+                    fields.push(self.unpatternize(param, ctx)?);
                 }
 
                 Value::Constr(idx, fields)
