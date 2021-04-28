@@ -1,11 +1,10 @@
-use crate::{Result, parser::Expr, compiler::{Compiler, bytecode::Instruction}};
+use crate::{Result, error, OrionError, parser::Expr, compiler::{Compiler, bytecode::{Instruction, Bytecode}}};
 
 impl Compiler {
     pub fn new(input: Vec<Expr>) -> Self {
         Self {
             input,
-            output: vec![],
-            constants: vec![],
+            output: Bytecode::new(),
         }
     }
 
@@ -14,26 +13,39 @@ impl Compiler {
             Expr::Literal(l) => {
                 let mut to_ret = vec![];
 
-                let idx = if !self.constants.contains(&l) {
-                    to_ret.push(Instruction::RegisterConstant(l.clone()));
-                    self.constants.push(l);
-                    self.constants.len() - 1
+                let idx = if !self.output.constants.contains(&l) {
+                    self.output.constants.push(l);
+                    self.output.constants.len() - 1
                 } else {
-                    self.constants.iter().position(|constant| *constant == l).unwrap()
+                    self.output.constants.iter().position(|constant| *constant == l).unwrap()
                 };
 
                 to_ret.push(Instruction::LoadConstant(idx as u16));
 
                 Ok(to_ret)
-            } 
+            }
+            Expr::Def(name, expr) => {
+
+                if self.output.variables.contains(&name) {
+                    return error!("Multiple declarations of `{}`.", name);
+                }
+
+                let mut to_ret = self.compile_expr(*expr)?; 
+                to_ret.push(Instruction::Def(self.output.variables.len() as u16));
+                to_ret.push(Instruction::Push(0));
+
+                self.output.variables.push(name);
+
+                Ok(to_ret)
+            }
             _ => todo!(),
         }
     }
 
-    pub fn compile(&mut self) -> Result<Vec<Instruction>> {
+    pub fn compile(&mut self) -> Result<Bytecode> {
         for expr in self.input.clone() {
             let to_push = self.compile_expr(expr)?;
-            self.output.extend(to_push);
+            self.output.instructions.extend(to_push);
         }
 
         Ok(self.output.clone())
