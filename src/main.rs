@@ -72,14 +72,15 @@ fn print_err(e: OrionError) {
         );
 }
 
-fn repl(no_prelude: bool, debug: bool) {
-    let mut interpreter = Interpreter::new(vec![]);
+fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
 
     println!(";; Welcome to Orion {}.\n
 ;; Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
 ;; This program comes with ABSOLUTELY NO WARRANTY.
 ;; This is free software, and you are welcome to redistribute it
 ;; under certain conditions.", env!("CARGO_PKG_VERSION"));
+    
+    let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
 
     let mut rl = Editor::<()>::new();
 
@@ -90,7 +91,7 @@ fn repl(no_prelude: bool, debug: bool) {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
                 if line == "(quit)" {
-                    return;
+                    return Ok(());
                 }
 
                 let tokens = match Lexer::new(line.trim()).proc_tokens() {
@@ -131,7 +132,7 @@ fn repl(no_prelude: bool, debug: bool) {
 
 
                 let start = Instant::now();
-                match interpreter.interpret(true, no_prelude) {
+                match interpreter.interpret(true) {
                     Ok(_) => {},
                     Err(e) => {
                         print_err(e);
@@ -146,7 +147,7 @@ fn repl(no_prelude: bool, debug: bool) {
             Err(ReadlineError::Interrupted) => {
                 println!(";; User break");
             }
-            Err(ReadlineError::Eof) => return,
+            Err(ReadlineError::Eof) => return Ok(()),
             Err(_) => {
                 eprintln!("An error occured, please retry.");
                 continue;
@@ -174,6 +175,10 @@ fn try_main() -> Result<()> {
              .short("d")
              .long("debug")
              .help("Display debug information."))
+        .arg(Arg::with_name("quiet")
+             .short("q")
+             .long("quiet")
+             .help("Do not display messages."))
         .get_matches();
 
     if let Some(path) = matches.value_of("file") {
@@ -203,7 +208,7 @@ fn try_main() -> Result<()> {
                 println!("\nStdout\n======");
             }
             let start = Instant::now();
-            Interpreter::new(ast).interpret(false, matches.is_present("no-load-prelude"))?;
+            Interpreter::new(ast, matches.is_present("no-load-prelude"), matches.is_present("quiet"))?.interpret(false)?;
             let elapsed = start.elapsed();
             if matches.is_present("debug") {
                 println!("\nDone in {}ms.", elapsed.as_millis());
@@ -213,7 +218,7 @@ fn try_main() -> Result<()> {
             error!("fatal: File not found: {}.", path)
         }
     } else {
-        repl(matches.is_present("no-load-prelude"), matches.is_present("debug"));
+        repl(matches.is_present("no-load-prelude"), matches.is_present("debug"), matches.is_present("quiet"))?;
         Ok(())
     }
 

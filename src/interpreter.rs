@@ -23,7 +23,7 @@ use crate::{
     builtins::ArgsLength,
     OrionError, Result,
 };
-use std::{collections::HashMap, env, fs, path::Path};
+use std::{io::{self, Write}, collections::HashMap, env, fs, path::Path};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
@@ -47,15 +47,51 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(input: Vec<Expr>) -> Self {
-        Self {
+    pub fn new(input: Vec<Expr>, no_prelude: bool, quiet: bool) -> Result<Self> {
+        let mut to_ret = Self {
             input,
             scopes: vec![HashMap::new()],
-            name_idx: HashMap::new(),
             variants: vec![],
             builtins: HashMap::new(),
             imported: vec![],
+            name_idx: HashMap::new(),
+        };
+        to_ret.register_builtin("+", Self::add, ArgsLength::OrMore(2));
+        to_ret.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
+        to_ret.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
+        to_ret.register_builtin("/", Self::div, ArgsLength::OrMore(2));
+        to_ret.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
+        to_ret.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
+        to_ret.register_builtin("cos", Self::cos, ArgsLength::Fixed(1));
+        to_ret.register_builtin("sin", Self::sin, ArgsLength::Fixed(1));
+        to_ret.register_builtin("tan", Self::tan, ArgsLength::Fixed(1));
+        to_ret.register_builtin("acos", Self::acos, ArgsLength::Fixed(1));
+        to_ret.register_builtin("asin", Self::asin, ArgsLength::Fixed(1));
+        to_ret.register_builtin("atan", Self::atan, ArgsLength::Fixed(1));
+
+        // Impure zone
+        to_ret.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
+        to_ret.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
+        to_ret.register_builtin("write", Self::write, ArgsLength::Fixed(2));
+        to_ret.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
+
+        to_ret.register_builtin("format", Self::format, ArgsLength::OrMore(1));
+
+        to_ret.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
+
+        // Prelude
+        if !no_prelude {
+            if !quiet {
+                print!(";; Loading prelude ... ");
+                io::stdout().flush().unwrap();
+            }            
+            to_ret.eval_load(&vec!["prelude.orn".to_string()])?;
+            if !quiet {
+                println!("\x1b[0;32mdone\x1b[0m");
+            }
         }
+
+        Ok(to_ret)
     }
     fn register_builtin(&mut self, builtin: impl ToString, callback: fn(&mut Interpreter, Vec<Value>, Option<&Vec<HashMap<String, Value>>>) -> Result<Value>, length: ArgsLength) {
         self.builtins.insert(builtin.to_string(), (callback, length));
@@ -249,36 +285,7 @@ impl Interpreter {
         Ok(Value::Unit) // Should not be called
     }
 
-    pub fn interpret(&mut self, repl: bool, no_prelude: bool) -> Result<Value> {
-
-        self.register_builtin("+", Self::add, ArgsLength::OrMore(2));
-        self.register_builtin("-", Self::sub, ArgsLength::OrMore(2));
-        self.register_builtin("*", Self::mul, ArgsLength::OrMore(2));
-        self.register_builtin("/", Self::div, ArgsLength::OrMore(2));
-        self.register_builtin("!", Self::opp, ArgsLength::Fixed(1));
-        self.register_builtin("_cmp", Self::cmp, ArgsLength::Fixed(2));
-        self.register_builtin("cos", Self::cos, ArgsLength::Fixed(1));
-        self.register_builtin("sin", Self::sin, ArgsLength::Fixed(1));
-        self.register_builtin("tan", Self::tan, ArgsLength::Fixed(1));
-        self.register_builtin("acos", Self::acos, ArgsLength::Fixed(1));
-        self.register_builtin("asin", Self::asin, ArgsLength::Fixed(1));
-        self.register_builtin("atan", Self::atan, ArgsLength::Fixed(1));
-
-        // Impure zone
-        self.register_builtin("putStr", Self::put_str, ArgsLength::Fixed(1));
-        self.register_builtin("putStrLn", Self::put_str_ln, ArgsLength::Fixed(1));
-        self.register_builtin("write", Self::write, ArgsLength::Fixed(2));
-        self.register_builtin("getLine", Self::get_line, ArgsLength::Fixed(0));
-
-        self.register_builtin("format", Self::format, ArgsLength::OrMore(1));
-
-        self.register_builtin("unquote", Self::unquote, ArgsLength::Fixed(1));
-
-        // Prelude
-        if !no_prelude {
-            self.eval_load(&vec!["prelude.orn".to_string()])?;
-        }
-
+    pub fn interpret(&mut self, repl: bool) -> Result<Value> {
         let toret = self.eval_expressions(&(self.input.clone()), None)?;
         if repl {
             let to_p = self.get_lit_val(&toret);
