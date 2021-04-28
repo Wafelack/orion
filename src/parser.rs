@@ -403,12 +403,11 @@ impl Parser {
                                 } else {
                                     bug!("What is this thing doing here ?");
                                 }
-                            })
-                        .collect::<Vec<_>>();
+                            });
 
                         let mut body = self.parse_expr()?;
 
-                        for arg in args.into_iter().rev() {
+                        for arg in args.rev() {
                             body = Expr::Lambda(arg.to_string(), Box::new(body));
                         }
                         self.advance(TType::RParen)?;

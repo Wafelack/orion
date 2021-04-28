@@ -97,7 +97,7 @@ impl Lexer {
         }
     }
     fn is_at_end(&self) -> bool {
-        self.current >= self.input.chars().collect::<Vec<_>>().len()
+        self.current >= self.input.chars().count()
     }
     fn peek(&self) -> char {
         self.input.chars().nth(self.current).unwrap()
