@@ -32,11 +32,18 @@ impl Compiler {
 
                 let mut to_ret = self.compile_expr(*expr)?; 
                 to_ret.push(Instruction::Def(self.output.variables.len() as u16));
-                to_ret.push(Instruction::Push(0));
+                to_ret.push(Instruction::LoadConstant(0));
 
                 self.output.variables.push(name);
 
                 Ok(to_ret)
+            }
+            Expr::Var(name) => {
+                if !self.output.variables.contains(&name) {
+                    error!("Variable not in scope: {}.", name)
+                } else {
+                    Ok(vec![Instruction::LoadVar(self.output.variables.iter().position(|e| e == &name).unwrap() as u16)])
+                }
             }
             _ => todo!(),
         }

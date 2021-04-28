@@ -4,7 +4,7 @@ use crate::parser::Literal;
 pub enum Instruction {
     LoadConstant(u16),
     Def(u16),
-    Push(u16),
+    LoadVar(u16),
 }
 
 #[derive(Clone)]
