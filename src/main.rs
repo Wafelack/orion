@@ -21,7 +21,9 @@
 mod errors;
 mod lexer;
 mod parser;
+mod bytecode;
 mod compiler;
+
 // mod builtins;
 
 use crate::{lexer::Lexer, parser::Parser, compiler::Compiler};
@@ -129,10 +131,18 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 let bytecode = Compiler::new(ast).compile()?;
                 println!("[INSTRUCTIONS]");
                 bytecode.instructions.into_iter().for_each(|i| println!("{:?}", i));
-                println!("\n[VARIABLES]");
-                bytecode.variables.into_iter().enumerate().for_each(|(idx, var)| println!("{}: {}", idx, var));
+                println!("\n[SYMBOLS]");
+                bytecode.symbols.into_iter().enumerate().for_each(|(idx, var)| println!("{}: {}", idx, var));
                 println!("\n[CONSTANTS]");
-                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("{}: {:?}", idx, constant));
+                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("{}: {:?}", idx, constant)); 
+                println!("\n[CHUNKS]");
+                bytecode.chunks.into_iter().enumerate().for_each(|(idx, chunk)| {
+                    println!("{}: {{", idx);
+                    chunk.into_iter().enumerate().for_each(|(id, instr)| {
+                        println!("\t{}: {:?}", id, instr);
+                    });
+                    println!("}}");
+                });
 
                 /* 
                 let start = Instant::now();
@@ -212,7 +222,7 @@ fn try_main() -> Result<()> {
                 println!("\nStdout\n======");
             }
             let start = Instant::now();
-//            Interpreter::new(ast, matches.is_present("no-load-prelude"), matches.is_present("quiet"))?.interpret(false)?;
+            // Interpreter::new(ast, matches.is_present("no-load-prelude"), matches.is_present("quiet"))?.interpret(false)?;
             let elapsed = start.elapsed();
             if matches.is_present("debug") {
                 println!("\nDone in {}ms.", elapsed.as_millis());
