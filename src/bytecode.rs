@@ -2,11 +2,10 @@ use crate::parser::Literal;
 
 #[derive(Copy, Clone, Debug)]
 pub enum OpCode {
-    Lambda(u16, u16), // Lambda(arg, chunk)
     LoadConst(u16),
     LoadSym(u16),
     Call(u16),
-    Builtin(u8, u8),
+Builtin(u8, u8),
     Def(u16),
     Add,
 }

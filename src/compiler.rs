@@ -33,10 +33,13 @@ impl Compiler {
                 } else if !self.output.symbols.contains(&arg) {
                     self.output.symbols.push(arg.clone());
                 }
-                let chunk = self.compile_expr(*body)?;
-                self.output.chunks.push(chunk);
+                let mut toret = self.compile_expr(*body)?;
+                toret.push(OpCode::LoadSym(self.output.symbols.iter().position(|sym| *sym == arg).unwrap_or_else(|| {
+                    self.output.symbols.push(arg);
+                    self.output.symbols.len()
+                }) as u16));
 
-                Ok(vec![OpCode::Lambda(self.output.symbols.iter().position(|sym| *sym == arg).unwrap() as u16, self.output.chunks.len() as u16 - 1)])
+                Ok(toret)
 
             }
             Expr::Var(name) => {
