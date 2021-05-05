@@ -26,22 +26,6 @@ impl Compiler {
 
                 Ok(vec![OpCode::LoadConst(self.output.constants.iter().position(|c| *c == lit).unwrap() as u16)])
             }
-            Expr::Lambda(arg, body) => {
-
-                if self.output.symbols.len() > u16::MAX as usize{
-                    return error!("Too much symbols are declared.");
-                } else if !self.output.symbols.contains(&arg) {
-                    self.output.symbols.push(arg.clone());
-                }
-                let mut toret = self.compile_expr(*body)?;
-                toret.push(OpCode::LoadSym(self.output.symbols.iter().position(|sym| *sym == arg).unwrap_or_else(|| {
-                    self.output.symbols.push(arg);
-                    self.output.symbols.len()
-                }) as u16));
-
-                Ok(toret)
-
-            }
             Expr::Var(name) => {
                 if !self.output.symbols.contains(&name) {
                     return error!("Variable not in scope: {}.", name);

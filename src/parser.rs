@@ -27,11 +27,11 @@ use std::{collections::HashMap, mem::discriminant};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Var(String),                //
-    Call(Box<Expr>, Box<Expr>), //
-    Lambda(String, Box<Expr>),  //
+    Var(String), 
+    Call(Box<Expr>, Vec<Expr>),
+    Lambda(Vec<String>, Box<Expr>),
     Literal(Literal),
-    Def(String, Box<Expr>), //
+    Def(String, Box<Expr>),
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
     Tuple(Vec<Expr>),
@@ -40,8 +40,6 @@ pub enum Expr {
     Panic(String, Box<Expr>),
     Begin(Vec<Expr>),
     Quote(Box<Expr>),
-
-    // Builtins
     Builtin(String, Vec<Expr>),
 }
 
@@ -50,7 +48,7 @@ impl Expr {
         format!("<#expr:{}>", match self {
             Self::Var(s) => format!("constant({})", s),
             Self::Call(_, _) => "call".to_string(),
-            Self::Lambda(_, _) => "lambda".to_string(),
+            Self::Lambda(args, _) => format!("lambda({} args)", args.len()),
             Self::Literal(l) => {
                 match l {
                     Literal::Integer(i) => format!("integer {}", i),
@@ -399,19 +397,16 @@ impl Parser {
                             .iter()
                             .map(|e| {
                                 if let TType::Ident(ident) = &e.ttype {
-                                    ident
+                                    ident.to_string()
                                 } else {
                                     bug!("What is this thing doing here ?");
                                 }
-                            });
+                            }).collect::<Vec<String>>();
 
                         let mut body = self.parse_expr()?;
 
-                        for arg in args.rev() {
-                            body = Expr::Lambda(arg.to_string(), Box::new(body));
-                        }
                         self.advance(TType::RParen)?;
-                        body
+                        Expr::Lambda(args, Box::new(body))
                     }
                     TType::Tuple => {
                         let mut args = vec![];
@@ -439,14 +434,10 @@ impl Parser {
                             if first_char(x).is_ascii_uppercase() {
                                 Expr::Constr(x.to_string(), args)
                             } else {
-                                args.into_iter().fold(func, |root, elem| {
-                                    Expr::Call(Box::new(root), Box::new(elem))
-                                })
+                                Expr::Call(Box::new(func), args)
                             }
                         } else {
-                            args.into_iter().fold(func, |root, elem| {
-                                Expr::Call(Box::new(root), Box::new(elem))
-                            })
+                            Expr::Call(Box::new(func), args)
                         }
                     }
                     _ => return error!("{}:{} | Unexpected Literal.", subroot.line, subroot.col),
@@ -496,7 +487,7 @@ mod test {
         let tokens = Lexer::new("(foobar 4 5)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Call(Box::new(Expr::Call(Box::new(Expr::Var("foobar".to_string())), Box::new(Expr::Literal(Literal::Integer(4))))), Box::new(Expr::Literal(Literal::Integer(5))))]);
+        assert_eq!(ast, vec![Expr::Call(Box::new(Expr::Var("foobar".to_string())), vec![Expr::Literal(Literal::Integer(4)), Expr::Literal(Literal::Integer(5))])]);
 
         Ok(())
     }
@@ -517,7 +508,7 @@ mod test {
         let tokens = Lexer::new("(λ (x y) 5)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Lambda("x".to_string(), Box::new(Expr::Lambda("y".to_string(), Box::new(Expr::Literal(Literal::Integer(5))))))]);
+        assert_eq!(ast, vec![Expr::Lambda(vec!["x".to_string(), "y".to_string()], Box::new(Expr::Literal(Literal::Integer(5))))]);
 
         Ok(())
     }
@@ -621,7 +612,4 @@ mod test {
 
         Ok(())
     }
-
-
-
 }
