@@ -12,43 +12,55 @@ impl Compiler {
             output: Bytecode::new(),
         }
     }
+    fn declare(&mut self, name: impl ToString) -> Result<u16> {
+        if self.output.symbols.len() > u16::MAX as usize{
+            return error!("Too much symbols are declared.");
+        }
+
+        if !self.output.symbols.contains(&name.to_string()) {
+            self.output.symbols.push(name.to_string());
+        }
+
+        Ok(self.output.symbols.iter().position(|s| s == &name.to_string()).unwrap() as u16)
+    }
+    fn register_constant(&mut self, constant: Literal) -> Result<u16> {
+        if !self.output.constants.contains(&constant) {
+            self.output.constants.push(constant.clone());
+        }
+
+        if self.output.constants.len() > u16::MAX as usize{
+            error!("Too much constants are used.")
+        } else {
+            Ok(self.output.constants.iter().position(|c| c == &constant).unwrap() as u16)
+        }
+    }
     fn compile_expr(&mut self, expr: Expr) -> Result<Vec<OpCode>> {
 
         match expr {
             Expr::Literal(lit) => {
-                if !self.output.constants.contains(&lit) {
-                    self.output.constants.push(lit.clone());
-                }
-
-                if self.output.constants.len() > u16::MAX as usize{
-                    return error!("Too much constants are used.");
-                }
-
-                Ok(vec![OpCode::LoadConst(self.output.constants.iter().position(|c| *c == lit).unwrap() as u16)])
+                Ok(vec![OpCode::LoadConst(self.register_constant(lit)?)])
             }
             Expr::Var(name) => {
                 if !self.output.symbols.contains(&name) {
                     return error!("Variable not in scope: {}.", name);
                 }
 
-                if self.output.symbols.len() > u16::MAX as usize{
-                    return error!("Too much symbols are declared.");
-                }
-
                 Ok(vec![OpCode::LoadSym(self.output.symbols.iter().position(|sym| *sym == name).unwrap() as u16)])
+            }
+            Expr::Lambda(args, body) => {
+
+                args.into_iter().map(|a| self.declare(a)).collect::<Result<Vec<_>>>()?;
+                let chunk = self.compile_expr(*body)?;
+                self.output.chunks.push(chunk);
+                Ok(vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)])
             }
             Expr::Def(name, expr) => {
                 if self.output.symbols.contains(&name) {
                     error!("Multiple declarations of `{}`.", name)
                 } else {
-
-                    if self.output.symbols.len() > u16::MAX as usize{
-                        return error!("Too much symbols are declared.");
-                    }
-
+                    self.declare(name)?;
                     let mut to_ret = self.compile_expr(*expr)?;
-                    to_ret.push(OpCode::Def(self.output.symbols.len() as u16));
-                    self.output.symbols.push(name);
+                    to_ret.push(OpCode::Def(self.output.symbols.len() as u16 - 1));
                     Ok(to_ret)
                 }
             }
