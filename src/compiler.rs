@@ -34,7 +34,7 @@ impl Compiler {
             Ok(self.output.constants.iter().position(|c| c == &constant).unwrap() as u16)
         }
     }
-    fn compile_expr(&mut self, expr: Expr) -> Result<Vec<OpCode>> {
+    fn compile_expr(&mut self, expr: Expr, symbols: Option<Vec<String>>) -> Result<Vec<OpCode>> {
 
         match expr {
             Expr::Literal(lit) => {
@@ -45,13 +45,13 @@ impl Compiler {
                     return error!("Variable not in scope: {}.", name);
                 }
 
-                Ok(vec![OpCode::LoadSym(self.output.symbols.iter().position(|sym| *sym == name).unwrap() as u16)])
+                Ok(vec![OpCode::LoadSym(symbols.unwrap_or(self.output.symbols.clone()).iter().position(|sym| *sym == name).unwrap() as u16)])
             }
             Expr::Lambda(args, body) => {
-                let chunk_syms = args.into_iter().map(|a| {
+                let chunk_syms = args.iter().map(|a| {
                     self.declare(a)
                 }).collect::<Result<Vec<_>>>()?;
-                let chunk_instrs = self.compile_expr(*body)?;
+                let chunk_instrs = self.compile_expr(*body, Some(args))?;
                 let chunk = Chunk {
                     instructions: chunk_instrs,
                     symbols: chunk_syms,
@@ -60,26 +60,22 @@ impl Compiler {
                 Ok(vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)])
             }
             Expr::Def(name, expr) => {
-                if self.output.symbols.contains(&name) {
-                    error!("Multiple declarations of `{}`.", name)
-                } else {
-                    self.declare(name)?;
-                    let mut to_ret = self.compile_expr(*expr)?;
-                    to_ret.push(OpCode::Def(self.output.symbols.len() as u16 - 1));
-                    Ok(to_ret)
-                }
+                let idx = self.declare(name)?;
+                let mut to_ret = self.compile_expr(*expr, symbols)?;
+                to_ret.push(OpCode::Def(idx));
+                Ok(to_ret)
             }
             Expr::Call(func, args) => {
-                let mut to_ret = self.compile_expr(*func)?;
+                let mut to_ret = self.compile_expr(*func, symbols.clone())?;
                 let argc = args.len();
-                args.into_iter().map(|a| self.compile_expr(a)).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().for_each(|part| to_ret.extend(part));
+                args.into_iter().map(|a| self.compile_expr(a, symbols.clone())).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().for_each(|part| to_ret.extend(part));
                 to_ret.push(OpCode::Call(argc as u16));
                 Ok(to_ret)
             }
             Expr::Builtin(builtin, args) => {
                 match builtin.as_str() {
                     "+" => if args.len() == 2 {
-                        self.add(args[0].clone(), args[1].clone())
+                        self.add(args[0].clone(), args[1].clone(), symbols)
                     } else {
                         return error!("Intrinsic `+` takes 2 arguments, but {} arguments were supplied.", args.len());
                     }
@@ -90,15 +86,15 @@ impl Compiler {
         }        
 
     }
-    fn add(&mut self, lhs: Expr, rhs: Expr) -> Result<Vec<OpCode>> {
-        let mut toret = self.compile_expr(lhs)?;
-        toret.extend(self.compile_expr(rhs)?);
+    fn add(&mut self, lhs: Expr, rhs: Expr, symbols: Option<Vec<String>>) -> Result<Vec<OpCode>> {
+        let mut toret = self.compile_expr(lhs, symbols.clone())?;
+        toret.extend(self.compile_expr(rhs, symbols)?);
         toret.push(OpCode::Add);
         Ok(toret)
     }
     pub fn compile(&mut self) -> Result<Bytecode> {
         for expr in self.input.clone() {
-            let to_push = self.compile_expr(expr)?;
+            let to_push = self.compile_expr(expr, None)?;
             self.output.instructions.extend(to_push);
         }
 
