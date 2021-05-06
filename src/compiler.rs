@@ -64,6 +64,13 @@ impl Compiler {
                     Ok(to_ret)
                 }
             }
+            Expr::Call(func, args) => {
+                let mut to_ret = self.compile_expr(*func)?;
+                let argc = args.len();
+                args.into_iter().map(|a| self.compile_expr(a)).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().for_each(|part| to_ret.extend(part));
+                to_ret.push(OpCode::Call(argc as u16));
+                Ok(to_ret)
+            }
             Expr::Builtin(builtin, args) => {
                 match builtin.as_str() {
                     "+" => if args.len() == 2 {
