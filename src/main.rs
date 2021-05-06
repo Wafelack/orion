@@ -23,10 +23,11 @@ mod lexer;
 mod parser;
 mod bytecode;
 mod compiler;
+mod vm;
 
 // mod builtins;
 
-use crate::{lexer::Lexer, parser::Parser, compiler::Compiler};
+use crate::{lexer::Lexer, parser::Parser, compiler::Compiler, vm::{VM, Value}};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
 use clap::{App, Arg};
@@ -130,23 +131,35 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
 
                 let bytecode = Compiler::new(ast).compile()?;
                 println!("[INSTRUCTIONS]");
-                bytecode.instructions.into_iter().for_each(|i| println!("{:?}", i));
+                bytecode.instructions.iter().for_each(|i| println!("{:?}", i));
                 println!("\n[SYMBOLS]");
-                bytecode.symbols.into_iter().enumerate().for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
+                bytecode.symbols.iter().enumerate().for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
                 println!("\n[CONSTANTS]");
-                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant)); 
+                bytecode.constants.iter().enumerate().for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant)); 
                 println!("\n[CHUNKS]");
-                bytecode.chunks.into_iter().enumerate().for_each(|(idx, chunk)| {
+                bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
                     println!("{}: {{", idx);
                     println!("  symbols: [");
-                    chunk.symbols.into_iter().for_each(|sym| {
+                    chunk.symbols.iter().for_each(|sym| {
                         println!("    0x{:04x}", sym);
                     });
                     println!("  ]\n  instructions: [");
-                    chunk.instructions.into_iter().for_each(|instr| {
+                    chunk.instructions.iter().for_each(|instr| {
                         println!("    {:?}", instr);
                     });
                     println!("  ]\n}}");
+                });
+
+                let mut vm = VM::<256>::new(bytecode);
+                let memory = vm.eval()?;
+                println!("-------------------------------");
+                println!("[STACK]");
+                vm.stack.into_iter().enumerate().for_each(|(idx, v)| {
+                    println!("0x{:02x}: {:?}", idx, v);
+                });
+                println!("\n[MEMORY]");
+                memory.into_iter().enumerate().for_each(|(idx, v)| {
+                    println!("0x{:02x}: {:?}", idx, v);
                 });
 
                 /* 
