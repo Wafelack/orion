@@ -1,4 +1,4 @@
-use crate::{Result, error, OrionError, parser::{Literal, Expr}, bytecode::{Bytecode, OpCode}};
+use crate::{Result, error, OrionError, parser::{Literal, Expr}, bytecode::{Chunk, Bytecode, OpCode}};
 
 pub struct Compiler {
     input: Vec<Expr>,
@@ -48,9 +48,14 @@ impl Compiler {
                 Ok(vec![OpCode::LoadSym(self.output.symbols.iter().position(|sym| *sym == name).unwrap() as u16)])
             }
             Expr::Lambda(args, body) => {
-
-                args.into_iter().map(|a| self.declare(a)).collect::<Result<Vec<_>>>()?;
-                let chunk = self.compile_expr(*body)?;
+                let chunk_syms = args.into_iter().map(|a| {
+                    self.declare(a)
+                }).collect::<Result<Vec<_>>>()?;
+                let chunk_instrs = self.compile_expr(*body)?;
+                let chunk = Chunk {
+                    instructions: chunk_instrs,
+                    symbols: chunk_syms,
+                };
                 self.output.chunks.push(chunk);
                 Ok(vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)])
             }
