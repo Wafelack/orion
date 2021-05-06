@@ -127,7 +127,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 if debug {
                     println!("\nStdout\n======");
                 }
-                
+
                 let bytecode = Compiler::new(ast).compile()?;
                 println!("[INSTRUCTIONS]");
                 bytecode.instructions.into_iter().for_each(|i| println!("{:?}", i));
@@ -145,13 +145,13 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 });
 
                 /* 
-                let start = Instant::now();
+                   let start = Instant::now();
                 /* match interpreter.interpret(true) {
-                    Ok(_) => {},
-                    Err(e) => {
-                        print_err(e);
-                        continue;
-                    }
+                Ok(_) => {},
+                Err(e) => {
+                print_err(e);
+                continue;
+                }
                 } */
                 let elapsed = start.elapsed();
                 if debug {
