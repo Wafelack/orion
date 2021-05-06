@@ -12,8 +12,14 @@ pub enum OpCode {
 }
 
 #[derive(Clone, Debug)]
+pub struct Chunk {
+    pub instructions: Vec<OpCode>,
+    pub symbols: Vec<u16>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Bytecode {
-    pub chunks: Vec<Vec<OpCode>>,
+    pub chunks: Vec<Chunk>,
     pub symbols: Vec<String>,
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,

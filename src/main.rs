@@ -132,16 +132,21 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 println!("[INSTRUCTIONS]");
                 bytecode.instructions.into_iter().for_each(|i| println!("{:?}", i));
                 println!("\n[SYMBOLS]");
-                bytecode.symbols.into_iter().enumerate().for_each(|(idx, var)| println!("{}: {}", idx, var));
+                bytecode.symbols.into_iter().enumerate().for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
                 println!("\n[CONSTANTS]");
-                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("{}: {:?}", idx, constant)); 
+                bytecode.constants.into_iter().enumerate().for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant)); 
                 println!("\n[CHUNKS]");
                 bytecode.chunks.into_iter().enumerate().for_each(|(idx, chunk)| {
                     println!("{}: {{", idx);
-                    chunk.into_iter().enumerate().for_each(|(id, instr)| {
-                        println!("\t{}: {:?}", id, instr);
+                    println!("  symbols: [");
+                    chunk.symbols.into_iter().for_each(|sym| {
+                        println!("    0x{:04x}", sym);
                     });
-                    println!("}}");
+                    println!("  ]\n  instructions: [");
+                    chunk.instructions.into_iter().for_each(|instr| {
+                        println!("    {:?}", instr);
+                    });
+                    println!("  ]\n}}");
                 });
 
                 /* 
