@@ -47,10 +47,11 @@ impl Compiler {
 
                 Ok(vec![OpCode::LoadSym(symbols.unwrap_or(self.output.symbols.clone()).iter().position(|sym| *sym == name).unwrap() as u16)])
             }
-            Expr::Lambda(args, body) => {
+            Expr::Lambda(mut args, body) => {
                 let chunk_syms = args.iter().map(|a| {
                     self.declare(a)
                 }).collect::<Result<Vec<_>>>()?;
+                args.extend(symbols.unwrap_or(self.output.symbols.clone()));
                 let chunk_instrs = self.compile_expr(*body, Some(args))?;
                 let chunk = Chunk {
                     instructions: chunk_instrs,
