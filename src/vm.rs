@@ -6,7 +6,7 @@ pub enum Value {
     Single(f32),
     String(String),
     Unit,
-    Lambda(u16, Vec<Value>),
+    Lambda(u16),
 }
 
 pub struct VM<const STACK_SIZE: usize> {
@@ -38,14 +38,14 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 assert_eq!(ctx.len() as u16, sym_id);
                 ctx.push(self.stack.pop().unwrap());
             }
-            OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id, ctx.clone())),
+            OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
                 let mut args = vec![];
                 for _ in 0..argc {
                     args.push(self.stack.pop().unwrap());
                 }
                 let func = self.stack.pop().unwrap();
-                if let Value::Lambda(chunk, mut ctx) = func {
+                if let Value::Lambda(chunk) = func {
                     let chunk = &self.input.chunks[chunk as usize];
                     if chunk.symbols.len() != args.len() {
                         return error!("Expected {} arguments, found {}.", chunk.symbols.len(), args.len());
@@ -56,7 +56,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     }
 
                     for instr in chunk.instructions.clone() {
-                        self.eval_opcode(instr, &mut ctx)?;
+                        self.eval_opcode(instr, ctx)?;
                     }
                 } else {
                     return error!("Expected a Lambda, found a {:?}.", func);
