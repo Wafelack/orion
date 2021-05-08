@@ -149,6 +149,17 @@ impl Lexer {
                 while !self.is_at_end() && self.peek() != '\n' {
                     self.advance();
                 }
+            } else if !self.is_at_end() && self.peek() == '|' {
+                self.advance();
+                while !self.is_at_end() {
+                    if self.peek() == '|' {
+                        if !self.is_at_end() && self.peek() == '#' {
+                            self.advance();
+                            break;
+                        }
+                    }
+                    self.advance();
+                }
             } else {
                 self.identifier();
             }
@@ -276,6 +287,13 @@ mod test {
     fn parentheses() -> Result<()> {
         let ttypes = get_ttypes(Lexer::new("()").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::LParen, TType::RParen]);
+        Ok(())
+    }
+    
+    #[test]
+    fn comments() -> Result<()> {
+        let ttypes = get_ttypes(Lexer::new(";;\n#|blah blah\nblah\n#|").proc_tokens()?);
+        assert_eq!(ttypes, vec![]);
         Ok(())
     }
 
