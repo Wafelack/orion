@@ -1,8 +1,9 @@
-use crate::{Result, error, OrionError, parser::{Literal, Expr}, bytecode::{Chunk, Bytecode, OpCode}};
-
+use crate::{lexer::Lexer, Result, error, OrionError, parser::{Parser, Literal, Expr}, bytecode::{Chunk, Bytecode, OpCode}};
+use std::{env, fs, path::Path};
 pub struct Compiler {
     input: Vec<Expr>,
     output: Bytecode,
+    load_history: Vec<String>,
 }
 
 impl Compiler {
@@ -10,6 +11,7 @@ impl Compiler {
         Self {
             input,
             output: Bytecode::new(),
+            load_history: vec![],
         }
     }
     fn declare(&mut self, name: impl ToString) -> Result<u16> {
@@ -46,6 +48,48 @@ impl Compiler {
                 }
 
                 Ok(vec![OpCode::LoadSym(symbols.unwrap_or(self.output.symbols.clone()).iter().position(|sym| *sym == name).unwrap() as u16)])
+            }
+            Expr::Load(files) => {
+                let lib_link = match env::var("ORION_LIB") {
+                    Ok(v) => v,
+                    Err(_) => return error!("ORION_LIB variable does not exist.")
+                };
+
+                let mut to_ret = vec![];
+
+                files.into_iter().map(|file| {
+                    let lib_path = format!("{}/{}", lib_link, file);
+                    let (content, fname) = if Path::new(&lib_path).exists() {
+                        match fs::read_to_string(&lib_path) {
+                            Ok(c) => (c, lib_path),
+                            _ => return error!("Failed to read file: {}.", lib_path),
+                        }
+                    } else if Path::new(&file).exists() {
+                        match fs::read_to_string(&file) {
+                            Ok(c) => (c, file.to_string()),
+                            _ => return error!("Failed to read file: {}.", file)
+                        }
+                    } else {
+                        return error!("File not found: {}.", file);
+                    };
+
+                    if !self.load_history.contains(&fname) {
+                        self.load_history.push(fname);
+                    } else {
+                        return Ok(());
+                    }
+
+                    let tokens = Lexer::new(content).proc_tokens()?;
+                    let expressions = Parser::new(tokens).parse()?;
+
+                    to_ret.extend(expressions.into_iter().map(|e| {
+                        self.compile_expr(e, symbols.clone())
+                    }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>());
+
+                    Ok(())
+                }).collect::<Result<()>>()?;
+
+                Ok(to_ret)
             }
             Expr::Lambda(mut args, body) => {
                 let chunk_syms = args.iter().map(|a| {
