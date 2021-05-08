@@ -84,7 +84,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
     let mut rl = Editor::<()>::new();
 
     loop {
-        let line = rl.readline("> ");
+        let line = rl.readline("orion> ");
 
         match line {
             Ok(line) => {
