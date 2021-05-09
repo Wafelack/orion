@@ -234,6 +234,7 @@ impl Lexer {
     pub fn proc_tokens(&mut self) -> Result<Vec<Token>> {
         self.register_builtin("format");
 
+        self.register_builtin("dbg");
         self.register_builtin("putStr");
         self.register_builtin("putStrLn");
         self.register_builtin("write");

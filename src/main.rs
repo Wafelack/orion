@@ -168,9 +168,10 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 });
 
                 let mut vm = VM::<256>::new(bytecode);
-                let memory = vm.eval()?;
                 println!("-------------------------------");
-                println!("[STACK]");
+                println!("[STDOUT]");
+                let memory = vm.eval()?;
+                println!("\n[STACK]");
                 vm.stack.into_iter().enumerate().for_each(|(idx, v)| {
                     println!("0x{:02x}: {:?}", idx, v);
                 });
