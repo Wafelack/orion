@@ -15,12 +15,18 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new(input: Vec<Expr>) -> Self {
-        Self {
+        let mut to_ret = Self {
             input,
             output: Bytecode::new(),
             load_history: vec![],
             builtins: vec![],
-        }
+        };
+        to_ret.register_builtin("+");
+        to_ret.register_builtin("dbg");
+        to_ret
+    }
+    fn register_builtin(&mut self, name: impl ToString) {
+        self.builtins.push(name.to_string())
     }
     fn register_constant(&mut self, constant: Literal) -> Result<u16> {
         if !self.output.constants.contains(&constant) {
@@ -171,10 +177,7 @@ impl Compiler {
                 Ok((vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)], symbols))
             }
             Expr::Builtin(name, args) => {
-                let idx = self.builtins.iter().position(|builtin| builtin == &name).unwrap_or_else(|| {
-                    self.builtins.push(name);
-                    self.builtins.len() - 1
-                });
+                let idx = self.builtins.iter().position(|builtin| builtin == &name).unwrap();
                 let argc = args.len();
                 let mut to_ret = args.into_iter().map(|arg| {
                     let (compiled, new_syms) = self.compile_expr(arg, symbols.clone())?;
