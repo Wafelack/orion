@@ -27,7 +27,7 @@ use std::{collections::HashMap, mem::discriminant};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Var(String), 
+    Var(String),
     Call(Box<Expr>, Vec<Expr>),
     Lambda(Vec<String>, Box<Expr>),
     Literal(Literal),
@@ -45,29 +45,32 @@ pub enum Expr {
 
 impl Expr {
     pub fn get_type(&self) -> String {
-        format!("<#expr:{}>", match self {
-            Self::Var(s) => format!("constant({})", s),
-            Self::Call(_, _) => "call".to_string(),
-            Self::Lambda(args, _) => format!("lambda({} args)", args.len()),
-            Self::Literal(l) => {
-                match l {
-                    Literal::Integer(i) => format!("integer {}", i),
-                    Literal::Single(s) => format!("single {}", s),
-                    Literal::String(s) => format!("string \"{}\"", s),
-                    Literal::Unit => "unit".to_string(),
+        format!(
+            "<#expr:{}>",
+            match self {
+                Self::Var(s) => format!("constant({})", s),
+                Self::Call(_, _) => "call".to_string(),
+                Self::Lambda(args, _) => format!("lambda({} args)", args.len()),
+                Self::Literal(l) => {
+                    match l {
+                        Literal::Integer(i) => format!("integer {}", i),
+                        Literal::Single(s) => format!("single {}", s),
+                        Literal::String(s) => format!("string \"{}\"", s),
+                        Literal::Unit => "unit".to_string(),
+                    }
                 }
+                Self::Def(name, _) => format!("constant_definition({})", name),
+                Self::Constr(name, _) => format!("enum_constructor({})", name),
+                Self::Enum(name, _) => format!("enum_definition({})", name),
+                Self::Tuple(t) => format!("tuple{{{}}}", t.len()),
+                Self::Load(_) => "load_procedure".to_string(),
+                Self::Match(_, _) => "match_statement".to_string(),
+                Self::Panic(_, _) => "panic_statement".to_string(),
+                Self::Begin(_) => "block".to_string(),
+                Self::Quote(e) => format!("Quote{}", e.get_type()),
+                Self::Builtin(n, _) => format!("builtin({})", n),
             }
-            Self::Def(name, _) => format!("constant_definition({})", name),
-            Self::Constr(name, _) => format!("enum_constructor({})", name),
-            Self::Enum(name, _) => format!("enum_definition({})", name),
-            Self::Tuple(t) => format!("tuple{{{}}}", t.len()),
-            Self::Load(_) => "load_procedure".to_string(),
-            Self::Match(_, _) => "match_statement".to_string(),
-            Self::Panic(_, _) => "panic_statement".to_string(),
-            Self::Begin(_) => "block".to_string(),
-            Self::Quote(e) => format!("Quote{}", e.get_type()),
-            Self::Builtin(n, _) => format!("builtin({})", n),
-        })
+        )
     }
 }
 
@@ -115,7 +118,7 @@ impl Parser {
                 popped.col,
                 expected.get_type(),
                 popped.ttype.get_type()
-                )
+            )
         } else {
             Ok(popped)
         }
@@ -126,7 +129,7 @@ impl Parser {
             error!(
                 "{}:{} | Unfinished expression.",
                 previous.line, previous.col
-                )
+            )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -148,9 +151,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-            {
-                toret.push(self.advance(expected.clone())?);
-            }
+        {
+            toret.push(self.advance(expected.clone())?);
+        }
 
         Ok(toret)
     }
@@ -204,7 +207,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Expected an Enum Variant.",
                                 subroot.line, subroot.col
-                                );
+                            );
                         }
                     }
                     _ => {
@@ -213,7 +216,7 @@ impl Parser {
                             subroot.line,
                             subroot.col,
                             subroot.ttype.get_type()
-                            )
+                        )
                     }
                 }
             }
@@ -223,7 +226,7 @@ impl Parser {
                     root.line,
                     root.col,
                     root.ttype.get_type()
-                    )
+                )
             }
         })
     }
@@ -242,9 +245,7 @@ impl Parser {
                     Expr::Var(v.to_string())
                 }
             }
-            TType::Quote => {
-                Expr::Quote(Box::new(self.parse_expr()?))
-            }
+            TType::Quote => Expr::Quote(Box::new(self.parse_expr()?)),
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -255,7 +256,7 @@ impl Parser {
                         Expr::Panic(
                             format!("[{}:{}] Program panicked at: ", subroot.line, subroot.col),
                             Box::new(to_ret),
-                            )
+                        )
                     }
                     TType::Builtin(b) => {
                         let mut args = vec![];
@@ -295,7 +296,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Literal names have to start with a lowercase letter.",
                                 raw_name.line, raw_name.col
-                                );
+                            );
                         }
 
                         let value = self.parse_expr()?;
@@ -347,7 +348,7 @@ impl Parser {
                             return error!(
                                 "{}:{} | Enum names have to start with a uppercase letter.",
                                 r_name.line, r_name.col
-                                );
+                            );
                         }
 
                         let mut var_len = HashMap::new();
@@ -401,7 +402,8 @@ impl Parser {
                                 } else {
                                     bug!("What is this thing doing here ?");
                                 }
-                            }).collect::<Vec<String>>();
+                            })
+                            .collect::<Vec<String>>();
 
                         let mut body = self.parse_expr()?;
 
@@ -447,7 +449,7 @@ impl Parser {
                 return error!(
                     "{}:{} | Unexpected Closing Parenthese.",
                     root.line, root.col
-                    )
+                )
             }
             _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
         })
@@ -487,18 +489,34 @@ mod test {
         let tokens = Lexer::new("(foobar 4 5)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Call(Box::new(Expr::Var("foobar".to_string())), vec![Expr::Literal(Literal::Integer(4)), Expr::Literal(Literal::Integer(5))])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Call(
+                Box::new(Expr::Var("foobar".to_string())),
+                vec![
+                    Expr::Literal(Literal::Integer(4)),
+                    Expr::Literal(Literal::Integer(5))
+                ]
+            )]
+        );
 
         Ok(())
     }
-
 
     #[test]
     fn literal() -> Result<()> {
         let tokens = Lexer::new("\"foo\" 42 3.1415926535897932 ()").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Literal(Literal::String("foo".to_string())), Expr::Literal(Literal::Integer(42)), Expr::Literal(Literal::Single(3.1415926535897932)), Expr::Literal(Literal::Unit)]);
+        assert_eq!(
+            ast,
+            vec![
+                Expr::Literal(Literal::String("foo".to_string())),
+                Expr::Literal(Literal::Integer(42)),
+                Expr::Literal(Literal::Single(3.1415926535897932)),
+                Expr::Literal(Literal::Unit)
+            ]
+        );
 
         Ok(())
     }
@@ -508,7 +526,13 @@ mod test {
         let tokens = Lexer::new("(λ (x y) 5)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Lambda(vec!["x".to_string(), "y".to_string()], Box::new(Expr::Literal(Literal::Integer(5))))]);
+        assert_eq!(
+            ast,
+            vec![Expr::Lambda(
+                vec!["x".to_string(), "y".to_string()],
+                Box::new(Expr::Literal(Literal::Integer(5)))
+            )]
+        );
 
         Ok(())
     }
@@ -518,7 +542,13 @@ mod test {
         let tokens = Lexer::new("(def foo 5)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Def("foo".to_string(), Box::new(Expr::Literal(Literal::Integer(5))))]);
+        assert_eq!(
+            ast,
+            vec![Expr::Def(
+                "foo".to_string(),
+                Box::new(Expr::Literal(Literal::Integer(5)))
+            )]
+        );
 
         Ok(())
     }
@@ -528,7 +558,13 @@ mod test {
         let tokens = Lexer::new("(Just a)Nothing").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Constr("Just".to_string(), vec![Expr::Var("a".to_string())]), Expr::Constr("Nothing".to_string(), vec![])]);
+        assert_eq!(
+            ast,
+            vec![
+                Expr::Constr("Just".to_string(), vec![Expr::Var("a".to_string())]),
+                Expr::Constr("Nothing".to_string(), vec![])
+            ]
+        );
 
         Ok(())
     }
@@ -538,7 +574,13 @@ mod test {
         let tokens = Lexer::new("(enum Maybe (Just x) Nil)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Enum("Maybe".to_string(), table!{"Just".to_string() => 1u8, "Nil".to_string() => 0u8})]);
+        assert_eq!(
+            ast,
+            vec![Expr::Enum(
+                "Maybe".to_string(),
+                table! {"Just".to_string() => 1u8, "Nil".to_string() => 0u8}
+            )]
+        );
 
         Ok(())
     }
@@ -548,17 +590,27 @@ mod test {
         let tokens = Lexer::new("(, a b c)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Tuple(vec![Expr::Var("a".to_string()), Expr::Var("b".to_string()), Expr::Var("c".to_string())])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Tuple(vec![
+                Expr::Var("a".to_string()),
+                Expr::Var("b".to_string()),
+                Expr::Var("c".to_string())
+            ])]
+        );
 
         Ok(())
     }
-    
+
     #[test]
     fn load() -> Result<()> {
         let tokens = Lexer::new("(load \"foo\" \"bar\")").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Load(vec!["foo".to_string(), "bar".to_string()])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Load(vec!["foo".to_string(), "bar".to_string()])]
+        );
 
         Ok(())
     }
@@ -568,7 +620,19 @@ mod test {
         let tokens = Lexer::new("(match foo (bar x)(_ 9))").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Match(Box::new(Expr::Var("foo".to_string())), vec![(Pattern::Var("bar".to_string()), Expr::Var("x".to_string())), (Pattern::Var("_".to_string()), Expr::Literal(Literal::Integer(9)))])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Match(
+                Box::new(Expr::Var("foo".to_string())),
+                vec![
+                    (Pattern::Var("bar".to_string()), Expr::Var("x".to_string())),
+                    (
+                        Pattern::Var("_".to_string()),
+                        Expr::Literal(Literal::Integer(9))
+                    )
+                ]
+            )]
+        );
 
         Ok(())
     }
@@ -578,7 +642,13 @@ mod test {
         let tokens = Lexer::new("(panic a)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Panic("[1:6] Program panicked at: ".to_string(), Box::new(Expr::Var("a".to_string())))]);
+        assert_eq!(
+            ast,
+            vec![Expr::Panic(
+                "[1:6] Program panicked at: ".to_string(),
+                Box::new(Expr::Var("a".to_string()))
+            )]
+        );
 
         Ok(())
     }
@@ -588,7 +658,14 @@ mod test {
         let tokens = Lexer::new("(begin a b c)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Begin(vec![Expr::Var("a".to_string()), Expr::Var("b".to_string()), Expr::Var("c".to_string())])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Begin(vec![
+                Expr::Var("a".to_string()),
+                Expr::Var("b".to_string()),
+                Expr::Var("c".to_string())
+            ])]
+        );
 
         Ok(())
     }
@@ -608,7 +685,16 @@ mod test {
         let tokens = Lexer::new("(format 5 a)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Builtin("format".to_string(), vec![Expr::Literal(Literal::Integer(5)), Expr::Var("a".to_string())])]);
+        assert_eq!(
+            ast,
+            vec![Expr::Builtin(
+                "format".to_string(),
+                vec![
+                    Expr::Literal(Literal::Integer(5)),
+                    Expr::Var("a".to_string())
+                ]
+            )]
+        );
 
         Ok(())
     }

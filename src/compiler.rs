@@ -1,9 +1,16 @@
-use crate::{lexer::Lexer, Result, error, OrionError, parser::{Parser, Literal, Expr}, bytecode::{Chunk, Bytecode, OpCode}};
+use crate::{
+    bytecode::{Bytecode, Chunk, OpCode},
+    error,
+    lexer::Lexer,
+    parser::{Expr, Literal, Parser},
+    OrionError, Result,
+};
 use std::{env, fs, path::Path};
 pub struct Compiler {
     input: Vec<Expr>,
     output: Bytecode,
     load_history: Vec<String>,
+    builtins: Vec<String>,
 }
 
 impl Compiler {
@@ -12,42 +19,95 @@ impl Compiler {
             input,
             output: Bytecode::new(),
             load_history: vec![],
+            builtins: vec![],
         }
-    }
-    fn declare(&mut self, name: impl ToString) -> Result<u16> {
-        if self.output.symbols.len() > u16::MAX as usize{
-            return error!("Too much symbols are declared.");
-        }
-
-        if !self.output.symbols.contains(&name.to_string()) {
-            self.output.symbols.push(name.to_string());
-        }
-
-        Ok(self.output.symbols.iter().position(|s| s == &name.to_string()).unwrap() as u16)
     }
     fn register_constant(&mut self, constant: Literal) -> Result<u16> {
         if !self.output.constants.contains(&constant) {
             self.output.constants.push(constant.clone());
         }
 
-        if self.output.constants.len() > u16::MAX as usize{
+        if self.output.constants.len() > u16::MAX as usize {
             error!("Too much constants are used.")
         } else {
-            Ok(self.output.constants.iter().position(|c| c == &constant).unwrap() as u16)
+            Ok(self
+               .output
+               .constants
+               .iter()
+               .position(|c| c == &constant)
+               .unwrap() as u16)
         }
     }
-    fn compile_expr(&mut self, expr: Expr, symbols: Option<Vec<String>>) -> Result<Vec<OpCode>> {
+    fn declare(
+        &mut self,
+        name: impl ToString,
+        mut symbols: Vec<String>,
+        ) -> Result<(u16, Vec<String>)> {
+        if self.output.symbols.len() >= u16::MAX as usize {
+            error!("Too much symbols are declared.")
+        } else {
+            Ok((
+                    if symbols.contains(&name.to_string()) {
+                        symbols.iter().position(|s| s == &name.to_string()).unwrap()
+                    } else {
+                        symbols.push(name.to_string());
+                        symbols.len()
+                    } as u16,
+                    symbols,
+                    ))
+        }
+    }
+    fn load_file(
+        &mut self,
+        fname: impl ToString,
+        mut symbols: Vec<String>,
+        ) -> Result<(Vec<OpCode>, Vec<String>)> {
+        let fname = fname.to_string();
+        if self.load_history.contains(&fname) {
+            Ok((vec![], symbols))
+        } else {
+            self.load_history.push(fname.clone());
+            match fs::read_to_string(&fname) {
+                Ok(content) => {
+                    let tokens = Lexer::new(content).proc_tokens()?;
+                    let expressions = Parser::new(tokens).parse()?;
 
-        match expr {
-            Expr::Literal(lit) => {
-                Ok(vec![OpCode::LoadConst(self.register_constant(lit)?)])
-            }
-            Expr::Var(name) => {
-                if !self.output.symbols.contains(&name) {
-                    return error!("Variable not in scope: {}.", name);
+                    Ok((
+                            expressions
+                            .into_iter()
+                            .map(|e| {
+                                let to_ret = self.compile_expr(e, symbols.clone())?;
+                                symbols = to_ret.1;
+                                Ok(to_ret.0)
+                            })
+                            .collect::<Result<Vec<Vec<OpCode>>>>()?
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<OpCode>>(),
+                            symbols,
+                            ))
                 }
-
-                Ok(vec![OpCode::LoadSym(symbols.unwrap_or(self.output.symbols.clone()).iter().position(|sym| *sym == name).unwrap() as u16)])
+                Err(e) => error!("Failed to read file: {}: {}.", fname, e),
+            }
+        }
+    }
+    fn compile_expr(
+        &mut self,
+        expr: Expr,
+        mut symbols: Vec<String>,
+        ) -> Result<(Vec<OpCode>, Vec<String>)> {
+        match expr {
+            Expr::Literal(lit) => Ok((
+                    vec![(OpCode::LoadConst(self.register_constant(lit)?))],
+                    symbols,
+                    )),
+            Expr::Var(name) => {
+                if !symbols.contains(&name) {
+                    error!("Variable not in scope: {}.", name)
+                } else {
+                    let (idx, symbols) = self.declare(name, symbols)?;
+                    Ok((vec![OpCode::LoadSym(idx)], symbols))
+                }
             }
             Expr::Load(files) => {
                 let lib_link = match env::var("ORION_LIB") {
@@ -55,93 +115,87 @@ impl Compiler {
                     Err(_) => return error!("ORION_LIB variable does not exist.")
                 };
 
-                let mut to_ret = vec![];
-
-                files.into_iter().map(|file| {
+                Ok((files.into_iter().map(|file| {
                     let lib_path = format!("{}/{}", lib_link, file);
-                    let (content, fname) = if Path::new(&lib_path).exists() {
-                        match fs::read_to_string(&lib_path) {
-                            Ok(c) => (c, lib_path),
-                            _ => return error!("Failed to read file: {}.", lib_path),
-                        }
+                    let fname = if Path::new(&lib_path).exists() {
+                        Ok(lib_path)
                     } else if Path::new(&file).exists() {
-                        match fs::read_to_string(&file) {
-                            Ok(c) => (c, file.to_string()),
-                            _ => return error!("Failed to read file: {}.", file)
-                        }
+                        Ok(file)
                     } else {
-                        return error!("File not found: {}.", file);
-                    };
+                        error!("File not found: {}.", file)
+                    }?;
 
-                    if !self.load_history.contains(&fname) {
-                        self.load_history.push(fname);
-                    } else {
-                        return Ok(());
-                    }
-
-                    let tokens = Lexer::new(content).proc_tokens()?;
-                    let expressions = Parser::new(tokens).parse()?;
-
-                    to_ret.extend(expressions.into_iter().map(|e| {
-                        self.compile_expr(e, symbols.clone())
-                    }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>());
-
-                    Ok(())
-                }).collect::<Result<()>>()?;
-
-                Ok(to_ret)
-            }
-            Expr::Lambda(mut args, body) => {
-                let chunk_syms = args.iter().map(|a| {
-                    self.declare(a)
-                }).collect::<Result<Vec<_>>>()?;
-                args.extend(symbols.unwrap_or(self.output.symbols.clone()));
-                let chunk_instrs = self.compile_expr(*body, Some(args))?;
-                let chunk = Chunk {
-                    instructions: chunk_instrs,
-                    symbols: chunk_syms,
-                };
-                self.output.chunks.push(chunk);
-                Ok(vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)])
+                    let to_ret = self.load_file(fname, symbols.clone())?;
+                    symbols = to_ret.1;
+                    Ok(to_ret.0)
+                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>(), symbols))
             }
             Expr::Def(name, expr) => {
-                let idx = self.declare(name)?;
-                let mut to_ret = self.compile_expr(*expr, symbols)?;
+                let (idx, symbols) = self.declare(name, symbols)?;
+                let (mut to_ret, symbols) = self.compile_expr(*expr, symbols)?;
                 to_ret.push(OpCode::Def(idx));
-                Ok(to_ret)
+                Ok((to_ret, symbols))
             }
             Expr::Call(func, args) => {
-                let mut to_ret = self.compile_expr(*func, symbols.clone())?;
-                let argc = args.len();
-                args.into_iter().map(|a| self.compile_expr(a, symbols.clone())).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().for_each(|part| to_ret.extend(part));
-                to_ret.push(OpCode::Call(argc as u16));
-                Ok(to_ret)
+                let (mut to_ret, mut symbols) = self.compile_expr(*func, symbols)?;
+                let argc = args.len() as u16;
+                to_ret.extend(args.into_iter()
+                    .map(|a| {
+                        let (opcodes, syms) = self.compile_expr(a, symbols.clone())?;
+                        symbols = syms;
+                        Ok(opcodes)
+                    }).collect::<Result<Vec<Vec<OpCode>>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<OpCode>>());
+                to_ret.push(OpCode::Call(argc));
+                Ok((to_ret, symbols))
             }
-            Expr::Builtin(builtin, args) => {
-                match builtin.as_str() {
-                    "+" => if args.len() == 2 {
-                        self.add(args[0].clone(), args[1].clone(), symbols)
-                    } else {
-                        return error!("Intrinsic `+` takes 2 arguments, but {} arguments were supplied.", args.len());
+            Expr::Lambda(args, body) => {
+                let chunk_symbols = args.iter().map(|a| {
+                    let (idx, syms) = self.declare(a, symbols.clone())?;
+                    symbols = syms;
+                    Ok(idx)
+                }).collect::<Result<Vec<_>>>()?;
+                let run_with = symbols.iter().enumerate().map(|(idx, sym)| {
+                    match chunk_symbols.iter().position(|id| *id as usize == idx) {
+                        Some(arg_i) => args[arg_i].to_string(),
+                        None => sym.to_string(),
                     }
-                    _ => todo!(),
-                }
+                }).collect::<Vec<String>>();
+                let (chunk_instructions, symbols) = self.compile_expr(*body, run_with)?;
+                self.output.chunks.push(Chunk {
+                    instructions: chunk_instructions,
+                    symbols: chunk_symbols,
+                });
+                Ok((vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)], symbols))
+            }
+            Expr::Builtin(name, args) => {
+                let idx = self.builtins.iter().position(|builtin| builtin == &name).unwrap_or_else(|| {
+                    self.builtins.push(name);
+                    self.builtins.len() - 1
+                });
+                let argc = args.len();
+                let mut to_ret = args.into_iter().map(|arg| {
+                    let (compiled, new_syms) = self.compile_expr(arg, symbols.clone())?;
+                    symbols = new_syms;
+                    Ok(compiled)
+                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>();
+                to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
+                Ok((to_ret, symbols))
             }
             _ => todo!(),
-        }        
-
-    }
-    fn add(&mut self, lhs: Expr, rhs: Expr, symbols: Option<Vec<String>>) -> Result<Vec<OpCode>> {
-        let mut toret = self.compile_expr(lhs, symbols.clone())?;
-        toret.extend(self.compile_expr(rhs, symbols)?);
-        toret.push(OpCode::Add);
-        Ok(toret)
+        }
     }
     pub fn compile(&mut self) -> Result<Bytecode> {
+        let mut symbols = vec![];
         for expr in self.input.clone() {
-            let to_push = self.compile_expr(expr, None)?;
+            let (to_push, new_symbols) = self.compile_expr(expr, symbols)?;
+            symbols = new_symbols;
             self.output.instructions.extend(to_push);
         }
+
+        self.output.symbols = symbols;
 
         Ok(self.output.clone())
     }

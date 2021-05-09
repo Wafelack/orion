@@ -18,20 +18,25 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+mod bytecode;
+mod compiler;
 mod errors;
 mod lexer;
 mod parser;
-mod bytecode;
-mod compiler;
 mod vm;
 
 // mod builtins;
 
-use crate::{lexer::Lexer, parser::Parser, compiler::Compiler, vm::{VM, Value}};
+use crate::{
+    compiler::Compiler,
+    lexer::Lexer,
+    parser::Parser,
+    vm::{Value, VM},
+};
+use clap::{App, Arg};
 pub use errors::{OrionError, Result};
 use rustyline::{error::ReadlineError, Editor};
-use clap::{App, Arg};
-use std::{time::Instant, process::exit, path::Path, fs};
+use std::{fs, path::Path, process::exit, time::Instant};
 
 #[macro_export]
 macro_rules! bug {
@@ -41,7 +46,7 @@ macro_rules! bug {
             $bug,
             file!(),
             line!()
-            )
+        )
     };
 }
 
@@ -69,16 +74,18 @@ fn print_err(e: OrionError) {
             "\x1b[0;31mError: \x1b[0m"
         },
         e.0
-        );
+    );
 }
 
 fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
-
-    println!(";; Welcome to Orion {}.\n
+    println!(
+        ";; Welcome to Orion {}.\n
 ;; Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
 ;; This program comes with ABSOLUTELY NO WARRANTY.
 ;; This is free software, and you are welcome to redistribute it
-;; under certain conditions.", env!("CARGO_PKG_VERSION"));
+;; under certain conditions.",
+        env!("CARGO_PKG_VERSION")
+    );
     // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
 
     let mut rl = Editor::<()>::new();
@@ -117,7 +124,6 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     }
                 };
 
-
                 if debug {
                     println!("Syntax Tree\n===========");
                     ast.iter().for_each(|e| println!("{}", e.get_type()));
@@ -131,11 +137,22 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
 
                 let bytecode = Compiler::new(ast).compile()?;
                 println!("[INSTRUCTIONS]");
-                bytecode.instructions.iter().for_each(|i| println!("{:?}", i));
+                bytecode
+                    .instructions
+                    .iter()
+                    .for_each(|i| println!("{:?}", i));
                 println!("\n[SYMBOLS]");
-                bytecode.symbols.iter().enumerate().for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
+                bytecode
+                    .symbols
+                    .iter()
+                    .enumerate()
+                    .for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
                 println!("\n[CONSTANTS]");
-                bytecode.constants.iter().enumerate().for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant)); 
+                bytecode
+                    .constants
+                    .iter()
+                    .enumerate()
+                    .for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant));
                 println!("\n[CHUNKS]");
                 bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
                     println!("{}: {{", idx);
@@ -162,7 +179,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     println!("0x{:02x}: {:?}", idx, v);
                 });
 
-                /* 
+                /*
                    let start = Instant::now();
                 /* match interpreter.interpret(true) {
                 Ok(_) => {},
@@ -184,38 +201,43 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 eprintln!("An error occured, please retry.");
                 continue;
             }
-
         }
     }
 }
 
 fn try_main() -> Result<()> {
-
     let matches = App::new("orion")
         .author(env!("CARGO_PKG_AUTHORS"))
         .version(env!("CARGO_PKG_VERSION"))
         .about("Orion is a purely functional lisp dialect.")
-        .arg(Arg::with_name("file")
-             .takes_value(true)
-             .index(1)
-             .help("The source file to pass to the interpreter"))
-        .arg(Arg::with_name("no-load-prelude")
-             .short("np")
-             .long("no-load-prelude")
-             .help("Do not load the prelude file"))
-        .arg(Arg::with_name("debug")
-             .short("d")
-             .long("debug")
-             .help("Display debug information."))
-        .arg(Arg::with_name("quiet")
-             .short("q")
-             .long("quiet")
-             .help("Do not display messages."))
+        .arg(
+            Arg::with_name("file")
+                .takes_value(true)
+                .index(1)
+                .help("The source file to pass to the interpreter"),
+        )
+        .arg(
+            Arg::with_name("no-load-prelude")
+                .short("np")
+                .long("no-load-prelude")
+                .help("Do not load the prelude file"),
+        )
+        .arg(
+            Arg::with_name("debug")
+                .short("d")
+                .long("debug")
+                .help("Display debug information."),
+        )
+        .arg(
+            Arg::with_name("quiet")
+                .short("q")
+                .long("quiet")
+                .help("Do not display messages."),
+        )
         .get_matches();
 
     if let Some(path) = matches.value_of("file") {
         if Path::new(path).exists() {
-
             let content = match fs::read_to_string(path) {
                 Ok(c) => c,
                 Err(e) => return error!("fatal: Failed to read file: {}.", e),
@@ -250,10 +272,13 @@ fn try_main() -> Result<()> {
             error!("fatal: File not found: {}.", path)
         }
     } else {
-        repl(matches.is_present("no-load-prelude"), matches.is_present("debug"), matches.is_present("quiet"))?;
+        repl(
+            matches.is_present("no-load-prelude"),
+            matches.is_present("debug"),
+            matches.is_present("quiet"),
+        )?;
         Ok(())
     }
-
 }
 
 fn main() {

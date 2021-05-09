@@ -81,7 +81,7 @@ pub struct Lexer {
     line: usize,
     start: usize,
     column: usize,
-    builtins: Vec<String>
+    builtins: Vec<String>,
 }
 
 impl Lexer {
@@ -126,9 +126,9 @@ impl Lexer {
 
         self.advance(); // Closing "
 
-        self.add_token(TType::Str(
-                apply_ansi_codes(&self.input[self.start + 1..self.current - 1])
-                ));
+        self.add_token(TType::Str(apply_ansi_codes(
+            &self.input[self.start + 1..self.current - 1],
+        )));
 
         Ok(())
     }
@@ -145,23 +145,25 @@ impl Lexer {
             }
             '\'' => self.add_token(TType::Quote),
             '"' => self.string()?,
-            '#' => if !self.is_at_end() && self.peek() == '!' && self.line == 1 {
-                while !self.is_at_end() && self.peek() != '\n' {
-                    self.advance();
-                }
-            } else if !self.is_at_end() && self.peek() == '|' {
-                self.advance();
-                while !self.is_at_end() {
-                    if self.peek() == '|' {
-                        if !self.is_at_end() && self.peek() == '#' {
-                            self.advance();
-                            break;
-                        }
+            '#' => {
+                if !self.is_at_end() && self.peek() == '!' && self.line == 1 {
+                    while !self.is_at_end() && self.peek() != '\n' {
+                        self.advance();
                     }
+                } else if !self.is_at_end() && self.peek() == '|' {
                     self.advance();
+                    while !self.is_at_end() {
+                        if self.peek() == '|' {
+                            if !self.is_at_end() && self.peek() == '#' {
+                                self.advance();
+                                break;
+                            }
+                        }
+                        self.advance();
+                    }
+                } else {
+                    self.identifier();
                 }
-            } else {
-                self.identifier();
             }
             ';' => {
                 while !self.is_at_end() && self.peek() != '\n' {
@@ -227,12 +229,9 @@ impl Lexer {
 
                 _ => self.add_token(TType::Ident(raw)),
             }
-
         }
-
     }
     pub fn proc_tokens(&mut self) -> Result<Vec<Token>> {
-
         self.register_builtin("format");
 
         self.register_builtin("putStr");
@@ -289,7 +288,7 @@ mod test {
         assert_eq!(ttypes, vec![TType::LParen, TType::RParen]);
         Ok(())
     }
-    
+
     #[test]
     fn comments() -> Result<()> {
         let ttypes = get_ttypes(Lexer::new(";;\n#|blah blah\nblah\n#|").proc_tokens()?);
@@ -307,7 +306,10 @@ mod test {
     #[test]
     fn numbers() -> Result<()> {
         let ttypes = get_ttypes(Lexer::new("42 3.1415926535897932").proc_tokens()?);
-        assert_eq!(ttypes, vec![TType::Number(42), TType::Float(3.1415926535897932)]);
+        assert_eq!(
+            ttypes,
+            vec![TType::Number(42), TType::Float(3.1415926535897932)]
+        );
         Ok(())
     }
 
