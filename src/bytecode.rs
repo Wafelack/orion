@@ -8,6 +8,7 @@ pub enum OpCode {
     Builtin(u8, u8),
     Def(u16),
     Lambda(u16),
+    Quote(u16),
 }
 
 #[derive(Clone, Debug)]

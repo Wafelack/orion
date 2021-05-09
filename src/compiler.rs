@@ -23,6 +23,7 @@ impl Compiler {
         };
         to_ret.register_builtin("+");
         to_ret.register_builtin("dbg");
+        to_ret.register_builtin("unquote");
         to_ret
     }
     fn register_builtin(&mut self, name: impl ToString) {
@@ -185,6 +186,12 @@ impl Compiler {
                     Ok(compiled)
                 }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>();
                 to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
+                Ok((to_ret, symbols))
+            }
+            Expr::Quote(expr) => {
+                let (body, symbols) = self.compile_expr(*expr, symbols)?;
+                let mut to_ret = vec![OpCode::Quote(body.len() as u16)];
+                to_ret.extend(body);
                 Ok((to_ret, symbols))
             }
             _ => todo!(),

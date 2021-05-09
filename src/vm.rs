@@ -12,12 +12,14 @@ pub enum Value {
     String(String),
     Unit,
     Lambda(u16),
+    Quote(Vec<OpCode>),
 }
 
 pub struct VM<const STACK_SIZE: usize> {
     pub input: Bytecode,
     pub stack: Vec<Value>,
-    pub builtins: Vec<(fn(&mut VM<STACK_SIZE>) -> Result<()>, u8)>,
+    pub builtins: Vec<(fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>, u8)>,
+    pub ip: usize,
 }
 
 fn to_val(lit: &Literal) -> Value {
@@ -35,16 +37,29 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             input,
             stack: Vec::with_capacity(STACK_SIZE),
             builtins: vec![],
+            ip: 0,
         };
         to_ret.register_builtin(Self::add, 2);
         to_ret.register_builtin(Self::dbg, 1);
+        to_ret.register_builtin(Self::unquote, 1);
         to_ret
     }
-    fn dbg(&mut self) -> Result<()> {
+    fn dbg(&mut self, _: &mut Vec<Value>) -> Result<()> {
         println!("{:?}", self.stack.pop().unwrap());
         Ok(())
     }
-    fn add(&mut self) -> Result<()> {
+    fn unquote(&mut self, ctx: &mut Vec<Value>) -> Result<()> {
+        match self.stack.pop().unwrap() {
+            Value::Quote(opcodes) => {
+                for opcode in opcodes {
+                    self.eval_opcode(opcode, ctx)?;
+                }
+                Ok(())
+            }
+            x => error!("Expected a Quote, found a {:?}", x),
+        }
+    }
+    fn add(&mut self, _: &mut Vec<Value>) -> Result<()> {
         let lhs = self.stack.pop().unwrap();
         let rhs = self.stack.pop().unwrap();
 
@@ -62,7 +77,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         }
         Ok(())
     }
-    fn register_builtin(&mut self, func: fn(&mut VM<STACK_SIZE>) -> Result<()>, argc: u8) {
+    fn register_builtin(&mut self, func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>, argc: u8) {
         self.builtins.push((func, argc))
     }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
@@ -118,17 +133,23 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 if f_argc != argc {
                     return error!("Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.", idx, f_argc, argc);
                 }
-                f(self)?;
+                f(self, ctx)?;
             }
-            _ => todo!(),
+            OpCode::Quote(n) => {
+                self.ip += 1;
+                self.stack.push(Value::Quote(self.input.instructions[self.ip..(self.ip + n as usize)].to_vec()));
+                self.ip += n as usize - 1;
+            }
         }
 
         Ok(())
     }
     pub fn eval(&mut self) -> Result<Vec<Value>> {
         let mut ctx = vec![];
-        for instr in self.input.instructions.clone() {
-            self.eval_opcode(instr, &mut ctx)?;
+        while self.ip < self.input.instructions.len() {
+            let instruction = self.input.instructions[self.ip];
+            self.eval_opcode(instruction, &mut ctx)?;
+            self.ip += 1;
         }
         Ok(ctx)
     }
