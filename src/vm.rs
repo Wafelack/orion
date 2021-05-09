@@ -37,7 +37,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             builtins: vec![],
         };
         to_ret.register_builtin(Self::add, 2);
+        to_ret.register_builtin(Self::dbg, 1);
         to_ret
+    }
+    fn dbg(&mut self) -> Result<()> {
+        println!("{:?}", self.stack.pop().unwrap());
+        Ok(())
     }
     fn add(&mut self) -> Result<()> {
         let lhs = self.stack.pop().unwrap();
@@ -88,7 +93,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             args.len()
                             );
                     }
-
+                    let prev_ctx = ctx.clone();
                     for idx in 0..chunk.symbols.len() {
                         let val = args[idx].clone();
                         let chunk_id = chunk.symbols[idx] as usize;
@@ -99,11 +104,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         }
                     }
 
-                    println!("{:?}", &ctx);
-
                     for instr in chunk.instructions.clone() {
                         self.eval_opcode(instr, ctx)?;
                     }
+
+                    *ctx = prev_ctx;
                 } else {
                     return error!("Expected a Lambda, found a {:?}.", func);
                 }
