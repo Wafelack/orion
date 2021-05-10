@@ -9,6 +9,7 @@ pub enum OpCode {
     Def(u16),        // (sym_id)
     Lambda(u16),     // (chunk_id)
     Quote(u16),      // (nb_opcodes)
+    Constructor(u16),    // (constr_id)
 }
 
 #[derive(Clone, Debug)]
@@ -23,7 +24,7 @@ pub struct Bytecode {
     pub symbols: Vec<String>,
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,
-    pub variants: Vec<u8>
+    pub constructors: Vec<u8>
 }
 
 impl Bytecode {
@@ -33,7 +34,7 @@ impl Bytecode {
             symbols: vec![],
             constants: vec![],
             instructions: vec![],
-            variants: vec![],
+            constructors: vec![],
         }
     }
 }
