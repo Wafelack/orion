@@ -10,7 +10,7 @@ pub enum OpCode {
     Lambda(u16),              // (chunk_id)
     Quote(u16),               // (nb_opcodes)
     Constructor(u16, u16),    // (constr_idx, to_eval)
-    Tuple(u16),               // (to_eval)
+    Tuple(u16, u16),          // (amount, to_eval)
 }
 
 #[derive(Clone, Debug)]

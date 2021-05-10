@@ -271,12 +271,14 @@ impl Compiler {
                 Ok((to_ret, symbols))
             }
             Expr::Tuple(vals) => {
-                let mut to_ret = vec![OpCode::Tuple(vals.len() as u16)];
-                to_ret.extend(vals.into_iter().map(|expr| {
+                let vals_len = vals.len();
+                let values = vals.into_iter().map(|expr| {
                     let (compiled, new_syms) = self.compile_expr(expr, symbols.clone())?;
                     symbols = new_syms;
                     Ok(compiled)
-                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten()); 
+                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>(); 
+                let mut to_ret = vec![OpCode::Tuple(values.len() as u16, vals_len as u16)];
+                to_ret.extend(values);
                 Ok((to_ret, symbols))
             }
             _ => todo!(),
