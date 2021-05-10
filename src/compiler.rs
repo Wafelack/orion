@@ -254,12 +254,13 @@ impl Compiler {
                 if amount != contained.len() as u8 {
                     error!("Enum Constructor {} takes {} values, but {} values were given.", name, amount, contained.len())
                 } else {
-                    let mut to_ret = vec![OpCode::Constructor(idx)];
-                    to_ret.extend(contained.into_iter().map(|expr| {
-                        let (compiled, new_syms) = self.compile_expr(expr, symbols)?;
+                    let values = contained.into_iter().map(|expr| {
+                        let (compiled, new_syms) = self.compile_expr(expr, symbols.clone())?;
                         symbols = new_syms;
                         Ok(compiled)
-                    }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>());
+                    }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>();
+                    let mut to_ret = vec![OpCode::Constructor(idx, values.len() as u16)];
+                    to_ret.extend(values);
                     Ok((to_ret, symbols))
                 }
             } 
