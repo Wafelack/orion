@@ -400,12 +400,12 @@ impl Parser {
                                 if let TType::Ident(ident) = &e.ttype {
                                     ident.to_string()
                                 } else {
-                                    bug!("What is this thing doing here ?");
+                                    bug!("UNEXPECTED_NON_IDENTIFIER");
                                 }
                             })
                             .collect::<Vec<String>>();
 
-                        let mut body = self.parse_expr()?;
+                        let body = self.parse_expr()?;
 
                         self.advance(TType::RParen)?;
                         Expr::Lambda(args, Box::new(body))
