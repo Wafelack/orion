@@ -23,6 +23,7 @@ pub struct Bytecode {
     pub symbols: Vec<String>,
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,
+    pub variants: Vec<u8>
 }
 
 impl Bytecode {
@@ -32,6 +33,7 @@ impl Bytecode {
             symbols: vec![],
             constants: vec![],
             instructions: vec![],
+            variants: vec![],
         }
     }
 }
