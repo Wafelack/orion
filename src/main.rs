@@ -157,7 +157,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                 bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
                     println!("{}: {{", idx);
                     println!("  reference: [");
-                    chunk.symbols.iter().for_each(|sym| {
+                    chunk.reference.iter().for_each(|sym| {
                         println!("    0x{:04x}", sym);
                     });
                     println!("  ]\n  instructions: [");
