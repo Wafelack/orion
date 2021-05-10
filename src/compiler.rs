@@ -11,14 +11,14 @@ pub struct Compiler {
     output: Bytecode,
     load_history: Vec<String>,
     builtins: Vec<String>,
-    variants: Vec<String>
+    constructors: Vec<String>
 }
 
 impl Compiler {
     pub fn new(input: Vec<Expr>) -> Self {
         let mut to_ret = Self {
             input,
-            variants: vec![],
+            constructors: vec![],
             output: Bytecode::new(),
             load_history: vec![],
             builtins: vec![],
@@ -46,21 +46,21 @@ impl Compiler {
                .unwrap() as u16)
         }
     }
-    fn register_variant(&mut self, name: impl ToString, contained_amount: u8) -> Result<()> {
+    fn register_constructor(&mut self, name: impl ToString, contained_amount: u8) -> Result<()> {
         let name = name.to_string();
-        if self.variants.contains(&name) {
-            error!("Enum Variant {} has already been defined (Index 0x{:04x})", &name, self.variants.iter().position(|var| var.to_string() == name).unwrap())
+        if self.constructors.contains(&name) {
+            error!("Enum Variant {} has already been defined (Index 0x{:04x})", &name, self.constructors.iter().position(|var| var.to_string() == name).unwrap())
         } else {
-            self.variants.push(name);
-            self.output.variants.push(contained_amount);
+            self.constructors.push(name);
+            self.output.constructors.push(contained_amount);
             Ok(())
         }
     }
-    fn get_variant(&self, name: impl ToString) -> Result<u8> {
+    fn get_constructor(&self, name: impl ToString) -> Result<(u8, u16)> {
         let name = name.to_string();
-        if self.variants.contains(&name) {
-            let idx = self.variants.iter().position(|variant| name == variant.to_string()).unwrap();
-            Ok(self.output.variants[idx])
+        if self.constructors.contains(&name) {
+            let idx = self.constructors.iter().position(|variant| name == variant.to_string()).unwrap();
+            Ok((self.output.constructors[idx], idx as u16))
         } else {
             error!("Enum Variant {} does not exist.", name)
         }
@@ -243,12 +243,26 @@ impl Compiler {
                 to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
             }
-            Expr::Enum(_, variants) => {
-                variants.into_iter().map(|(k, v)| {
-                    self.register_variant(k, v)
+            Expr::Enum(_, constructors) => {
+                constructors.into_iter().map(|(k, v)| {
+                    self.register_constructor(k, v)
                 }).collect::<Result<()>>()?;
                 Ok((vec![], symbols))
             }
+            Expr::Constr(name, contained) => {
+                let (amount, idx) = self.get_constructor(&name)?;
+                if amount != contained.len() as u8 {
+                    error!("Enum Constructor {} takes {} values, but {} values were given.", name, amount, contained.len())
+                } else {
+                    let mut to_ret = vec![OpCode::Constructor(idx)];
+                    to_ret.extend(contained.into_iter().map(|expr| {
+                        let (compiled, new_syms) = self.compile_expr(expr, symbols)?;
+                        symbols = new_syms;
+                        Ok(compiled)
+                    }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>());
+                    Ok((to_ret, symbols))
+                }
+            } 
             Expr::Quote(expr) => {
                 let (body, symbols) = self.compile_expr(*expr, symbols)?;
                 let mut to_ret = vec![OpCode::Quote(body.len() as u16)];
