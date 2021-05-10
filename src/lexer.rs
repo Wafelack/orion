@@ -124,10 +124,10 @@ impl Lexer {
             return error!("{}:{} | Unterminated string.", self.line, self.column);
         }
 
-        self.advance(); // Closing "
+        self.advance(); // Closing double quotes
 
         self.add_token(TType::Str(apply_ansi_codes(
-            &self.input[self.start + 1..self.current - 1],
+            &self.input[self.start + 1..self.current - 1], // Remove opening and closing double quotes
         )));
 
         Ok(())
@@ -190,7 +190,7 @@ impl Lexer {
         }
 
         if !self.is_at_end() && self.peek() == '.' {
-            self.advance();
+            self.advance(); // Decimal part delimiter
         }
 
         while !self.is_at_end() && self.peek().is_digit(10) {
