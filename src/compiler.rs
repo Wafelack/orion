@@ -11,12 +11,14 @@ pub struct Compiler {
     output: Bytecode,
     load_history: Vec<String>,
     builtins: Vec<String>,
+    variants: Vec<String>
 }
 
 impl Compiler {
     pub fn new(input: Vec<Expr>) -> Self {
         let mut to_ret = Self {
             input,
+            variants: vec![],
             output: Bytecode::new(),
             load_history: vec![],
             builtins: vec![],
@@ -37,37 +39,56 @@ impl Compiler {
             error!("Too much constants are used.")
         } else {
             Ok(self
-                .output
-                .constants
-                .iter()
-                .position(|c| c == &constant)
-                .unwrap() as u16)
+               .output
+               .constants
+               .iter()
+               .position(|c| c == &constant)
+               .unwrap() as u16)
+        }
+    }
+    fn register_variant(&mut self, name: impl ToString, contained_amount: u8) -> Result<()> {
+        let name = name.to_string();
+        if self.variants.contains(&name) {
+            error!("Enum Variant {} has already been defined (Index 0x{:04x})", &name, self.variants.iter().position(|var| var.to_string() == name).unwrap())
+        } else {
+            self.variants.push(name);
+            self.output.variants.push(contained_amount);
+            Ok(())
+        }
+    }
+    fn get_variant(&self, name: impl ToString) -> Result<u8> {
+        let name = name.to_string();
+        if self.variants.contains(&name) {
+            let idx = self.variants.iter().position(|variant| name == variant.to_string()).unwrap();
+            Ok(self.output.variants[idx])
+        } else {
+            error!("Enum Variant {} does not exist.", name)
         }
     }
     fn declare(
         &mut self,
         name: impl ToString,
         mut symbols: Vec<String>,
-    ) -> Result<(u16, Vec<String>)> {
+        ) -> Result<(u16, Vec<String>)> {
         if self.output.symbols.len() >= u16::MAX as usize {
             error!("Too much symbols are declared.")
         } else {
             Ok((
-                if symbols.contains(&name.to_string()) {
-                    symbols.iter().position(|s| s == &name.to_string()).unwrap()
-                } else {
-                    symbols.push(name.to_string());
-                    symbols.len()
-                } as u16,
-                symbols,
-            ))
+                    if symbols.contains(&name.to_string()) {
+                        symbols.iter().position(|s| s == &name.to_string()).unwrap()
+                    } else {
+                        symbols.push(name.to_string());
+                        symbols.len()
+                    } as u16,
+                    symbols,
+                    ))
         }
     }
     fn load_file(
         &mut self,
         fname: impl ToString,
         mut symbols: Vec<String>,
-    ) -> Result<(Vec<OpCode>, Vec<String>)> {
+        ) -> Result<(Vec<OpCode>, Vec<String>)> {
         let fname = fname.to_string();
         if self.load_history.contains(&fname) { // Avoid error-prone reloading if file has already been loaded.
             Ok((vec![], symbols))
@@ -79,7 +100,7 @@ impl Compiler {
                     let expressions = Parser::new(tokens).parse()?;
 
                     Ok((
-                        expressions
+                            expressions
                             .into_iter()
                             .map(|e| {
                                 let to_ret = self.compile_expr(e, symbols.clone())?;
@@ -90,8 +111,8 @@ impl Compiler {
                             .into_iter()
                             .flatten()
                             .collect::<Vec<OpCode>>(),
-                        symbols,
-                    ))
+                            symbols,
+                            ))
                 }
                 Err(e) => error!("Failed to read file: {}: {}.", fname, e),
             }
@@ -101,12 +122,12 @@ impl Compiler {
         &mut self,
         expr: Expr,
         mut symbols: Vec<String>,
-    ) -> Result<(Vec<OpCode>, Vec<String>)> {
+        ) -> Result<(Vec<OpCode>, Vec<String>)> {
         match expr {
             Expr::Literal(lit) => Ok((
-                vec![(OpCode::LoadConst(self.register_constant(lit)?))],
-                symbols,
-            )),
+                    vec![(OpCode::LoadConst(self.register_constant(lit)?))],
+                    symbols,
+                    )),
             Expr::Var(name) => {
                 if !symbols.contains(&name) {
                     error!("Variable not in scope: {}.", name)
@@ -122,7 +143,7 @@ impl Compiler {
                 };
 
                 Ok((
-                    files
+                        files
                         .into_iter()
                         .map(|file| {
                             let lib_path = format!("{}/{}", lib_link, file);
@@ -142,8 +163,8 @@ impl Compiler {
                         .into_iter()
                         .flatten()
                         .collect::<Vec<OpCode>>(),
-                    symbols,
-                ))
+                        symbols,
+                        ))
             }
             Expr::Def(name, expr) => {
                 let (idx, symbols) = self.declare(name, symbols)?;
@@ -156,16 +177,16 @@ impl Compiler {
                 let argc = args.len() as u16;
                 to_ret.extend( // Push arguments onto the stack, and keep the amount in order to pop all the arguments.
                     args.into_iter()
-                        .map(|a| {
-                            let (opcodes, syms) = self.compile_expr(a, symbols.clone())?;
-                            symbols = syms; // Update symbols.
-                            Ok(opcodes)
-                        })
-                        .collect::<Result<Vec<Vec<OpCode>>>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<OpCode>>(),
-                );
+                    .map(|a| {
+                        let (opcodes, syms) = self.compile_expr(a, symbols.clone())?;
+                        symbols = syms; // Update symbols.
+                        Ok(opcodes)
+                    })
+                    .collect::<Result<Vec<Vec<OpCode>>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<OpCode>>(),
+                    );
                 to_ret.push(OpCode::Call(argc));
                 Ok((to_ret, symbols))
             }
@@ -177,7 +198,7 @@ impl Compiler {
                         symbols = syms;
                         Ok(idx)
                     })
-                    .collect::<Result<Vec<_>>>()?; // Position in the symbol table for each arg.
+                .collect::<Result<Vec<_>>>()?; // Position in the symbol table for each arg.
                 let run_with = symbols
                     .iter()
                     .enumerate()
@@ -190,16 +211,16 @@ impl Compiler {
                             None => sym.to_string(),
                         }
                     })
-                    .collect::<Vec<String>>();
+                .collect::<Vec<String>>();
                 let (chunk_instructions, symbols) = self.compile_expr(*body, run_with)?;
                 self.output.chunks.push(Chunk {
                     instructions: chunk_instructions,
                     reference: args_reference,
                 });
                 Ok((
-                    vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)],
-                    symbols,
-                ))
+                        vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)],
+                        symbols,
+                        ))
             }
             Expr::Builtin(name, args) => {
                 let idx = self
@@ -215,12 +236,18 @@ impl Compiler {
                         symbols = new_syms; // Update symbols.
                         Ok(compiled)
                     })
-                    .collect::<Result<Vec<Vec<OpCode>>>>()?
+                .collect::<Result<Vec<Vec<OpCode>>>>()?
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
                 to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
+            }
+            Expr::Enum(_, variants) => {
+                variants.into_iter().map(|(k, v)| {
+                    self.register_variant(k, v)
+                }).collect::<Result<()>>()?;
+                Ok((vec![], symbols))
             }
             Expr::Quote(expr) => {
                 let (body, symbols) = self.compile_expr(*expr, symbols)?;
