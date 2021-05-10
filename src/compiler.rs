@@ -270,6 +270,15 @@ impl Compiler {
                 to_ret.extend(body);
                 Ok((to_ret, symbols))
             }
+            Expr::Tuple(vals) => {
+                let mut to_ret = vec![OpCode::Tuple(vals.len() as u16)];
+                to_ret.extend(vals.into_iter().map(|expr| {
+                    let (compiled, new_syms) = self.compile_expr(expr, symbols.clone())?;
+                    symbols = new_syms;
+                    Ok(compiled)
+                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten()); 
+                Ok((to_ret, symbols))
+            }
             _ => todo!(),
         }
     }
