@@ -63,8 +63,8 @@ Roadmap
 	- [x] Variables definition
 	- [x] Function calls
 	- [x] Builtins calls
-	- [ ] Enumerations
-	- [ ] Variants
+	- [x] Enumerations
+	- [x] Variants
 	- [ ] Tuples
 	- [ ] Pattern Matching
 	- [ ] Builtins
