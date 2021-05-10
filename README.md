@@ -65,7 +65,7 @@ Roadmap
 	- [x] Builtins calls
 	- [x] Enumerations
 	- [x] Variants
-	- [ ] Tuples
+	- [x] Tuples
 	- [ ] Pattern Matching
 	- [ ] Builtins
 		- [x] Add
