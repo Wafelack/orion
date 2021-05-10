@@ -79,8 +79,8 @@ fn print_err(e: OrionError) {
 
 fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
     println!(
-        ";; Welcome to Orion {}.\n
-;; Orion REPL  Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
+        ";; Orion REPL v{}.\n
+;; Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
 ;; This program comes with ABSOLUTELY NO WARRANTY.
 ;; This is free software, and you are welcome to redistribute it
 ;; under certain conditions.",

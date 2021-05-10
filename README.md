@@ -54,10 +54,41 @@ Roadmap
 
 - [x] Lexing
 - [x] Parsing
-- [x] Evaluation
-- [x] Core functionnality
-- [x] Documentation
-- [ ] Standard library.
+- [ ] Compilation and Virtual Machine
+	- [x] Literals
+	- [x] Lambdas
+	- [x] Quotes
+	- [x] Variables
+	- [x] Load
+	- [x] Variables definition
+	- [x] Function calls
+	- [x] Builtins calls
+	- [ ] Enumerations
+	- [ ] Variants
+	- [ ] Tuples
+	- [ ] Pattern Matching
+	- [ ] Builtins
+		- [x] Add
+		- [ ] Sub
+		- [ ] Mul
+		- [ ] Div
+		- [x] Dbg
+		- [ ] putStr
+		- [ ] write
+		- [ ] getLine
+		- [ ] _Cmp
+		- [ ] Cos
+		- [ ] Sin
+		- [ ] Tan
+		- [ ] Acos
+		- [ ] Asin
+		- [ ] Atan
+		- [x] Unquote
+- [ ] Documentation
+	- [x] Core Library documentation
+	- [x] Standard Library documetation
+	- [x] Builtins documentation
+	- [ ] Begginer guide
 
 Quick Example
 -------------

@@ -1,2 +1,2 @@
-*.orn linguist-language=lisp
-*.orn diff=lisp
+*.orn linguist-language=clojure
+*.orn diff=clojure
