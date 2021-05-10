@@ -2,13 +2,13 @@ use crate::parser::Literal;
 
 #[derive(Copy, Clone, Debug)]
 pub enum OpCode {
-    LoadConst(u16),
-    LoadSym(u16),
-    Call(u16),
-    Builtin(u8, u8),
-    Def(u16),
-    Lambda(u16),
-    Quote(u16),
+    LoadConst(u16),  // (const_id)
+    LoadSym(u16),    // (sym_id)
+    Call(u16),       // (argc)
+    Builtin(u8, u8), // (builtin_id, argc)
+    Def(u16),        // (sym_id)
+    Lambda(u16),     // (chunk_id)
+    Quote(u16),      // (nb_opcodes)
 }
 
 #[derive(Clone, Debug)]
