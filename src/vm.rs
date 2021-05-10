@@ -14,6 +14,7 @@ pub enum Value {
     Lambda(u16),
     Quote(Vec<OpCode>),
     Constructor(u16, Vec<Value>),
+    Tuple(Vec<Value>)
 }
 
 pub struct VM<const STACK_SIZE: usize> {
@@ -161,6 +162,15 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.stack.pop().unwrap()
                 }).collect::<Vec<Value>>();
                 self.stack.push(Value::Constructor(idx, vals));
+            }
+            OpCode::Tuple(amount, to_eval) => {
+                for i in 1..=amount {
+                    let instruction = self.input.instructions[self.ip + i as usize];
+                    self.eval_opcode(instruction, ctx)?;
+                }
+                self.ip += amount as usize;
+                let vals = (0..to_eval).map(|_| self.stack.pop().unwrap()).collect::<Vec<Value>>();
+                self.stack.push(Value::Tuple(vals))
             }
         }
 
