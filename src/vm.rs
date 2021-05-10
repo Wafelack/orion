@@ -67,17 +67,20 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             Value::Integer(lhs) => match rhs {
                 Value::Integer(rhs) => self.stack.push(Value::Integer(lhs + rhs)),
                 _ => return error!("Expected an Integer, found a {:?}.", rhs),
-            }
+            },
             Value::Single(lhs) => match rhs {
                 Value::Single(rhs) => self.stack.push(Value::Single(lhs + rhs)),
                 _ => return error!("Expected a Single, found a {:?}.", rhs),
-
-            }
+            },
             _ => return error!("Expected a Single or an Integer, found a {:?}.", lhs),
         }
         Ok(())
     }
-    fn register_builtin(&mut self, func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>, argc: u8) {
+    fn register_builtin(
+        &mut self,
+        func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>,
+        argc: u8,
+    ) {
         self.builtins.push((func, argc))
     }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
@@ -101,29 +104,30 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 let func = self.stack.pop().unwrap();
                 if let Value::Lambda(chunk) = func {
                     let chunk = &self.input.chunks[chunk as usize];
-                    if chunk.symbols.len() != args.len() {
+                    if chunk.reference.len() != args.len() {
                         return error!(
                             "Expected {} arguments, found {}.",
-                            chunk.symbols.len(),
+                            chunk.reference.len(),
                             args.len()
-                            );
+                        );
                     }
-                    let prev_ctx = ctx.clone();
-                    for idx in 0..chunk.symbols.len() {
+                    let prev_ctx = ctx.clone(); // Save symbol table before editing.
+                    for idx in 0..chunk.reference.len() {
+                        // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
-                        let chunk_id = chunk.symbols[idx] as usize;
+                        let chunk_id = chunk.reference[idx] as usize;
                         if chunk_id >= ctx.len() {
-                            ctx.push(val);
+                            ctx.push(val); // Push if symbol has not been affected yet.
                         } else {
                             ctx[chunk_id] = val;
                         }
                     }
 
                     for instr in chunk.instructions.clone() {
-                        self.eval_opcode(instr, ctx)?;
+                        self.eval_opcode(instr, ctx)?; // Eval chunk body.
                     }
 
-                    *ctx = prev_ctx;
+                    *ctx = prev_ctx; // Drop modified context with replaced arguments and reuse older context.
                 } else {
                     return error!("Expected a Lambda, found a {:?}.", func);
                 }
@@ -131,13 +135,18 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Builtin(idx, argc) => {
                 let (f, f_argc) = self.builtins[idx as usize];
                 if f_argc != argc {
-                    return error!("Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.", idx, f_argc, argc);
+                    return error!(
+                        "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
+                        idx, f_argc, argc
+                    );
                 }
                 f(self, ctx)?;
             }
             OpCode::Quote(n) => {
                 self.ip += 1;
-                self.stack.push(Value::Quote(self.input.instructions[self.ip..(self.ip + n as usize)].to_vec()));
+                self.stack.push(Value::Quote(
+                    self.input.instructions[self.ip..(self.ip + n as usize)].to_vec(),
+                ));
                 self.ip += n as usize - 1;
             }
         }
