@@ -31,7 +31,7 @@ pub enum Expr {
     Call(Box<Expr>, Vec<Expr>),
     Lambda(Vec<String>, Box<Expr>),
     Literal(Literal),
-    Def(String, Box<Expr>),
+    Def(String, Box<Expr>, bool), // (name, value, impure?)
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
     Tuple(Vec<Expr>),
@@ -59,7 +59,7 @@ impl Expr {
                         Literal::Unit => "unit".to_string(),
                     }
                 }
-                Self::Def(name, _) => format!("constant_definition({})", name),
+                Self::Def(name, _, _) => format!("constant_definition({})", name),
                 Self::Constr(name, _) => format!("enum_constructor({})", name),
                 Self::Enum(name, _) => format!("enum_definition({})", name),
                 Self::Tuple(t) => format!("tuple{{{}}}", t.len()),
@@ -285,6 +285,18 @@ impl Parser {
                         Expr::Load(names)
                     }
                     TType::Def => {
+                        let impure =
+                            if self.peek().and_then(|t| Some(t.ttype)) == Some(TType::Quote) {
+                                self.advance(TType::Quote)?;
+                                let got = self.advance(TType::Ident("".to_string()))?;
+                                if got.ttype == TType::Ident("impure".to_string()) {
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            };
                         let raw_name = self.advance(TType::Ident("".to_owned()))?;
                         let name = if let TType::Ident(n) = raw_name.ttype {
                             n
@@ -303,7 +315,7 @@ impl Parser {
 
                         self.advance(TType::RParen)?;
 
-                        Expr::Def(name, Box::new(value))
+                        Expr::Def(name, Box::new(value), impure)
                     }
                     TType::Begin => {
                         let mut expressions = vec![];
@@ -539,15 +551,22 @@ mod test {
 
     #[test]
     fn def() -> Result<()> {
-        let tokens = Lexer::new("(def foo 5)").proc_tokens()?;
+        let tokens = Lexer::new("(def foo 5)(def 'impure moo jsp)").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
         assert_eq!(
             ast,
-            vec![Expr::Def(
-                "foo".to_string(),
-                Box::new(Expr::Literal(Literal::Integer(5)))
-            )]
+            vec![
+                Expr::Def(
+                    "foo".to_string(),
+                    Box::new(Expr::Literal(Literal::Integer(5)), false)
+                ),
+                Expr::Def(
+                    "moo".to_string(),
+                    Box::new(Expr::Var("jsp".to_string())),
+                    true
+                )
+            ]
         );
 
         Ok(())
