@@ -220,6 +220,18 @@ impl Compiler {
                 to_ret.push(OpCode::Call(argc));
                 Ok((to_ret, symbols))
             }
+            Expr::Begin(expressions) => {
+                let instructions = expressions.into_iter().map(|expr| {
+                    let (instruction, new_syms) = self.compile_expr(expr, symbols.clone(), impure)?;
+                    symbols = new_syms;
+                    Ok(instruction)
+                }).collect::<Result<Vec<Vec<OpCode>>>>()?.into_iter().flatten().collect::<Vec<OpCode>>();
+                self.output.chunks.push(Chunk {
+                    instructions,
+                    reference: vec![],
+                });
+                Ok((vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1), OpCode::Call(0)], symbols))
+            }
             Expr::Lambda(args, body) => {
                 let args_reference = args
                     .iter()
