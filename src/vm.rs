@@ -14,13 +14,16 @@ pub enum Value {
     Lambda(u16),
     Quote(Vec<OpCode>),
     Constructor(u16, Vec<Value>),
-    Tuple(Vec<Value>)
+    Tuple(Vec<Value>),
 }
 
 pub struct VM<const STACK_SIZE: usize> {
     pub input: Bytecode,
     pub stack: Vec<Value>,
-    pub builtins: Vec<(fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>, u8)>,
+    pub builtins: Vec<(
+        fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
+        u8,
+    )>,
     pub ip: usize,
 }
 
@@ -46,41 +49,40 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::unquote, 1);
         to_ret
     }
-    fn dbg(&mut self, _: &mut Vec<Value>) -> Result<()> {
+    fn dbg(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         println!("{:?}", self.stack.pop().unwrap());
-        Ok(())
+        Ok(Value::Unit)
     }
-    fn unquote(&mut self, ctx: &mut Vec<Value>) -> Result<()> {
+    fn unquote(&mut self, ctx: &mut Vec<Value>) -> Result<Value> {
         match self.stack.pop().unwrap() {
             Value::Quote(opcodes) => {
                 for opcode in opcodes {
                     self.eval_opcode(opcode, ctx)?;
                 }
-                Ok(())
+                Ok(Value::Unit)
             }
             x => error!("Expected a Quote, found a {:?}", x),
         }
     }
-    fn add(&mut self, _: &mut Vec<Value>) -> Result<()> {
+    fn add(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         let lhs = self.stack.pop().unwrap();
         let rhs = self.stack.pop().unwrap();
 
         match lhs {
             Value::Integer(lhs) => match rhs {
-                Value::Integer(rhs) => self.stack.push(Value::Integer(lhs + rhs)),
-                _ => return error!("Expected an Integer, found a {:?}.", rhs),
+                Value::Integer(rhs) => Ok(Value::Integer(lhs + rhs)),
+                _ => error!("Expected an Integer, found a {:?}.", rhs),
             },
             Value::Single(lhs) => match rhs {
-                Value::Single(rhs) => self.stack.push(Value::Single(lhs + rhs)),
-                _ => return error!("Expected a Single, found a {:?}.", rhs),
+                Value::Single(rhs) => Ok(Value::Single(lhs + rhs)),
+                _ => error!("Expected a Single, found a {:?}.", rhs),
             },
-            _ => return error!("Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!("Expected a Single or an Integer, found a {:?}.", lhs),
         }
-        Ok(())
     }
     fn register_builtin(
         &mut self,
-        func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<()>,
+        func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
         argc: u8,
     ) {
         self.builtins.push((func, argc))
@@ -142,7 +144,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         idx, f_argc, argc
                     );
                 }
-                f(self, ctx)?;
+                let to_push = f(self, ctx)?;
+                self.stack.push(to_push);
             }
             OpCode::Quote(n) => {
                 self.ip += 1;
@@ -158,9 +161,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.eval_opcode(instruction, ctx)?;
                 }
                 self.ip += amount as usize;
-                let vals = (0..to_eval).map(|_| {
-                    self.stack.pop().unwrap()
-                }).collect::<Vec<Value>>();
+                let vals = (0..to_eval)
+                    .map(|_| self.stack.pop().unwrap())
+                    .collect::<Vec<Value>>();
                 self.stack.push(Value::Constructor(idx, vals));
             }
             OpCode::Tuple(amount, to_eval) => {
@@ -169,7 +172,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.eval_opcode(instruction, ctx)?;
                 }
                 self.ip += amount as usize;
-                let vals = (0..to_eval).map(|_| self.stack.pop().unwrap()).collect::<Vec<Value>>();
+                let vals = (0..to_eval)
+                    .map(|_| self.stack.pop().unwrap())
+                    .collect::<Vec<Value>>();
                 self.stack.push(Value::Tuple(vals))
             }
         }
