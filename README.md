@@ -36,11 +36,7 @@ $ make install PREFIX==/wherever/you/want/
 
 ### Windows
 
-* Clone the project.
-* Build with cargo.
-* Copy `target/release/orion` to `C:/Program Files/Orion`.
-* Copy `lib/` to `C:/Program Files/Orion/`.
-* Add `C:/Program Files/Orion` to your `PATH`.
+Build the project, copy the binary to your path, move the library wherever you want and set `ORION_LIB` to this location.
 
 Documentation
 -------------

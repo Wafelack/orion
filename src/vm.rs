@@ -23,8 +23,8 @@ pub struct VM<const STACK_SIZE: usize> {
     pub builtins: Vec<(
         fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
         u8,
-    )>,
-    pub ip: usize,
+        )>,
+        pub ip: usize,
 }
 
 fn to_val(lit: &Literal) -> Value {
@@ -84,13 +84,17 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         &mut self,
         func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
         argc: u8,
-    ) {
+        ) {
         self.builtins.push((func, argc))
     }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
         match opcode {
             OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
-            OpCode::LoadSym(id) => self.stack.push(ctx[id as usize].clone()),
+            OpCode::LoadSym(id) => {
+                println!("Symbols: {:?}", self.input.symbols);
+                println!("CTX: {:?}", ctx);
+                self.stack.push(ctx[id as usize].clone())
+            },
             OpCode::Def(sym_id) => {
                 let popped = self.stack.pop().unwrap();
                 if sym_id as usize >= ctx.len() {
@@ -113,7 +117,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             "Expected {} arguments, found {}.",
                             chunk.reference.len(),
                             args.len()
-                        );
+                            );
                     }
                     let prev_ctx = ctx.clone(); // Save symbol table before editing.
                     for idx in 0..chunk.reference.len() {
@@ -142,7 +146,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     return error!(
                         "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
                         idx, f_argc, argc
-                    );
+                        );
                 }
                 let to_push = f(self, ctx)?;
                 self.stack.push(to_push);
@@ -150,8 +154,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Quote(n) => {
                 self.ip += 1;
                 self.stack.push(Value::Quote(
-                    self.input.instructions[self.ip..(self.ip + n as usize)].to_vec(),
-                ));
+                        self.input.instructions[self.ip..(self.ip + n as usize)].to_vec(),
+                        ));
                 self.ip += n as usize - 1;
             }
             OpCode::Constructor(idx, to_eval) => {
