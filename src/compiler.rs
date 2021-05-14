@@ -95,7 +95,7 @@ impl Compiler {
                         .unwrap()
                 } else {
                     symbols.push((name.to_string(), impure));
-                    symbols.len()
+                    symbols.len() - 1
                 } as u16,
                 symbols,
             ))
@@ -197,8 +197,9 @@ impl Compiler {
             }
             Expr::Def(name, expr, purity) => {
                 let (idx, symbols) = self.declare(name, symbols, purity)?;
-                let (mut to_ret, symbols) = self.compile_expr(*expr, symbols, purity)?; // Update symbols.
-                to_ret.push(OpCode::Def(idx));
+                let (to_push, symbols) = self.compile_expr(*expr, symbols, purity)?; // Update symbols.
+                let mut to_ret = vec![OpCode::Def(idx, to_push.len() as u16)];
+                to_ret.extend(to_push);
                 Ok((to_ret, symbols))
             }
             Expr::Call(func, args) => {

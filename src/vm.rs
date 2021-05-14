@@ -15,6 +15,7 @@ pub enum Value {
     Quote(Vec<OpCode>),
     Constructor(u16, Vec<Value>),
     Tuple(Vec<Value>),
+    Initialzing,
 }
 
 pub struct VM<const STACK_SIZE: usize> {
@@ -95,16 +96,23 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 println!("CTX: {:?}", ctx);
                 self.stack.push(ctx[id as usize].clone())
             },
-            OpCode::Def(sym_id) => {
-                let popped = self.stack.pop().unwrap();
+            OpCode::Def(sym_id, instr_length) => {
                 if sym_id as usize >= ctx.len() {
-                    ctx.push(popped);
+                    ctx.push(Value::Initialzing);
                 } else {
-                    ctx[sym_id as usize] = popped;
+                    ctx[sym_id as usize] = Value::Initialzing;
                 }
+                (1..=instr_length).map(|i| {
+                    let instr = self.input.instructions[self.ip + i as usize];
+                    self.eval_opcode(instr,ctx)
+                }).collect::<Result<()>>()?;
+                self.ip += instr_length as usize;
+                let popped = self.stack.pop().unwrap();
+                ctx[sym_id as usize] = popped;
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
+            println!("{:?}", self.stack);
                 let mut args = vec![];
                 for _ in 0..argc {
                     args.push(self.stack.pop().unwrap());
