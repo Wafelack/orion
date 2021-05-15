@@ -99,11 +99,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
-                println!("{:?}", self.stack);
                 let mut args = vec![];
                 for _ in 0..argc {
                     args.push(self.stack.pop().unwrap());
                 }
+                args.reverse();
                 let func = self.stack.pop().unwrap();
                 if let Value::Lambda(chunk) = func {
                     let chunk = &self.input.chunks[chunk as usize];
