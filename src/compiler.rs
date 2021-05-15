@@ -25,7 +25,6 @@ impl Compiler {
         };
         to_ret.register_builtin("+", false);
         to_ret.register_builtin("dbg", true);
-        to_ret.register_builtin("unquote", false);
         to_ret
     }
     fn register_builtin(&mut self, name: impl ToString, impure: bool) {
@@ -324,12 +323,6 @@ impl Compiler {
                     to_ret.extend(values);
                     Ok((to_ret, symbols))
                 }
-            }
-            Expr::Quote(expr) => {
-                let (body, symbols) = self.compile_expr(*expr, symbols, impure)?;
-                let mut to_ret = vec![OpCode::Quote(body.len() as u16)];
-                to_ret.extend(body);
-                Ok((to_ret, symbols))
             }
             Expr::Tuple(vals) => {
                 let vals_len = vals.len();
