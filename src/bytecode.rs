@@ -8,7 +8,6 @@ pub enum OpCode {
     Builtin(u8, u8),       // (builtin_id, argc)
     Def(u16, u16),         // (sym_id, instructions_length)
     Lambda(u16),           // (chunk_id)
-    Quote(u16),            // (nb_opcodes)
     Constructor(u16, u16), // (constr_idx, to_eval)
     Tuple(u16, u16),       // (amount, to_eval)
 }

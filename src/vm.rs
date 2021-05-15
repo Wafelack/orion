@@ -1,4 +1,4 @@
-use crate::{
+use crate::{    
     bytecode::{Bytecode, Chunk, OpCode},
     error,
     parser::Literal,
@@ -12,7 +12,6 @@ pub enum Value {
     String(String),
     Unit,
     Lambda(u16),
-    Quote(Vec<OpCode>),
     Constructor(u16, Vec<Value>),
     Tuple(Vec<Value>),
     Initialzing,
@@ -47,23 +46,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         };
         to_ret.register_builtin(Self::add, 2);
         to_ret.register_builtin(Self::dbg, 1);
-        to_ret.register_builtin(Self::unquote, 1);
         to_ret
     }
     fn dbg(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         println!("{:?}", self.stack.pop().unwrap());
         Ok(Value::Unit)
-    }
-    fn unquote(&mut self, ctx: &mut Vec<Value>) -> Result<Value> {
-        match self.stack.pop().unwrap() {
-            Value::Quote(opcodes) => {
-                for opcode in opcodes {
-                    self.eval_opcode(opcode, ctx)?;
-                }
-                Ok(Value::Unit)
-            }
-            x => error!("Expected a Quote, found a {:?}", x),
-        }
     }
     fn add(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         let lhs = self.stack.pop().unwrap();
@@ -112,7 +99,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
-            println!("{:?}", self.stack);
+                println!("{:?}", self.stack);
                 let mut args = vec![];
                 for _ in 0..argc {
                     args.push(self.stack.pop().unwrap());
@@ -158,13 +145,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 let to_push = f(self, ctx)?;
                 self.stack.push(to_push);
-            }
-            OpCode::Quote(n) => {
-                self.ip += 1;
-                self.stack.push(Value::Quote(
-                        self.input.instructions[self.ip..(self.ip + n as usize)].to_vec(),
-                        ));
-                self.ip += n as usize - 1;
             }
             OpCode::Constructor(idx, to_eval) => {
                 let amount = self.input.constructors[idx as usize];

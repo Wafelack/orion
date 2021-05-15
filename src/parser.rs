@@ -39,7 +39,6 @@ pub enum Expr {
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
     Panic(String, Box<Expr>),
     Begin(Vec<Expr>),
-    Quote(Box<Expr>),
     Builtin(String, Vec<Expr>),
 }
 
@@ -67,7 +66,6 @@ impl Expr {
                 Self::Match(_, _) => "match_statement".to_string(),
                 Self::Panic(_, _) => "panic_statement".to_string(),
                 Self::Begin(_) => "block".to_string(),
-                Self::Quote(e) => format!("Quote{}", e.get_type()),
                 Self::Builtin(n, _) => format!("builtin({})", n),
             }
         )
@@ -245,7 +243,7 @@ impl Parser {
                     Expr::Var(v.to_string())
                 }
             }
-            TType::Quote => Expr::Quote(Box::new(self.parse_expr()?)),
+            TType::Quote => Expr::Lambda(vec![], Box::new(self.parse_expr()?)),
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -694,7 +692,7 @@ mod test {
         let tokens = Lexer::new("'a").proc_tokens()?;
         let ast = Parser::new(tokens).parse()?;
 
-        assert_eq!(ast, vec![Expr::Quote(Box::new(Expr::Var("a".to_string())))]);
+        assert_eq!(ast, vec![Expr::Lambda(vec![], Box::new(Expr::Var("a".to_string())))]);
 
         Ok(())
     }
