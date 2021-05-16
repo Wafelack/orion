@@ -69,7 +69,7 @@ fn print_err(e: OrionError) {
     eprintln!(
         "{}{}{}",
         if e.0.is_some() && e.1.is_some() {
-            format!("{}:{}: ", e.0, e.1)
+            format!("{}:{}: ", e.0.unwrap(), e.1.unwrap())
         } else {
             "".to_string()
         },
@@ -78,7 +78,7 @@ fn print_err(e: OrionError) {
         } else {
             "\x1b[0;31mError: \x1b[0m"
         },
-        e.0
+        e.2
     );
 }
 
@@ -105,7 +105,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     return Ok(());
                 }
 
-                let tokens = match Lexer::new(line.trim()).proc_tokens() {
+                let tokens = match Lexer::new(line.trim(), "REPL").proc_tokens() {
                     Ok(t) => t,
                     Err(e) => {
                         print_err(e);
@@ -246,10 +246,10 @@ fn try_main() -> Result<()> {
         if Path::new(path).exists() {
             let content = match fs::read_to_string(path) {
                 Ok(c) => c,
-                Err(e) => return error!("fatal: Failed to read file: {}.", e),
+                Err(e) => return error!(=> "fatal: Failed to read file: {}.", e),
             };
 
-            let tokens = Lexer::new(content).proc_tokens()?;
+            let tokens = Lexer::new(content, path).proc_tokens()?;
             if matches.is_present("debug") {
                 println!("Tokens\n======");
                 tokens.iter().for_each(|t| {
@@ -275,7 +275,7 @@ fn try_main() -> Result<()> {
             }
             Ok(())
         } else {
-            error!("fatal: File not found: {}.", path)
+            error!(=> "fatal: File not found: {}.", path)
         }
     } else {
         repl(
