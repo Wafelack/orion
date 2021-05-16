@@ -96,14 +96,16 @@ pub struct Parser {
     input: Vec<Token>,
     output: Vec<Expr>,
     current: usize,
+    file: String,
 }
 
 impl Parser {
-    pub fn new(input: Vec<Token>) -> Self {
+    pub fn new(input: Vec<Token>, file: impl ToString) -> Self {
         Self {
             input,
             output: vec![],
             current: 0usize,
+            file: file.to_string(),
         }
     }
     fn advance(&mut self, expected: TType) -> Result<Token> {
@@ -111,9 +113,9 @@ impl Parser {
 
         if discriminant(&popped.ttype) != discriminant(&expected) {
             error!(
-                "{}:{} | Expected {}, found {}.",
-                popped.line,
-                popped.col,
+                self.file,
+                popped.line =>
+                "Expected {}, found {}.",
                 expected.get_type(),
                 popped.ttype.get_type()
             )
@@ -125,8 +127,9 @@ impl Parser {
         if self.is_at_end() {
             let previous = &self.input[self.current - 1];
             error!(
-                "{}:{} | Unfinished expression.",
-                previous.line, previous.col
+                self.file,
+                previous.line =>
+                "Unfinished expression.",
             )
         } else {
             if self.input.len() != 1 {
@@ -197,32 +200,35 @@ impl Parser {
                                 Pattern::Constr(x.to_string(), args)
                             } else {
                                 return error!(
-                                    "{}:{} | Invalid Enum Variant name, Enum Variant names have to start with an uppercase letter: {}.",
-                                    subroot.line, subroot.col, x
+                                    self.file,
+                                    subroot.line =>
+                                    "Invalid Enum Variant name, Enum Variant names have to start with an uppercase letter: {}.",
+                                    x
                                     );
                             }
                         } else {
                             return error!(
-                                "{}:{} | Expected an Enum Variant.",
-                                subroot.line, subroot.col
+                                self.file,
+                                subroot.line =>
+                                "Expected an Enum Variant.",
                             );
                         }
                     }
                     _ => {
                         return error!(
+                            self.file,
+                            self.line =>
                             "{}:{} | Expected Tuple or Enum Variant, found {}.",
                             subroot.line,
-                            subroot.col,
-                            subroot.ttype.get_type()
                         )
                     }
                 }
             }
             _ => {
                 return error!(
-                    "{}:{} | Expected Literal, Identifier, Tuple or Enum Variant, found {}.",
-                    root.line,
-                    root.col,
+                    self.file,
+                    root.line =>
+                    "Expected Literal, Identifier, Tuple or Enum Variant, found {}.",
                     root.ttype.get_type()
                 )
             }
@@ -252,24 +258,20 @@ impl Parser {
                         let to_ret = self.parse_expr()?;
                         self.advance(TType::RParen)?;
                         Expr::Panic(
-                            format!("[{}:{}] Program panicked at: ", subroot.line, subroot.col),
+                            format!("{}:{}: Program panicked at: ", self.file, subroot.line),
                             Box::new(to_ret),
                         )
                     }
                     TType::Builtin(b) => {
                         let mut args = vec![];
-
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             args.push(self.parse_expr()?);
                         }
-
                         self.advance(TType::RParen)?;
-
                         Expr::Builtin(b.to_string(), args)
                     }
                     TType::Load => {
                         let mut names = vec![];
-
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             let r_name = self.advance(TType::Str("".to_owned()))?;
 
@@ -301,11 +303,11 @@ impl Parser {
                         } else {
                             bug!("UNEXPECTED_NON_IDENTIFIER");
                         };
-
                         if first_char(&name).is_ascii_uppercase() {
                             return error!(
-                                "{}:{} | Literal names have to start with a lowercase letter.",
-                                raw_name.line, raw_name.col
+                                self.file,
+                                subroot.line =>
+                                "Literal names have to start with a lowercase letter.",
                             );
                         }
 
@@ -331,18 +333,12 @@ impl Parser {
                         let mut couples = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             self.advance(TType::LParen)?;
-
                             let pat = self.parse_pattern()?;
-
                             let todo = self.parse_expr()?;
-
                             couples.push((pat, todo));
-
                             self.advance(TType::RParen)?;
                         }
-
                         self.advance(TType::RParen)?;
-
                         Expr::Match(Box::new(to_match), couples)
                     }
                     TType::Enum => {
@@ -356,8 +352,9 @@ impl Parser {
 
                         if !first_char(&name).is_ascii_uppercase() {
                             return error!(
+                                self.file,
+                                r_name.line =>
                                 "{}:{} | Enum names have to start with a uppercase letter.",
-                                r_name.line, r_name.col
                             );
                         }
 
@@ -379,7 +376,7 @@ impl Parser {
                             };
 
                             if !first_char(&vname).is_ascii_uppercase() {
-                                return error!("{}:{} | Enum variant names have to start with a uppercase letter.", r_name.line, r_name.col);
+                                return error!(self.file, r_name.line => "Enum variant names have to start with a uppercase letter.");
                             }
 
                             let length = if mul {
@@ -425,9 +422,7 @@ impl Parser {
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
                             args.push(self.parse_expr()?);
                         }
-
                         self.advance(TType::RParen)?;
-
                         Expr::Tuple(args)
                     }
                     TType::RParen => Expr::Literal(Literal::Unit),
@@ -452,16 +447,17 @@ impl Parser {
                             Expr::Call(Box::new(func), args)
                         }
                     }
-                    _ => return error!("{}:{} | Unexpected Literal.", subroot.line, subroot.col),
+                    _ => return error!(self.file, subroot.line => "Unexpected Literal.", subroot.line, subroot.col),
                 }
             }
             TType::RParen => {
                 return error!(
-                    "{}:{} | Unexpected Closing Parenthese.",
-                    root.line, root.col
+                    self.file,
+                    root.line => 
+                    "Unexpected Closing Parenthese.",
                 )
             }
-            _ => return error!("{}:{} | Unexpected Keyword.", root.line, root.col),
+            _ => return error!(self.file, root.line => "{}:{} | Unexpected Keyword."),
         })
     }
 
