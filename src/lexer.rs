@@ -60,17 +60,16 @@ impl TType {
 pub struct Token {
     pub line: usize,
     pub ttype: TType,
-    pub col: usize,
 }
 
 impl Token {
-    pub fn new(ttype: TType, col: usize, line: usize) -> Self {
-        Self { line, ttype, col }
+    pub fn new(ttype: TType, line: usize) -> Self {
+        Self { line, ttype }
     }
     pub fn display(&self) -> String {
         let ttyped = self.ttype.get_type().to_ascii_lowercase().replace(" ", "_");
 
-        format!("<#token:{}{{{}:{}}}>", ttyped, self.line, self.col)
+        format!("<#token:{}{{{}}}>", ttyped, self.line)
     }
 }
 
@@ -80,19 +79,19 @@ pub struct Lexer {
     current: usize,
     line: usize,
     start: usize,
-    column: usize,
     builtins: Vec<String>,
+    file: String,
 }
 
 impl Lexer {
-    pub fn new(input: impl ToString) -> Self {
+    pub fn new(input: impl ToString, file: impl ToString) -> Self {
         Self {
             input: input.to_string().replace("λ", "lambda").to_string(),
             output: vec![],
             current: 0,
-            column: 0,
             line: 1,
             start: 0,
+            file: file.to_string(),
             builtins: vec![],
         }
     }
@@ -103,25 +102,21 @@ impl Lexer {
         self.input.chars().nth(self.current).unwrap()
     }
     fn advance(&mut self) -> char {
-        self.column += 1;
         self.current += 1;
         self.input.chars().nth(self.current - 1).unwrap()
     }
     fn add_token(&mut self, ttype: TType) {
-        self.output.push(Token::new(ttype, self.column, self.line));
+        self.output.push(Token::new(ttype, self.line));
     }
     fn string(&mut self) -> Result<()> {
         while !self.is_at_end() && self.peek() != '"' {
             if self.peek() == '\n' {
                 self.line += 1;
-                self.column = 0;
             }
-
             self.advance();
         }
-
         if self.is_at_end() {
-            return error!("{}:{} | Unterminated string.", self.line, self.column);
+            return error!(self.file, self.line => "Unterminated string.");
         }
 
         self.advance(); // Closing double quotes
@@ -139,10 +134,7 @@ impl Lexer {
             '(' => self.add_token(TType::LParen),
             ')' => self.add_token(TType::RParen),
             ' ' | '\r' | '\t' => {}
-            '\n' => {
-                self.column = 0;
-                self.line += 1;
-            }
+            '\n' => self.line += 1,
             '\'' => self.add_token(TType::Quote),
             '"' => self.string()?,
             '#' => {
@@ -253,8 +245,6 @@ impl Lexer {
         self.register_builtin("asin");
         self.register_builtin("atan");
 
-        self.register_builtin("unquote");
-
         while !self.is_at_end() {
             self.proc_token()?;
             self.start = self.current;
@@ -285,28 +275,28 @@ mod test {
 
     #[test]
     fn parentheses() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("()").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("()", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::LParen, TType::RParen]);
         Ok(())
     }
 
     #[test]
     fn comments() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new(";;\n#|blah blah\nblah\n#|").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new(";;\n#|blah blah\nblah\n#|", "").proc_tokens()?);
         assert_eq!(ttypes, vec![]);
         Ok(())
     }
 
     #[test]
     fn quote() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("'").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("'", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Quote]);
         Ok(())
     }
 
     #[test]
     fn numbers() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("42 3.1415926535897932").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("42 3.1415926535897932", "").proc_tokens()?);
         assert_eq!(
             ttypes,
             vec![TType::Number(42), TType::Float(3.1415926535897932)]
@@ -316,70 +306,70 @@ mod test {
 
     #[test]
     fn string() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new(r#""Hello, World !""#).proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new(r#""Hello, World !""#, "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Str("Hello, World !".to_string())]);
         Ok(())
     }
 
     #[test]
     fn def() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("def").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("def", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Def]);
         Ok(())
     }
 
     #[test]
     fn r#enum() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("enum").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("enum", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Enum]);
         Ok(())
     }
 
     #[test]
     fn tuple() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new(",").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new(",", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Tuple]);
         Ok(())
     }
 
     #[test]
     fn lambda() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("λ lambda \\").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("λ lambda \\", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Lambda, TType::Lambda, TType::Lambda]);
         Ok(())
     }
 
     #[test]
     fn r#match() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("match").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("match", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Match]);
         Ok(())
     }
 
     #[test]
     fn panic() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("panic").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("panic", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Panic]);
         Ok(())
     }
 
     #[test]
     fn begin() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("begin").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("begin", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Begin]);
         Ok(())
     }
 
     #[test]
     fn load() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("load").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("load", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Load]);
         Ok(())
     }
 
     #[test]
     fn builtin() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("format").proc_tokens()?);
+        let ttypes = get_ttypes(Lexer::new("format", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Builtin("format".to_string())]);
         Ok(())
     }

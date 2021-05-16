@@ -25,7 +25,7 @@ pub type Result<T> = std::result::Result<T, OrionError>;
 
 #[macro_export]
 macro_rules! error {
-    ($($arg:tt)* $(, $file:expr, $line:expr)?) => {
+    ($($file:expr, $line:expr)? => $($arg:tt)*) => {
         {
             let mut file = None;
             let mut line = None;
