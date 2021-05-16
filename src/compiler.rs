@@ -342,6 +342,17 @@ impl Compiler {
                 to_ret.extend(values);
                 Ok((to_ret, symbols))
             }
+            Expr::Match(expression, patterns) => {
+                let patterns = patterns.into_iter()
+                    .map(|pat| {
+                        let (pat, new_syms) = self.simplify_pat(pat, symbols)?;
+                        symbols = new_syms;
+                        pat
+                    }).collect::<Vec<_>>();
+
+
+                todo!();
+            } 
             _ => todo!(),
         }
     }
