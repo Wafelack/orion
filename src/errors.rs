@@ -19,13 +19,22 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 #[derive(Debug)]
-pub struct OrionError(pub String);
+pub struct OrionError(pub Option<String>, pub Option<usize>, pub String);
 
 pub type Result<T> = std::result::Result<T, OrionError>;
 
 #[macro_export]
 macro_rules! error {
-    ($($arg:tt)*) => {
-        Err(OrionError(format_args!($($arg)*).to_string()))
+    ($($arg:tt)* $(, $file:expr, $line:expr)?) => {
+        {
+            let mut file = None;
+            let mut line = None;
+            $ (
+                file = Some($file.to_string());
+                line = Some($line)
+              )?
+                Err(OrionError(file, line, format_args!($($arg)*).to_string()))
+
+        }
     }
 }

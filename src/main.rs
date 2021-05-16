@@ -67,7 +67,12 @@ macro_rules! table {
 
 fn print_err(e: OrionError) {
     eprintln!(
-        "{}{}",
+        "{}{}{}",
+        if e.0.is_some() && e.1.is_some() {
+            format!("{}:{}: ", e.0, e.1)
+        } else {
+            "".to_string()
+        },
         if cfg!(windows) {
             "Error: "
         } else {
