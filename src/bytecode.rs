@@ -1,4 +1,4 @@
-use crate::parser::Literal;
+use crate::parser::{Literal, self};
 
 #[derive(Copy, Clone, Debug)]
 pub enum OpCode {
@@ -19,8 +19,19 @@ pub struct Chunk {
 }
 
 #[derive(Clone, Debug)]
+pub struct Pattern {
+    pub pat: parser::Pattern,
+    pub to_exec: Vec<OpCode>,
+}
+#[derive(Clone, Debug)]
+pub struct Match {
+    pub expression: Vec<OpCode>,
+    pub patterns: Vec<Pattern>,
+}
+#[derive(Clone, Debug)]
 pub struct Bytecode {
     pub chunks: Vec<Chunk>,
+    pub matches: Vec<Match>,
     pub symbols: Vec<String>,
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,
@@ -35,6 +46,7 @@ impl Bytecode {
             constants: vec![],
             instructions: vec![],
             constructors: vec![],
+            matches: vec![],
         }
     }
 }

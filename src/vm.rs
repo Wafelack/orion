@@ -48,13 +48,14 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::dbg, 1);
         to_ret
     }
+
     fn dbg(&mut self, _: &mut Vec<Value>) -> Result<Value> {
-        println!("{:?}", self.stack.pop().unwrap());
+        println!("{:?}", self.pop()?);
         Ok(Value::Unit)
     }
     fn add(&mut self, _: &mut Vec<Value>) -> Result<Value> {
-        let lhs = self.stack.pop().unwrap();
-        let rhs = self.stack.pop().unwrap();
+        let lhs = self.pop()?;
+        let rhs = self.pop()?;
 
         match lhs {
             Value::Integer(lhs) => match rhs {
@@ -75,6 +76,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         ) {
         self.builtins.push((func, argc))
     }
+    fn pop(&mut self) -> Result<Value> {
+        match self.stack.pop() {
+            Some(v) => Ok(v),
+            None => error!("Stack underflow."),
+        }
+    }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
         match opcode {
             OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
@@ -94,17 +101,17 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.eval_opcode(instr,ctx)
                 }).collect::<Result<()>>()?;
                 self.ip += instr_length as usize;
-                let popped = self.stack.pop().unwrap();
+                let popped = self.pop()?;
                 ctx[sym_id as usize] = popped;
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
                 let mut args = vec![];
                 for _ in 0..argc {
-                    args.push(self.stack.pop().unwrap());
+                    args.push(self.pop()?);
                 }
                 args.reverse();
-                let func = self.stack.pop().unwrap();
+                let func = self.pop()?;
                 if let Value::Lambda(chunk) = func {
                     let chunk = &self.input.chunks[chunk as usize];
                     if chunk.reference.len() != args.len() {
@@ -154,7 +161,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 self.ip += amount as usize;
                 let vals = (0..to_eval)
-                    .map(|_| self.stack.pop().unwrap())
+                    .map(|_| self.pop()?)
                     .collect::<Vec<Value>>();
                 self.stack.push(Value::Constructor(idx, vals));
             }
@@ -165,7 +172,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 self.ip += amount as usize;
                 let vals = (0..to_eval)
-                    .map(|_| self.stack.pop().unwrap())
+                    .map(|_| self.pop()?)
                     .collect::<Vec<Value>>();
                 self.stack.push(Value::Tuple(vals))
             }
