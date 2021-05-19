@@ -25,8 +25,28 @@ use crate::{
 };
 use std::{collections::HashMap, mem::discriminant};
 
+#[derive(PartialEq, Debug, Clone)]
+pub struct Expr {
+    pub line: usize,
+    pub exprt: ExprT,
+}
+impl Expr {
+    pub fn new(exprt: ExprT) -> Self {
+        Self {
+            exprt,
+            line: 0,
+        }
+    }
+    pub fn line(&self, line: usize) -> Self {
+        Self {
+            exprt: self.exprt,
+            line,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expr {
+pub enum ExprT {
     Var(String),
     Call(Box<Expr>, Vec<Expr>),
     Lambda(Vec<String>, Box<Expr>),
@@ -46,27 +66,26 @@ impl Expr {
     pub fn get_type(&self) -> String {
         format!(
             "<#expr:{}>",
-            match self {
-                Self::Var(s) => format!("constant({})", s),
-                Self::Call(_, _) => "call".to_string(),
-                Self::Lambda(args, _) => format!("lambda({} args)", args.len()),
-                Self::Literal(l) => {
+            match self.exprt {
+                ExprT::Var(s) => format!("constant({})", s),
+                ExprT::Call(_, _) => "call".to_string(),
+                ExprT::Lambda(args, _) => format!("lambda({} args)", args.len()),
+                ExprT::Literal(l) => {
                     match l {
                         Literal::Integer(i) => format!("integer {}", i),
                         Literal::Single(s) => format!("single {}", s),
                         Literal::String(s) => format!("string \"{}\"", s),
-                        Literal::Unit => "unit".to_string(),
                     }
                 }
-                Self::Def(name, _, _) => format!("constant_definition({})", name),
-                Self::Constr(name, _) => format!("enum_constructor({})", name),
-                Self::Enum(name, _) => format!("enum_definition({})", name),
-                Self::Tuple(t) => format!("tuple{{{}}}", t.len()),
-                Self::Load(_) => "load_procedure".to_string(),
-                Self::Match(_, _) => "match_statement".to_string(),
-                Self::Panic(_, _) => "panic_statement".to_string(),
-                Self::Begin(_) => "block".to_string(),
-                Self::Builtin(n, _) => format!("builtin({})", n),
+                ExprT::Def(name, _, _) => format!("constant_definition({})", name),
+                ExprT::Constr(name, _) => format!("enum_constructor({})", name),
+                ExprT::Enum(name, _) => format!("enum_definition({})", name),
+                ExprT::Tuple(t) => format!("tuple{{{}}}", t.len()),
+                ExprT::Load(_) => "load_procedure".to_string(),
+                ExprT::Match(_, _) => "match_statement".to_string(),
+                ExprT::Panic(_, _) => "panic_statement".to_string(),
+                ExprT::Begin(_) => "block".to_string(),
+                ExprT::Builtin(n, _) => format!("builtin({})", n),
             }
         )
     }
@@ -77,7 +96,6 @@ pub enum Literal {
     Integer(i32),
     Single(f32),
     String(String),
-    Unit,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -118,7 +136,7 @@ impl Parser {
                 "Expected {}, found {}.",
                 expected.get_type(),
                 popped.ttype.get_type()
-            )
+                )
         } else {
             Ok(popped)
         }
@@ -130,7 +148,7 @@ impl Parser {
                 self.file,
                 previous.line =>
                 "Unfinished expression.",
-            )
+                )
         } else {
             if self.input.len() != 1 {
                 self.current += 1;
@@ -152,9 +170,9 @@ impl Parser {
 
         while !self.is_at_end()
             && std::mem::discriminant(&self.peek().unwrap().ttype) == discriminant(&expected)
-        {
-            toret.push(self.advance(expected.clone())?);
-        }
+            {
+                toret.push(self.advance(expected.clone())?);
+            }
 
         Ok(toret)
     }
@@ -177,7 +195,7 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
-                    TType::RParen => Pattern::Literal(Literal::Unit),
+                    TType::RParen => Pattern::Tuple(vec![]),
                     TType::Tuple => {
                         let mut args = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
@@ -211,7 +229,7 @@ impl Parser {
                                 self.file,
                                 subroot.line =>
                                 "Expected an Enum Variant.",
-                            );
+                                );
                         }
                     }
                     _ => {
@@ -220,7 +238,7 @@ impl Parser {
                             self.line =>
                             "{}:{} | Expected Tuple or Enum Variant, found {}.",
                             subroot.line,
-                        )
+                            )
                     }
                 }
             }
@@ -230,7 +248,7 @@ impl Parser {
                     root.line =>
                     "Expected Literal, Identifier, Tuple or Enum Variant, found {}.",
                     root.ttype.get_type()
-                )
+                    )
             }
         })
     }
@@ -239,17 +257,17 @@ impl Parser {
         let root = self.pop()?;
 
         Ok(match &root.ttype {
-            TType::Str(s) => Expr::Literal(Literal::String(s.to_string())),
-            TType::Float(f) => Expr::Literal(Literal::Single(*f)),
-            TType::Number(i) => Expr::Literal(Literal::Integer(*i)),
+            TType::Str(s) => Expr::new(ExprT::Literal(Literal::String(s.to_string()))).line(root.line),
+            TType::Float(f) => Expr::new(ExprT::Literal(Literal::Single(*f))).line(root.line),
+            TType::Number(i) => Expr::new(ExprT::Literal(Literal::Integer(*i))).line(root.line),
             TType::Ident(v) => {
                 if first_char(&v).is_ascii_uppercase() {
-                    Expr::Constr(v.to_string(), vec![])
+                    Expr::new(ExprT::Constr(v.to_string(), vec![])).line(root.line)
                 } else {
-                    Expr::Var(v.to_string())
+                    Expr::new(ExprT::Var(v.to_string())).line(root.line)
                 }
             }
-            TType::Quote => Expr::Lambda(vec![], Box::new(self.parse_expr()?)),
+            TType::Quote => Expr::new(ExprT::Lambda(vec![], Box::new(self.parse_expr()?))).line(root.line),
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -257,10 +275,11 @@ impl Parser {
                     TType::Panic => {
                         let to_ret = self.parse_expr()?;
                         self.advance(TType::RParen)?;
-                        Expr::Panic(
-                            format!("{}:{}: Program panicked at: ", self.file, subroot.line),
-                            Box::new(to_ret),
-                        )
+                        Expr::new(ExprT::Panic(
+                                format!("{}:{}: Program panicked at: ", self.file, subroot.line),
+                                Box::new(to_ret),
+                                )).line(subroot.line)
+
                     }
                     TType::Builtin(b) => {
                         let mut args = vec![];
@@ -268,7 +287,7 @@ impl Parser {
                             args.push(self.parse_expr()?);
                         }
                         self.advance(TType::RParen)?;
-                        Expr::Builtin(b.to_string(), args)
+                        Expr::new(ExprT::Builtin(b.to_string(), args)).line(subroot.line)
                     }
                     TType::Load => {
                         let mut names = vec![];
@@ -282,7 +301,7 @@ impl Parser {
                             }
                         }
                         self.advance(TType::RParen)?;
-                        Expr::Load(names)
+                        Expr::new(ExprT::Load(names)).line(subroot.line)                    
                     }
                     TType::Def => {
                         let impure =
@@ -308,14 +327,14 @@ impl Parser {
                                 self.file,
                                 subroot.line =>
                                 "Literal names have to start with a lowercase letter.",
-                            );
+                                );
                         }
 
                         let value = self.parse_expr()?;
 
                         self.advance(TType::RParen)?;
 
-                        Expr::Def(name, Box::new(value), impure)
+                        Expr::new(ExprT::Def(name, Box::new(value), impure)).line(subroot.line)
                     }
                     TType::Begin => {
                         let mut expressions = vec![];
@@ -326,7 +345,7 @@ impl Parser {
 
                         self.advance(TType::RParen)?;
 
-                        Expr::Begin(expressions)
+                        Expr::new(ExprT::Begin(expressions)).line(subroot.line)
                     }
                     TType::Match => {
                         let to_match = self.parse_expr()?;
@@ -339,7 +358,7 @@ impl Parser {
                             self.advance(TType::RParen)?;
                         }
                         self.advance(TType::RParen)?;
-                        Expr::Match(Box::new(to_match), couples)
+                        Expr::new(ExprT::Match(Box::new(to_match), couples)).line(subroot.line)
                     }
                     TType::Enum => {
                         let r_name = self.advance(TType::Ident("".to_owned()))?;
@@ -355,7 +374,7 @@ impl Parser {
                                 self.file,
                                 r_name.line =>
                                 "{}:{} | Enum names have to start with a uppercase letter.",
-                            );
+                                );
                         }
 
                         let mut var_len = HashMap::new();
@@ -394,7 +413,7 @@ impl Parser {
 
                         self.advance(TType::RParen)?;
 
-                        Expr::Enum(name, var_len)
+                        Expr::new(ExprT::Enum(name, var_len)).line(subroot.line)
                     }
                     TType::Lambda => {
                         self.advance(TType::LParen)?;
@@ -410,12 +429,12 @@ impl Parser {
                                     bug!("UNEXPECTED_NON_IDENTIFIER");
                                 }
                             })
-                            .collect::<Vec<String>>();
+                        .collect::<Vec<String>>();
 
                         let body = self.parse_expr()?;
 
                         self.advance(TType::RParen)?;
-                        Expr::Lambda(args, Box::new(body))
+                        Expr::new(ExprT::Lambda(args, Box::new(body))).line(subroot.line)
                     }
                     TType::Tuple => {
                         let mut args = vec![];
@@ -423,9 +442,9 @@ impl Parser {
                             args.push(self.parse_expr()?);
                         }
                         self.advance(TType::RParen)?;
-                        Expr::Tuple(args)
+                        Expr::new(ExprT::Tuple(args)).line(subroot.line)
                     }
-                    TType::RParen => Expr::Literal(Literal::Unit),
+                    TType::RParen => Expr::new(ExprT::Tuple(vec![])).line(subroot.line),
                     TType::LParen | TType::Ident(_) => {
                         self.current -= 1; // Safe because at least 1 paren
                         let func = self.parse_expr()?;
@@ -439,12 +458,12 @@ impl Parser {
 
                         if let TType::Ident(x) = &subroot.ttype {
                             if first_char(x).is_ascii_uppercase() {
-                                Expr::Constr(x.to_string(), args)
+                                Expr::new(ExprT::Constr(x.to_string(), args)).line(subroot.line)
                             } else {
-                                Expr::Call(Box::new(func), args)
+                                Expr::new(ExprT::Call(Box::new(func), args)).line(subroot.line)
                             }
                         } else {
-                            Expr::Call(Box::new(func), args)
+                            Expr::new(ExprT::Call(Box::new(func), args)).line(subroot.line)
                         }
                     }
                     _ => return error!(self.file, subroot.line => "Unexpected Literal.", subroot.line, subroot.col),
@@ -455,7 +474,7 @@ impl Parser {
                     self.file,
                     root.line => 
                     "Unexpected Closing Parenthese.",
-                )
+                    )
             }
             _ => return error!(self.file, root.line => "{}:{} | Unexpected Keyword."),
         })
@@ -482,8 +501,8 @@ mod test {
 
     #[test]
     fn variables() -> Result<()> {
-        let tokens = Lexer::new("foo").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("foo", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(ast, vec![Expr::Var("foo".to_string())]);
 
@@ -492,201 +511,201 @@ mod test {
 
     #[test]
     fn call() -> Result<()> {
-        let tokens = Lexer::new("(foobar 4 5)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(foobar 4 5)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Call(
                 Box::new(Expr::Var("foobar".to_string())),
                 vec![
-                    Expr::Literal(Literal::Integer(4)),
-                    Expr::Literal(Literal::Integer(5))
+                Expr::Literal(Literal::Integer(4)),
+                Expr::Literal(Literal::Integer(5))
                 ]
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
 
     #[test]
     fn literal() -> Result<()> {
-        let tokens = Lexer::new("\"foo\" 42 3.1415926535897932 ()").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("\"foo\" 42 3.1415926535897932 ()", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![
-                Expr::Literal(Literal::String("foo".to_string())),
-                Expr::Literal(Literal::Integer(42)),
-                Expr::Literal(Literal::Single(3.1415926535897932)),
-                Expr::Literal(Literal::Unit)
+            Expr::Literal(Literal::String("foo".to_string())),
+            Expr::Literal(Literal::Integer(42)),
+            Expr::Literal(Literal::Single(3.1415926535897932)),
+            Expr::Literal(Literal::Unit)
             ]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn lambda() -> Result<()> {
-        let tokens = Lexer::new("(λ (x y) 5)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(λ (x y) 5)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Lambda(
                 vec!["x".to_string(), "y".to_string()],
                 Box::new(Expr::Literal(Literal::Integer(5)))
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
 
     #[test]
     fn def() -> Result<()> {
-        let tokens = Lexer::new("(def foo 5)(def 'impure moo jsp)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(def foo 5)(def 'impure moo jsp)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![
-                Expr::Def(
-                    "foo".to_string(),
-                    Box::new(Expr::Literal(Literal::Integer(5)), false)
+            Expr::Def(
+                "foo".to_string(),
+                Box::new(Expr::Literal(Literal::Integer(5)), false)
                 ),
                 Expr::Def(
                     "moo".to_string(),
                     Box::new(Expr::Var("jsp".to_string())),
                     true
-                )
+                    )
             ]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn constr() -> Result<()> {
-        let tokens = Lexer::new("(Just a)Nothing").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(Just a)Nothing", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![
-                Expr::Constr("Just".to_string(), vec![Expr::Var("a".to_string())]),
-                Expr::Constr("Nothing".to_string(), vec![])
+            Expr::Constr("Just".to_string(), vec![Expr::Var("a".to_string())]),
+            Expr::Constr("Nothing".to_string(), vec![])
             ]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn r#enum() -> Result<()> {
-        let tokens = Lexer::new("(enum Maybe (Just x) Nil)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(enum Maybe (Just x) Nil)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Enum(
                 "Maybe".to_string(),
                 table! {"Just".to_string() => 1u8, "Nil".to_string() => 0u8}
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
 
     #[test]
     fn tuple() -> Result<()> {
-        let tokens = Lexer::new("(, a b c)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(, a b c)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Tuple(vec![
-                Expr::Var("a".to_string()),
-                Expr::Var("b".to_string()),
-                Expr::Var("c".to_string())
+                             Expr::Var("a".to_string()),
+                             Expr::Var("b".to_string()),
+                             Expr::Var("c".to_string())
             ])]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn load() -> Result<()> {
-        let tokens = Lexer::new("(load \"foo\" \"bar\")").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(load \"foo\" \"bar\")", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Load(vec!["foo".to_string(), "bar".to_string()])]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn r#match() -> Result<()> {
-        let tokens = Lexer::new("(match foo (bar x)(_ 9))").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(match foo (bar x)(_ 9))", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Match(
                 Box::new(Expr::Var("foo".to_string())),
                 vec![
-                    (Pattern::Var("bar".to_string()), Expr::Var("x".to_string())),
-                    (
-                        Pattern::Var("_".to_string()),
-                        Expr::Literal(Literal::Integer(9))
-                    )
+                (Pattern::Var("bar".to_string()), Expr::Var("x".to_string())),
+                (
+                    Pattern::Var("_".to_string()),
+                    Expr::Literal(Literal::Integer(9))
+                )
                 ]
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
 
     #[test]
     fn r#panic() -> Result<()> {
-        let tokens = Lexer::new("(panic a)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(panic a)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Panic(
                 "[1:6] Program panicked at: ".to_string(),
                 Box::new(Expr::Var("a".to_string()))
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
 
     #[test]
     fn begin() -> Result<()> {
-        let tokens = Lexer::new("(begin a b c)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(begin a b c)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Begin(vec![
-                Expr::Var("a".to_string()),
-                Expr::Var("b".to_string()),
-                Expr::Var("c".to_string())
+                             Expr::Var("a".to_string()),
+                             Expr::Var("b".to_string()),
+                             Expr::Var("c".to_string())
             ])]
-        );
+            );
 
         Ok(())
     }
 
     #[test]
     fn quote() -> Result<()> {
-        let tokens = Lexer::new("'a").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("'a", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(ast, vec![Expr::Lambda(vec![], Box::new(Expr::Var("a".to_string())))]);
 
@@ -695,19 +714,19 @@ mod test {
 
     #[test]
     fn builtins() -> Result<()> {
-        let tokens = Lexer::new("(format 5 a)").proc_tokens()?;
-        let ast = Parser::new(tokens).parse()?;
+        let tokens = Lexer::new("(format 5 a)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
 
         assert_eq!(
             ast,
             vec![Expr::Builtin(
                 "format".to_string(),
                 vec![
-                    Expr::Literal(Literal::Integer(5)),
-                    Expr::Var("a".to_string())
+                Expr::Literal(Literal::Integer(5)),
+                Expr::Var("a".to_string())
                 ]
-            )]
-        );
+                )]
+            );
 
         Ok(())
     }
