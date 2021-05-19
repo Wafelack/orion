@@ -95,6 +95,17 @@ impl Lexer {
             builtins: vec![],
         }
     }
+    pub fn line(self, line: usize) -> Self {
+        Self {
+            input: self.input,
+            output: self.output,
+            current: self.current,
+            line,
+            start: self.start,
+            file: self.file,
+            builtins: self.builtins,
+        }
+    }
     fn is_at_end(&self) -> bool {
         self.current >= self.input.chars().count()
     }

@@ -94,8 +94,10 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
     // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
 
     let mut rl = Editor::<()>::new();
+    let mut i = 0;
 
     loop {
+        i += 1;
         let line = rl.readline("orion> ");
 
         match line {
@@ -105,7 +107,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     return Ok(());
                 }
 
-                let tokens = match Lexer::new(line.trim(), "REPL").proc_tokens() {
+                let tokens = match Lexer::new(line.trim(), "REPL").line(i).proc_tokens() {
                     Ok(t) => t,
                     Err(e) => {
                         print_err(e);
