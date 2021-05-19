@@ -147,7 +147,7 @@ impl Compiler {
         mut symbols: Vec<(String, bool)>,
         impure: bool,
     ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
-        match expr.exprt {
+        match expr.exprt.clone() {
             ExprT::Literal(lit) => Ok((
                 vec![(OpCode::LoadConst(self.register_constant(lit, expr.line)?))],
                 symbols,

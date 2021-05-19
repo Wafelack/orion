@@ -37,7 +37,7 @@ impl Expr {
             line: 0,
         }
     }
-    pub fn line(&self, line: usize) -> Self {
+    pub fn line(self, line: usize) -> Self {
         Self {
             exprt: self.exprt,
             line,
@@ -66,7 +66,7 @@ impl Expr {
     pub fn get_type(&self) -> String {
         format!(
             "<#expr:{}>",
-            match self.exprt {
+            match &self.exprt {
                 ExprT::Var(s) => format!("constant({})", s),
                 ExprT::Call(_, _) => "call".to_string(),
                 ExprT::Lambda(args, _) => format!("lambda({} args)", args.len()),
@@ -235,9 +235,9 @@ impl Parser {
                     _ => {
                         return error!(
                             self.file,
-                            self.line =>
-                            "{}:{} | Expected Tuple or Enum Variant, found {}.",
-                            subroot.line,
+                            subroot.line =>
+                            "Expected Tuple or Enum Variant, found {}.",
+                            subroot.ttype.get_type(),
                             )
                     }
                 }
@@ -373,7 +373,7 @@ impl Parser {
                             return error!(
                                 self.file,
                                 r_name.line =>
-                                "{}:{} | Enum names have to start with a uppercase letter.",
+                                "Enum names have to start with a uppercase letter.",
                                 );
                         }
 
@@ -466,7 +466,7 @@ impl Parser {
                             Expr::new(ExprT::Call(Box::new(func), args)).line(subroot.line)
                         }
                     }
-                    _ => return error!(self.file, subroot.line => "Unexpected Literal.", subroot.line, subroot.col),
+                    _ => return error!(self.file, subroot.line => "Unexpected Literal."),
                 }
             }
             TType::RParen => {
@@ -476,7 +476,7 @@ impl Parser {
                     "Unexpected Closing Parenthese.",
                     )
             }
-            _ => return error!(self.file, root.line => "{}:{} | Unexpected Keyword."),
+            _ => return error!(self.file, root.line => "Unexpected Keyword."),
         })
     }
 
