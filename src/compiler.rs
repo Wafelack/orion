@@ -2,7 +2,7 @@ use crate::{
     bytecode::{Bytecode, Chunk, OpCode},
     error,
     lexer::Lexer,
-    parser::{Expr, Literal, Parser},
+    parser::{Expr, ExprT, Literal, Parser},
     OrionError, Result,
 };
 use std::{env, fs, path::Path};
@@ -12,16 +12,18 @@ pub struct Compiler {
     load_history: Vec<String>,
     builtins: Vec<(String, bool)>, // (name, impure?)
     constructors: Vec<String>,
+    file: String,
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>) -> Self {
+    pub fn new(input: Vec<Expr>, file: impl ToString) -> Self {
         let mut to_ret = Self {
             input,
             constructors: vec![],
             output: Bytecode::new(),
             load_history: vec![],
             builtins: vec![],
+            file: file.to_string(),
         };
         to_ret.register_builtin("+", false);
         to_ret.register_builtin("dbg", true);
@@ -30,12 +32,12 @@ impl Compiler {
     fn register_builtin(&mut self, name: impl ToString, impure: bool) {
         self.builtins.push((name.to_string(), impure))
     }
-    fn register_constant(&mut self, constant: Literal) -> Result<u16> {
+    fn register_constant(&mut self, constant: Literal, line: usize) -> Result<u16> {
         if !self.output.constants.contains(&constant) {
             self.output.constants.push(constant.clone());
         }
         if self.output.constants.len() > u16::MAX as usize {
-            error!("Too much constants are used.")
+            error!(self.file, line => "Too much constants are used.")
         } else {
             Ok(self
                 .output
@@ -45,10 +47,12 @@ impl Compiler {
                 .unwrap() as u16)
         }
     }
-    fn register_constructor(&mut self, name: impl ToString, contained_amount: u8) -> Result<()> {
+    fn register_constructor(&mut self, name: impl ToString, contained_amount: u8, line: usize) -> Result<()> {
         let name = name.to_string();
         if self.constructors.contains(&name) {
             error!(
+                self.file,
+                line =>
                 "Enum Variant {} has already been defined (Index 0x{:04x})",
                 &name,
                 self.constructors
@@ -62,7 +66,7 @@ impl Compiler {
             Ok(())
         }
     }
-    fn get_constructor(&self, name: impl ToString) -> Result<(u8, u16)> {
+    fn get_constructor(&self, name: impl ToString, line: usize) -> Result<(u8, u16)> {
         let name = name.to_string();
         if self.constructors.contains(&name) {
             let idx = self
@@ -72,7 +76,7 @@ impl Compiler {
                 .unwrap();
             Ok((self.output.constructors[idx], idx as u16))
         } else {
-            error!("Enum Variant {} does not exist.", name)
+            error!(self.file, line => "Enum variant {} does not exist.", name)
         }
     }
     fn declare(
@@ -80,9 +84,10 @@ impl Compiler {
         name: impl ToString,
         mut symbols: Vec<(String, bool)>,
         impure: bool,
+        line: usize,
     ) -> Result<(u16, Vec<(String, bool)>)> {
         if self.output.symbols.len() >= u16::MAX as usize {
-            error!("Too much symbols are declared.")
+            error!(self.file, line => "Too much symbols are declared.")
         } else {
             Ok((
                 if symbols.contains(&(name.to_string(), impure))
@@ -104,6 +109,7 @@ impl Compiler {
         &mut self,
         fname: impl ToString,
         mut symbols: Vec<(String, bool)>,
+        line: usize,
     ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
         let fname = fname.to_string();
         if self.load_history.contains(&fname) {
@@ -113,8 +119,8 @@ impl Compiler {
             self.load_history.push(fname.clone());
             match fs::read_to_string(&fname) {
                 Ok(content) => {
-                    let tokens = Lexer::new(content).proc_tokens()?;
-                    let expressions = Parser::new(tokens).parse()?;
+                    let tokens = Lexer::new(content, line).proc_tokens()?;
+                    let expressions = Parser::new(tokens, line).parse()?;
 
                     Ok((
                         expressions
@@ -131,7 +137,7 @@ impl Compiler {
                         symbols,
                     ))
                 }
-                Err(e) => error!("Failed to read file: {}: {}.", fname, e),
+                Err(e) => error!(self.file, line => "Failed to read file: {}: {}.", fname, e),
             }
         }
     }
@@ -141,33 +147,35 @@ impl Compiler {
         mut symbols: Vec<(String, bool)>,
         impure: bool,
     ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
-        match expr {
-            Expr::Literal(lit) => Ok((
-                vec![(OpCode::LoadConst(self.register_constant(lit)?))],
+        match expr.exprt {
+            ExprT::Literal(lit) => Ok((
+                vec![(OpCode::LoadConst(self.register_constant(lit, expr.line)?))],
                 symbols,
             )),
-            Expr::Var(name) => {
+            ExprT::Var(name) => {
                 if !symbols.contains(&(name.clone(), impure)) {
                     if impure && symbols.contains(&(name.clone(), false)) {
-                        let (idx, symbols) = self.declare(name, symbols, impure)?;
+                        let (idx, symbols) = self.declare(name, symbols, impure, expr.line)?;
                         Ok((vec![OpCode::LoadSym(idx)], symbols))
                     } else if !impure && symbols.contains(&(name.clone(), true)) {
                         error!(
+                            self.file,
+                            expr.line =>
                             "Impure function used out of an `impure` declaration: {}",
                             name
                         )
                     } else {
-                        error!("Variable not in scope: {}.", name)
+                        error!(self.file, expr.line => "Variable not in scope: {}.", name)
                     }
                 } else {
-                    let (idx, symbols) = self.declare(name, symbols, impure)?;
+                    let (idx, symbols) = self.declare(name, symbols, impure, expr.line)?;
                     Ok((vec![OpCode::LoadSym(idx)], symbols))
                 }
             }
-            Expr::Load(files) => {
+            ExprT::Load(files) => {
                 let lib_link = match env::var("ORION_LIB") {
                     Ok(v) => v,
-                    Err(_) => return error!("ORION_LIB variable does not exist."),
+                    Err(_) => return error!(self.file, expr.line => "ORION_LIB variable does not exist."),
                 };
 
                 Ok((
@@ -180,10 +188,10 @@ impl Compiler {
                             } else if Path::new(&file).exists() {
                                 Ok(file)
                             } else {
-                                error!("File not found: {}.", file)
+                                error!(self.file, expr.line => "File not found: {}.", file)
                             }?;
 
-                            let to_ret = self.load_file(fname, symbols.clone())?;
+                            let to_ret = self.load_file(fname, symbols.clone(), expr.line)?;
                             symbols = to_ret.1; // Update symbols.
                             Ok(to_ret.0)
                         })
@@ -194,14 +202,14 @@ impl Compiler {
                     symbols,
                 ))
             }
-            Expr::Def(name, expr, purity) => {
-                let (idx, symbols) = self.declare(name, symbols, purity)?;
-                let (to_push, symbols) = self.compile_expr(*expr, symbols, purity)?; // Update symbols.
+            ExprT::Def(name, value, purity) => {
+                let (idx, symbols) = self.declare(name, symbols, purity, expr.line)?;
+                let (to_push, symbols) = self.compile_expr(*value, symbols, purity)?; // Update symbols.
                 let mut to_ret = vec![OpCode::Def(idx, to_push.len() as u16)];
                 to_ret.extend(to_push);
                 Ok((to_ret, symbols))
             }
-            Expr::Call(func, args) => {
+            ExprT::Call(func, args) => {
                 let (mut to_ret, mut symbols) = self.compile_expr(*func, symbols, impure)?; // The λ to execute.
                 let argc = args.len() as u16;
                 to_ret.extend(
@@ -220,7 +228,7 @@ impl Compiler {
                 to_ret.push(OpCode::Call(argc));
                 Ok((to_ret, symbols))
             }
-            Expr::Begin(expressions) => {
+            ExprT::Begin(expressions) => {
                 let instructions = expressions.into_iter().map(|expr| {
                     let (instruction, new_syms) = self.compile_expr(expr, symbols.clone(), impure)?;
                     symbols = new_syms;
@@ -232,11 +240,11 @@ impl Compiler {
                 });
                 Ok((vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1), OpCode::Call(0)], symbols))
             }
-            Expr::Lambda(args, body) => {
+            ExprT::Lambda(args, body) => {
                 let args_reference = args
                     .iter()
                     .map(|a| {
-                        let (idx, syms) = self.declare(a, symbols.clone(), false)?;
+                        let (idx, syms) = self.declare(a, symbols.clone(), false, expr.line)?;
                         symbols = syms;
                         Ok(idx)
                     })
@@ -264,7 +272,7 @@ impl Compiler {
                     symbols,
                 ))
             }
-            Expr::Builtin(name, args) => {
+            ExprT::Builtin(name, args) => {
                 let idx = self
                     .builtins
                     .iter()
@@ -272,7 +280,7 @@ impl Compiler {
                     .unwrap();
                 let impure_builtin = self.builtins[idx as usize].1;
                 if !impure && impure_builtin {
-                    return error!("Impure builtin used out of an `impure` function: {}.", name);
+                    return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
                 }
                 let argc = args.len();
                 let mut to_ret = args
@@ -290,17 +298,19 @@ impl Compiler {
                 to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
             }
-            Expr::Enum(_, constructors) => {
+            ExprT::Enum(_, constructors) => {
                 constructors
                     .into_iter()
-                    .map(|(k, v)| self.register_constructor(k, v))
+                    .map(|(k, v)| self.register_constructor(k, v, expr.line))
                     .collect::<Result<()>>()?;
                 Ok((vec![], symbols))
             }
-            Expr::Constr(name, contained) => {
-                let (amount, idx) = self.get_constructor(&name)?;
+            ExprT::Constr(name, contained) => {
+                let (amount, idx) = self.get_constructor(&name, expr.line)?;
                 if amount != contained.len() as u8 {
                     error!(
+                        self.file,
+                        expr.line =>
                         "Enum Constructor {} takes {} values, but {} values were given.",
                         name,
                         amount,
@@ -324,7 +334,7 @@ impl Compiler {
                     Ok((to_ret, symbols))
                 }
             }
-            Expr::Tuple(vals) => {
+            ExprT::Tuple(vals) => {
                 let vals_len = vals.len();
                 let values = vals
                     .into_iter()
@@ -342,7 +352,7 @@ impl Compiler {
                 to_ret.extend(values);
                 Ok((to_ret, symbols))
             }
-            Expr::Match(expression, patterns) => {
+            /* ExprT::Match(expression, patterns) => {
                 let patterns = patterns.into_iter()
                     .map(|pat| {
                         let (pat, new_syms) = self.simplify_pat(pat, symbols)?;
@@ -352,7 +362,7 @@ impl Compiler {
 
 
                 todo!();
-            } 
+            } */
             _ => todo!(),
         }
     }
