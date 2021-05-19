@@ -31,7 +31,7 @@ macro_rules! error {
             let mut line = None;
             $ (
                 file = Some($file.to_string());
-                line = Some($line)
+                line = Some($line);
               )?
                 Err(OrionError(file, line, format_args!($($arg)*).to_string()))
 
