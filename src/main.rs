@@ -121,7 +121,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     println!();
                 }
 
-                let ast = match Parser::new(tokens).parse() {
+                let ast = match Parser::new(tokens, "REPL").parse() {
                     Ok(ast) => ast,
                     Err(e) => {
                         print_err(e);
@@ -140,7 +140,7 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
                     println!("\nStdout\n======");
                 }
 
-                let bytecode = Compiler::new(ast).compile()?;
+                let bytecode = Compiler::new(ast, "REPL").compile()?;
                 println!("[INSTRUCTIONS]");
                 bytecode
                     .instructions
@@ -258,7 +258,7 @@ fn try_main() -> Result<()> {
                 println!();
             }
 
-            let ast = Parser::new(tokens).parse()?;
+            let ast = Parser::new(tokens, path).parse()?;
 
             if matches.is_present("debug") {
                 println!("Syntax Tree\n===========");
