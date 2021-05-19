@@ -32,7 +32,6 @@ fn to_val(lit: &Literal) -> Value {
         Literal::Integer(i) => Value::Integer(*i),
         Literal::Single(s) => Value::Single(*s),
         Literal::String(s) => Value::String(s.to_string()),
-        Literal::Unit => Value::Unit,
     }
 }
 
@@ -60,13 +59,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match lhs {
             Value::Integer(lhs) => match rhs {
                 Value::Integer(rhs) => Ok(Value::Integer(lhs + rhs)),
-                _ => error!("Expected an Integer, found a {:?}.", rhs),
+                _ => error!(=> "Expected an Integer, found a {:?}.", rhs),
             },
             Value::Single(lhs) => match rhs {
                 Value::Single(rhs) => Ok(Value::Single(lhs + rhs)),
-                _ => error!("Expected a Single, found a {:?}.", rhs),
+                _ => error!(=> "Expected a Single, found a {:?}.", rhs),
             },
-            _ => error!("Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
         }
     }
     fn register_builtin(
@@ -79,7 +78,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn pop(&mut self) -> Result<Value> {
         match self.stack.pop() {
             Some(v) => Ok(v),
-            None => error!("Stack underflow."),
+            None => error!(=> "Stack underflow."),
         }
     }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
@@ -116,7 +115,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     let chunk = &self.input.chunks[chunk as usize];
                     if chunk.reference.len() != args.len() {
                         return error!(
-                            "Expected {} arguments, found {}.",
+                            => "Expected {} arguments, found {}.",
                             chunk.reference.len(),
                             args.len()
                             );
@@ -139,14 +138,14 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
                     *ctx = prev_ctx; // Drop modified context with replaced arguments and reuse older context.
                 } else {
-                    return error!("Expected a Lambda, found a {:?}.", func);
+                    return error!(=> "Expected a Lambda, found a {:?}.", func);
                 }
             }
             OpCode::Builtin(idx, argc) => {
                 let (f, f_argc) = self.builtins[idx as usize];
                 if f_argc != argc {
                     return error!(
-                        "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
+                        => "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
                         idx, f_argc, argc
                         );
                 }
@@ -161,8 +160,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 self.ip += amount as usize;
                 let vals = (0..to_eval)
-                    .map(|_| self.pop()?)
-                    .collect::<Vec<Value>>();
+                    .map(|_| self.pop())
+                    .collect::<Result<Vec<Value>>>()?;
                 self.stack.push(Value::Constructor(idx, vals));
             }
             OpCode::Tuple(amount, to_eval) => {
@@ -172,8 +171,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 self.ip += amount as usize;
                 let vals = (0..to_eval)
-                    .map(|_| self.pop()?)
-                    .collect::<Vec<Value>>();
+                    .map(|_| self.pop())
+                    .collect::<Result<Vec<Value>>>()?;
                 self.stack.push(Value::Tuple(vals))
             }
         }
