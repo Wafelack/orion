@@ -173,22 +173,23 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
             OpCode::Constructor(idx, to_eval) => {
                 let amount = self.input.constructors[idx as usize];
-                for i in 1..=amount {
-                    let instruction = self.input.instructions[self.ip + i as usize];
+                for _ in 1..=amount {
+                    self.ip += 1;
+                    let instruction = self.input.instructions[self.ip];
                     self.eval_opcode(instruction, ctx)?;
                 }
-                self.ip += amount as usize;
-                let vals = (0..to_eval)
+                let mut vals = (0..to_eval)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Value>>>()?;
+                vals.reverse();
                 self.stack.push(Value::Constructor(idx, vals));
             }
-            OpCode::Tuple(amount, to_eval) => {
-                for i in 1..=amount {
-                    let instruction = self.input.instructions[self.ip + i as usize];
+            OpCode::Tuple(to_eval) => {
+                for _ in 1..=to_eval{
+                    self.ip += 1;
+                    let instruction = self.input.instructions[self.ip];
                     self.eval_opcode(instruction, ctx)?;
                 }
-                self.ip += amount as usize;
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Value>>>()?;

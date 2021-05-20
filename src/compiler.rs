@@ -317,6 +317,7 @@ impl Compiler {
                         contained.len()
                     )
                 } else {
+                    let contained_len = contained.len();
                     let values = contained
                         .into_iter()
                         .map(|expr| {
@@ -329,7 +330,7 @@ impl Compiler {
                         .into_iter()
                         .flatten()
                         .collect::<Vec<OpCode>>();
-                    let mut to_ret = vec![OpCode::Constructor(idx, values.len() as u16)];
+                    let mut to_ret = vec![OpCode::Constructor(idx, contained_len as u16)];
                     to_ret.extend(values);
                     Ok((to_ret, symbols))
                 }
@@ -348,7 +349,7 @@ impl Compiler {
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
-                let mut to_ret = vec![OpCode::Tuple(values.len() as u16, vals_len as u16)];
+                let mut to_ret = vec![OpCode::Tuple(vals_len as u16)];
                 to_ret.extend(values);
                 Ok((to_ret, symbols))
             }

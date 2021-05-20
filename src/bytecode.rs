@@ -9,7 +9,7 @@ pub enum OpCode {
     Def(u16, u16),         // (sym_id, instructions_length)
     Lambda(u16),           // (chunk_id)
     Constructor(u16, u16), // (constr_idx, to_eval)
-    Tuple(u16, u16),       // (amount, to_eval)
+    Tuple(u16),       // (amount, to_eval)
 }
 
 #[derive(Clone, Debug)]
