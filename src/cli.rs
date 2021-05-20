@@ -1,8 +1,9 @@
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
-use crate::{Result, print_err, error, OrionError, lexer::Lexer, parser::Parser, compiler::Compiler, vm::VM};
+use std::time::Instant;
+use crate::{Result, print_err, error, OrionError, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
 
-fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
+fn repl(dbg_level: u8) -> Result<()> {
     println!(
         ";; Orion REPL v{}.\n
 ;; Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
@@ -12,6 +13,8 @@ fn repl(no_prelude: bool, debug: bool, quiet: bool) -> Result<()> {
 env!("CARGO_PKG_VERSION")
 );
     // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
+    let mut ctx = vec![];
+    let mut vm = VM::new(Bytecode::new());
 
     let mut rl = Editor::<()>::new();
     let mut i = 0;
@@ -26,100 +29,39 @@ env!("CARGO_PKG_VERSION")
                 if line == "(quit)" {
                     return Ok(());
                 }
-
-                let tokens = match Lexer::new(line.trim(), "REPL").line(i).proc_tokens() {
+                let start = Instant::now();
+                let tokens = match lex_dbg("REPL", i, line, dbg_level) {
                     Ok(t) => t,
                     Err(e) => {
                         print_err(e);
                         continue;
                     }
                 };
-
-                if debug {
-                    println!("Tokens\n======");
-                    tokens.iter().for_each(|t| {
-                        println!("{}", t.display());
-                    });
-                    println!();
-                }
-
-                let ast = match Parser::new(tokens, "REPL").parse() {
-                    Ok(ast) => ast,
+                let expressions = match parse_dbg("REPL", tokens, dbg_level) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
+                };
+                let bytecode = match compile_dbg("REPL", expressions, dbg_level) {
+                    Ok(b) => b,
                     Err(e) => {
                         print_err(e);
                         continue;
                     }
                 };
 
-                if debug {
-                    println!("Syntax Tree\n===========");
-                    ast.iter().for_each(|e| println!("{}", e.get_type()));
+                match eval_dbg(&mut vm, &mut ctx, bytecode, dbg_level) {
+                    Ok(t) => if dbg_level > 0 {
+                        println!("Done in {}ms.", t);
+                    },
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
                 }
-
-                // interpreter.update_ast(ast);
-
-                if debug {
-                    println!("\nStdout\n======");
-                }
-
-                let bytecode = Compiler::new(ast, "REPL").compile()?;
-                println!("[INSTRUCTIONS]");
-                bytecode
-                    .instructions
-                    .iter()
-                    .for_each(|i| println!("{:?}", i));
-                println!("\n[SYMBOLS]");
-                bytecode
-                    .symbols
-                    .iter()
-                    .enumerate()
-                    .for_each(|(idx, var)| println!("0x{:04x}: {}", idx, var));
-                println!("\n[CONSTANTS]");
-                bytecode
-                    .constants
-                    .iter()
-                    .enumerate()
-                    .for_each(|(idx, constant)| println!("0x{:04x}: {:?}", idx, constant));
-                println!("\n[CHUNKS]");
-                bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
-                    println!("{}: {{", idx);
-                    println!("  reference: [");
-                    chunk.reference.iter().for_each(|sym| {
-                        println!("    0x{:04x}", sym);
-                    });
-                    println!("  ]\n  instructions: [");
-                    chunk.instructions.iter().for_each(|instr| {
-                        println!("    {:?}", instr);
-                    });
-                    println!("  ]\n}}");
-                });
-
-                let mut vm = VM::<256>::new(bytecode);
-                println!("-------------------------------");
-                println!("[STDOUT]");
-                let memory = vm.eval()?;
-                println!("\n[STACK]");
-                vm.stack.into_iter().enumerate().for_each(|(idx, v)| {
-                    println!("0x{:02x}: {:?}", idx, v);
-                });
-                println!("\n[MEMORY]");
-                memory.into_iter().enumerate().for_each(|(idx, v)| {
-                    println!("0x{:02x}: {:?}", idx, v);
-                });
-
-                /*
-                   let start = Instant::now();
-                /* match interpreter.interpret(true) {
-                Ok(_) => {},
-                Err(e) => {
-                print_err(e);
-                continue;
-                }
-                } */
-                let elapsed = start.elapsed();
-                if debug {
-                    println!("\nDone in {}ms.", elapsed.as_millis());
-                } */
+                println!("=> {}", vm.stack[vm.stack.len() - 1]);
             }
             Err(ReadlineError::Interrupted) => {
                 println!(";; User break");
@@ -132,46 +74,154 @@ env!("CARGO_PKG_VERSION")
         }
     }
 }
+
+const STAR: &str = "\x1b[0;32m*\x1b[0m";
+
+fn lex_dbg(file: impl ToString, line: usize, code: impl ToString, level: u8) -> Result<Vec<Token>> {
+    if level > 0 {
+        println!("{} Tokenizing {} SLOC...", STAR, code.to_string().lines().filter(|l| !l.is_empty()).count());
+    }
+    let tokens = Lexer::new(code, file).line(line).proc_tokens()?;
+    if level > 1 {
+        println!("[\x1b[0;33mTOKENS\x1b[0m]");
+        tokens.iter().enumerate().for_each(|(idx, tok)| {
+            println!("{:03}    {}:{:?}", idx, tok.line, tok.ttype);
+        });
+        println!("===========================================");
+    } 
+    Ok(tokens)
+}
+fn parse_dbg(file: impl ToString, code: Vec<Token>, level: u8) -> Result<Vec<Expr>> {
+    if level > 0 {
+        println!("{} Parsing {} Tokens...", STAR, code.len());
+    }
+    let expressions = Parser::new(code, file).parse()?;
+    if level > 1 {
+        println!("[\x1b[0;33mAST\x1b[0m]");
+        expressions.iter().enumerate().for_each(|(idx, expr)| {
+            println!("{:03}    {}:{:?}", idx, expr.line, expr.exprt);
+        });
+        println!("===========================================");
+    } 
+    Ok(expressions)
+}
+fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8) -> Result<Bytecode> {
+    if level > 0 {
+        println!("{} Compiling {} Exprs...", STAR, expressions.len());
+    }
+    let bytecode = Compiler::new(expressions, file).compile()?;
+    if level > 1 {
+        if bytecode.constants.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.CONSTANTS\x1b[0m]");
+            bytecode.constants.iter().enumerate().for_each(|(idx, constant)| println!("{:03}    {:?}", idx, constant));
+
+        }
+        if bytecode.symbols.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.SYMBOLS\x1b[0m]");
+            bytecode.symbols.iter().enumerate().for_each(|(idx, sym)| println!("{:03}    {}", idx, sym));
+        }
+        if bytecode.constructors.len() != 0 { 
+            println!("[\x1b[0;33mBYTECODE.CONSTRUCTORS\x1b[0m]");
+            bytecode.constructors.iter().enumerate().for_each(|(idx, containing)| println!("{:03}    {}", idx, containing));
+        }
+        if bytecode.chunks.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.CHUNKS\x1b[0m]");
+            bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
+                println!("{:03} =", idx);
+                println!("    [\x1b[0;34mREFERENCE\x1b[0m]");
+                chunk.reference.iter().enumerate().for_each(|(idx, other_id)| println!("    {:03}    0x{:04x}", idx, other_id));
+                println!("    [\x1b[0;34mINSTRUCTIONS\x1b[0m]");
+                chunk.instructions.iter().enumerate().for_each(|(idx, instr)| println!("    {:03}    {:?}", idx, instr));
+            });
+
+        }
+        if bytecode.instructions.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.INSTRUCTIONS\x1b[0m]");
+            bytecode.instructions.iter().enumerate().for_each(|(idx, instr)| println!("{:03}    {:?}", idx, instr));
+            println!("===========================================");
+        }
+    } 
+    Ok(bytecode)
+}
+fn eval_dbg(vm: &mut VM<256>, ctx: &mut Vec<Value>, bytecode: Bytecode, level: u8) -> Result<u64> {
+    let mut stack = Vec::with_capacity(256);
+    stack.push(Value::Tuple(vec![]));
+    vm.input = bytecode;
+    vm.stack = stack;
+    vm.ip = 0;
+    let start = Instant::now();
+    let new_ctx = vm.eval(ctx.clone())?;
+    *ctx = new_ctx;
+    let elapsed = start.elapsed();
+    if level > 1 {
+        if ctx.len() != 0 {
+            println!("[\x1b[0;33mMEMORY\x1b[0m]");
+            ctx.iter().enumerate().for_each(|(idx, v)| println!("{:03}   {:?}", idx, v));
+        }
+    }
+    if level > 2 {
+        println!("[\x1b[0;33mSTACK\x1b[0m]");
+        vm.stack.iter().rev().enumerate().for_each(|(idx, v)| println!("{}    {:?}", if idx == 0 { "TS".to_string() } else { format!("{:03}", idx) }, v))
+    }
+    Ok(elapsed.as_millis() as u64)
+}
+
 macro_rules! get_app {
     ($name:literal, $version:expr) => {
-    App::new($name)
-        .version($version)
-        .long_version(format!(
+        App::new($name)
+            .version($version)
+            .long_version(format!(
 "{}
 Copyright (C) 2021 Wafelack
 License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.", $version).as_str())
-        .about("LISP inspired purely functional programming language.")
-        .after_help("Report bugs to: <https://github.com/orion-lang/orion/issues/new>\nOrion home page: <https://orion-lang.github.io>\nRepository: <https://github.com/orion-lang/orion>")
-        .help_message("Print help information.")
-        .version_message("Print version information.")
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .arg(Arg::with_name("file")
-             .index(1)
-             .takes_value(true)
-             .value_name("FILE")
-             .help("The source file to compile."))
-        .arg(Arg::with_name("compile-only")
-             .short("c")
-             .long("compile-only")
-             .help("Compile, but do not run."))
-        .arg(Arg::with_name("output")
-             .short("o")
-             .long("output")
-             .takes_value(true)
-             .value_name("FILE")
-             .help("Place the output into FILE."))
-        .arg(Arg::with_name("debug-level")
-             .short("d")
-             .long("debug")
-             .value_name("LEVEL")
-             .takes_value(true)
-             .help("Set the debug level. Defaults to 0."))
+            .about("LISP inspired purely functional programming language.")
+            .after_help("Report bugs to: <https://github.com/orion-lang/orion/issues/new>\nOrion home page: <https://orion-lang.github.io>\nRepository: <https://github.com/orion-lang/orion>")
+            .help_message("Print help information.")
+            .version_message("Print version information.")
+            .author(env!("CARGO_PKG_AUTHORS"))
+            .arg(Arg::with_name("file")
+                 .index(1)
+                 .takes_value(true)
+                 .value_name("FILE")
+                 .help("The source file to compile."))
+            .arg(Arg::with_name("compile-only")
+                 .short("c")
+                 .long("compile-only")
+                 .help("Compile, but do not run."))
+            .arg(Arg::with_name("output")
+                 .short("o")
+                 .long("output")
+                 .takes_value(true)
+                 .value_name("FILE")
+                 .help("Place the output into FILE."))
+            .arg(Arg::with_name("debug-level")
+                 .short("d")
+                 .long("debug")
+                 .value_name("LEVEL")
+                 .takes_value(true)
+                 .help("Set the debug level. Defaults to 0."))
     }
 }
 pub fn cli() -> Result<()> {
     let matches = get_app!("Orion", env!("CARGO_PKG_VERSION")).get_matches();
+    let dbg_level = match matches.value_of("debug-level") {
+        Some(lvl) => match lvl.parse::<u8>() {
+            Ok(u) => if u > 3 {
+                3
+            } else {
+                u
+            }
+            Err(_) => 0,
+        }
+        None => 0,
+    };
+    let compile_only = matches.is_present("compile-only");
+    if let Some(file) = matches.value_of("file") {
 
+    } else {
+        repl(dbg_level)?;
+    }
     Ok(())
 }
