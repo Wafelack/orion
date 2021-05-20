@@ -5,10 +5,10 @@ authors = ["Wafelack <wafelack@protonmail.com>"]
 edition = "2018"
 repository = "https://github.com/wafelack/orion"
 readme = "https://github.com/wafelack/orion/blob/master/README.md"
-description = "Orion is a high level, purely functional Lisp dialect."
+description = "LISP inspired purely functional programming language."
 documentation = "https://github.com/wafelack/orion/blob/master/DOCS.md"
 license = "GPL-3.0"
-keywords = ["lisp", "functional", "fp", "language"]
+keywords = ["lisp-like", "functional", "fp", "language"]
 
 
 [[bin]]
