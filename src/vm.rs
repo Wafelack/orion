@@ -1,20 +1,35 @@
 use crate::{    
     bytecode::{Bytecode, Chunk, OpCode},
-    error,
+    error, bug,
     parser::Literal,
     OrionError, Result,
 };
+
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     Integer(i32),
     Single(f32),
     String(String),
-    Unit,
     Lambda(u16),
     Constructor(u16, Vec<Value>),
     Tuple(Vec<Value>),
     Initialzing,
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Value::Integer(i) => write!(f, "{}", i),
+            Value::Single(r) => write!(f, "{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
+            Value::String(s) => write!(f, "\"{}\"", s),
+            Value::Lambda(u) => write!(f, "\\{}", u),
+            Value::Constructor(id, args) => write!(f, "#{}({})", id, args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
+            Value::Tuple(args) => write!(f, "({})", args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
+            _ => bug!("UNEXPECTED_INITIALIZING")
+        }
+    }
 }
 
 pub struct VM<const STACK_SIZE: usize> {
@@ -39,7 +54,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn new(input: Bytecode) -> Self {
         let mut to_ret = Self {
             input,
-            stack: Vec::with_capacity(STACK_SIZE),
+            stack: {
+                let mut stack = Vec::with_capacity(STACK_SIZE);
+                stack.push(Value::Tuple(vec![]));
+                stack
+            },
             builtins: vec![],
             ip: 0,
         };
@@ -50,7 +69,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
     fn dbg(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         println!("{:?}", self.pop()?);
-        Ok(Value::Unit)
+        Ok(Value::Tuple(vec![]))
     }
     fn add(&mut self, _: &mut Vec<Value>) -> Result<Value> {
         let lhs = self.pop()?;
@@ -170,17 +189,18 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.eval_opcode(instruction, ctx)?;
                 }
                 self.ip += amount as usize;
-                let vals = (0..to_eval)
+                let mut vals = (0..to_eval)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Value>>>()?;
+                vals.reverse();
                 self.stack.push(Value::Tuple(vals))
             }
         }
 
         Ok(())
     }
-    pub fn eval(&mut self) -> Result<Vec<Value>> {
-        let mut ctx = vec![];
+    pub fn eval(&mut self, ctx: Vec<Value>) -> Result<Vec<Value>> {
+        let mut ctx = ctx;
         while self.ip < self.input.instructions.len() {
             let instruction = self.input.instructions[self.ip];
             self.eval_opcode(instruction, &mut ctx)?;
