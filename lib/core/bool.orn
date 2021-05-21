@@ -25,32 +25,32 @@
 (def #t True)
 (def #f False)
 
-(def = (lambda (lhs rhs)
+(def = (λ (lhs rhs)
 	(match lhs
 		(rhs True)
 		(_ False))))
 
-(def not (lambda (val)
+(def not (λ (val)
 	(match val
 		(True False)
 		(False True))))
 
-(def /= (lambda (lhs rhs)
+(def /= (λ (lhs rhs)
 	(not (= lhs rhs))))
 
-(def and (lambda (lhs rhs)
+(def and (λ (lhs rhs)
 	(match lhs
 		(True (match rhs
 			(True True)
 			(False False)))
 		(False False))))
 
-(def or (lambda (lhs rhs)
+(def or (λ (lhs rhs)
 	(match lhs
 		(True True)
 		(False rhs))))
 
-(def assert_eq (lambda (lhs rhs)
+(def assert_eq (λ (lhs rhs)
 	(match (= lhs rhs)
 		(True ())
 		(False (panic (format "Assertion failed: #v /= #v.`" lhs rhs))))))
