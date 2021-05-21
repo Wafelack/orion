@@ -153,7 +153,8 @@ impl Bytecode {
         to_ret.extend(serialized);
 
         // Match
-        
+        to_ret.extend(&(self.matches.len() as u16).to_be_bytes());
+
         to_ret
     }
 }
