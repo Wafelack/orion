@@ -24,22 +24,22 @@
       Equal
       Greater)
 
-(def cmp (lambda (lhs rhs)
+(def cmp (λ (lhs rhs)
                  (match (_cmp lhs rhs)
                         (0 Less)
                         (1 Equal)
                         (2 Greater))))
 
-(def < (lambda (lhs rhs)
+(def < (λ (lhs rhs)
                (= (cmp lhs rhs) Less)))
 
-(def > (lambda (lhs rhs)
+(def > (λ (lhs rhs)
                (= (cmp lhs rhs) Greater)))
 
-(def >= (lambda (lhs rhs)
+(def >= (λ (lhs rhs)
                 (or (> lhs rhs) (= lhs rhs))))
 
-(def <= (lambda (lhs rhs)
+(def <= (λ (lhs rhs)
                 (or (< lhs rhs) (= lhs rhs))))
 
 (def % (λ (lhs rhs)
