@@ -63,6 +63,7 @@ Roadmap
 	- [x] Variants
 	- [x] Tuples
 	- [ ] Pattern Matching
+	- [ ] Typechecking
 	- [ ] Builtins
 		- [x] Add
 		- [ ] Sub
@@ -104,11 +105,6 @@ Differences Between Older Orion and Newer Orion
 The current Orion is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
 
 The older Orion was functional and imperative, had mutation, and an enormous builtin part.
-
-Code Structure
---------------
-
-<img width="500px" src="assets/code_structure.png">
 
 Performances
 ------------
