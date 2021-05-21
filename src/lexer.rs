@@ -86,7 +86,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(input: impl ToString, file: impl ToString) -> Self {
         Self {
-            input: input.to_string().replace("λ", "lambda").to_string(),
+            input: input.to_string().replace("λ", "\\").to_string(),
             output: vec![],
             current: 0,
             line: 1,
@@ -222,7 +222,6 @@ impl Lexer {
             match raw.as_str() {
                 "def" => self.add_token(TType::Def),
                 "enum" => self.add_token(TType::Enum),
-                "lambda" => self.add_token(TType::Lambda),
                 "\\" => self.add_token(TType::Lambda),
                 "," => self.add_token(TType::Tuple),
                 "match" => self.add_token(TType::Match),

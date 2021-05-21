@@ -104,8 +104,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match opcode {
             OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
             OpCode::LoadSym(id) => {
-                println!("Symbols: {:?}", self.input.symbols);
-                println!("CTX: {:?}", ctx);
                 self.stack.push(ctx[id as usize].clone())
             },
             OpCode::Def(sym_id, instr_length) => {

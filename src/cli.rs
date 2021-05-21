@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
-use std::time::Instant;
+use std::{time::Instant, path::Path, fs, io::Write};
 use crate::{Result, print_err, error, OrionError, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
 
 fn repl(dbg_level: u8) -> Result<()> {
@@ -51,10 +51,14 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 };
+                let elapsed = start.elapsed();
+                if dbg_level > 0 {
+                    println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
+                }
 
                 match eval_dbg(&mut vm, &mut ctx, bytecode, dbg_level) {
                     Ok(t) => if dbg_level > 0 {
-                        println!("Done in {}ms.", t);
+                        println!("{} Run in {}ms.", STAR, t);
                     },
                     Err(e) => {
                         print_err(e);
@@ -217,9 +221,37 @@ pub fn cli() -> Result<()> {
         }
         None => 0,
     };
-    let compile_only = matches.is_present("compile-only");
     if let Some(file) = matches.value_of("file") {
-
+        let output = match matches.value_of("output") {
+            Some(f) => f.to_string(),
+            None => format!("{}.orc", Path::new(file).file_stem().unwrap().to_str().unwrap()),
+        };
+        let content = match fs::read_to_string(file) {
+            Ok(s) => s,
+            Err(e) => return error!(=> "Failed to read file: {}: {}.", file, e)
+        };
+        let start = Instant::now();
+        let tokens = lex_dbg(file, 1, content, dbg_level)?;
+        let expressions = parse_dbg(file, tokens, dbg_level)?;
+        let bytecode = compile_dbg(file, expressions, dbg_level)?;
+        let elapsed = start.elapsed();
+        if dbg_level > 0 {
+            println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
+        }
+        let to_write = bytecode.serialize();
+        match (match fs::File::create(&output) {
+            Ok(f) => f,
+            Err(e) => return error!(=> "Failed to create file: {}: {}.", output, e)
+        }).write_all(to_write.as_slice()) {
+           Ok(()) => {}
+           Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
+        };
+        if !matches.is_present("compile-only") {
+            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new()), &mut vec![], bytecode, dbg_level)?;
+            if dbg_level > 0 {
+                println!("{} Run in {}ms.", STAR, time)
+            }
+        }
     } else {
         repl(dbg_level)?;
     }

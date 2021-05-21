@@ -40,10 +40,9 @@ macro_rules! bug {
             $bug,
             file!(),
             line!()
-        )
+            )
     };
 }
-
 #[macro_export]
 macro_rules! table {
     {$($key:expr => $value:expr),+} => {
@@ -58,25 +57,20 @@ macro_rules! table {
                                            }
                                        };
 }
-
 fn print_err(e: OrionError) {
     eprintln!(
-        "{}{}{}",
+        "{}{}",
         if e.0.is_some() && e.1.is_some() {
-            format!("{}:{}: ", e.0.unwrap(), e.1.unwrap())
+            format!("{}.{}: ", e.0.unwrap(), e.1.unwrap())
         } else {
-            "".to_string()
+            if cfg!(windows) {
+                "Error: "
+            } else {
+                "\x1b[0;31mError: \x1b[0m"
+            }.to_string()
         },
-        if cfg!(windows) {
-            "Error: "
-        } else {
-            "\x1b[0;31mError: \x1b[0m"
-        },
-        e.2
-    );
+        e.2);
 }
-
-
 fn main() {
     match cli() {
         Ok(()) => {}
