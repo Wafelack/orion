@@ -1,8 +1,8 @@
 use crate::{
-    bytecode::{Bytecode, Chunk, OpCode},
+    bytecode::{BytecodePattern, Bytecode, Chunk, OpCode},
     error,
     lexer::Lexer,
-    parser::{Expr, ExprT, Literal, Parser},
+    parser::{Expr, ExprT, Literal, Parser, Pattern as ParserPattern},
     OrionError, Result,
 };
 use std::{env, fs, path::Path};
@@ -40,11 +40,11 @@ impl Compiler {
             error!(self.file, line => "Too much constants are used.")
         } else {
             Ok(self
-                .output
-                .constants
-                .iter()
-                .position(|c| c == &constant)
-                .unwrap() as u16)
+               .output
+               .constants
+               .iter()
+               .position(|c| c == &constant)
+               .unwrap() as u16)
         }
     }
     fn register_constructor(&mut self, name: impl ToString, contained_amount: u8, line: usize) -> Result<()> {
@@ -56,10 +56,10 @@ impl Compiler {
                 "Enum Variant {} has already been defined (Index 0x{:04x})",
                 &name,
                 self.constructors
-                    .iter()
-                    .position(|var| var.to_string() == name)
-                    .unwrap()
-            )
+                .iter()
+                .position(|var| var.to_string() == name)
+                .unwrap()
+                )
         } else {
             self.constructors.push(name);
             self.output.constructors.push(contained_amount);
@@ -85,24 +85,24 @@ impl Compiler {
         mut symbols: Vec<(String, bool)>,
         impure: bool,
         line: usize,
-    ) -> Result<(u16, Vec<(String, bool)>)> {
-        if self.output.symbols.len() >= u16::MAX as usize {
+        ) -> Result<(u16, Vec<(String, bool)>)> {
+        if symbols.len() >= u16::MAX as usize {
             error!(self.file, line => "Too much symbols are declared.")
         } else {
             Ok((
-                if symbols.contains(&(name.to_string(), impure))
+                    if symbols.contains(&(name.to_string(), impure))
                     || symbols.contains(&(name.to_string(), !impure))
-                {
-                    symbols
-                        .iter()
-                        .position(|s| s.0 == name.to_string())
-                        .unwrap()
-                } else {
-                    symbols.push((name.to_string(), impure));
-                    symbols.len() - 1
-                } as u16,
-                symbols,
-            ))
+                    {
+                        symbols
+                            .iter()
+                            .position(|s| s.0 == name.to_string())
+                            .unwrap()
+                    } else {
+                        symbols.push((name.to_string(), impure));
+                        symbols.len() - 1
+                    } as u16,
+                    symbols,
+                    ))
         }
     }
     fn load_file(
@@ -110,7 +110,7 @@ impl Compiler {
         fname: impl ToString,
         mut symbols: Vec<(String, bool)>,
         line: usize,
-    ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
+        ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
         let fname = fname.to_string();
         if self.load_history.contains(&fname) {
             // Avoid error-prone reloading if file has already been loaded.
@@ -123,7 +123,7 @@ impl Compiler {
                     let expressions = Parser::new(tokens, line).parse()?;
 
                     Ok((
-                        expressions
+                            expressions
                             .into_iter()
                             .map(|e| {
                                 let to_ret = self.compile_expr(e, symbols.clone(), true)?;
@@ -134,8 +134,8 @@ impl Compiler {
                             .into_iter()
                             .flatten()
                             .collect::<Vec<OpCode>>(),
-                        symbols,
-                    ))
+                            symbols,
+                            ))
                 }
                 Err(e) => error!(self.file, line => "Failed to read file: {}: {}.", fname, e),
             }
@@ -146,12 +146,12 @@ impl Compiler {
         expr: Expr,
         mut symbols: Vec<(String, bool)>,
         impure: bool,
-    ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
+        ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
         match expr.exprt.clone() {
             ExprT::Literal(lit) => Ok((
-                vec![(OpCode::LoadConst(self.register_constant(lit, expr.line)?))],
-                symbols,
-            )),
+                    vec![(OpCode::LoadConst(self.register_constant(lit, expr.line)?))],
+                    symbols,
+                    )),
             ExprT::Var(name) => {
                 if !symbols.contains(&(name.clone(), impure)) {
                     if impure && symbols.contains(&(name.clone(), false)) {
@@ -163,7 +163,7 @@ impl Compiler {
                             expr.line =>
                             "Impure function used out of an `impure` declaration: {}",
                             name
-                        )
+                            )
                     } else {
                         error!(self.file, expr.line => "Variable not in scope: {}.", name)
                     }
@@ -179,7 +179,7 @@ impl Compiler {
                 };
 
                 Ok((
-                    files
+                        files
                         .into_iter()
                         .map(|file| {
                             let lib_path = format!("{}/{}", lib_link, file);
@@ -199,8 +199,8 @@ impl Compiler {
                         .into_iter()
                         .flatten()
                         .collect::<Vec<OpCode>>(),
-                    symbols,
-                ))
+                        symbols,
+                        ))
             }
             ExprT::Def(name, value, purity) => {
                 let (idx, symbols) = self.declare(name, symbols, purity, expr.line)?;
@@ -215,16 +215,16 @@ impl Compiler {
                 to_ret.extend(
                     // Push arguments onto the stack, and keep the amount in order to pop all the arguments.
                     args.into_iter()
-                        .map(|a| {
-                            let (opcodes, syms) = self.compile_expr(a, symbols.clone(), impure)?;
-                            symbols = syms; // Update symbols.
-                            Ok(opcodes)
-                        })
-                        .collect::<Result<Vec<Vec<OpCode>>>>()?
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<OpCode>>(),
-                );
+                    .map(|a| {
+                        let (opcodes, syms) = self.compile_expr(a, symbols.clone(), impure)?;
+                        symbols = syms; // Update symbols.
+                        Ok(opcodes)
+                    })
+                    .collect::<Result<Vec<Vec<OpCode>>>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<OpCode>>(),
+                    );
                 to_ret.push(OpCode::Call(argc));
                 Ok((to_ret, symbols))
             }
@@ -248,7 +248,7 @@ impl Compiler {
                         symbols = syms;
                         Ok(idx)
                     })
-                    .collect::<Result<Vec<_>>>()?; // Position in the symbol table for each arg.
+                .collect::<Result<Vec<_>>>()?; // Position in the symbol table for each arg.
                 let run_with = symbols
                     .iter()
                     .enumerate()
@@ -261,16 +261,16 @@ impl Compiler {
                             None => sym.clone(),
                         }
                     })
-                    .collect::<Vec<(String, bool)>>();
+                .collect::<Vec<(String, bool)>>();
                 let (chunk_instructions, symbols) = self.compile_expr(*body, run_with, impure)?;
                 self.output.chunks.push(Chunk {
                     instructions: chunk_instructions,
                     reference: args_reference,
                 });
                 Ok((
-                    vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)],
-                    symbols,
-                ))
+                        vec![OpCode::Lambda(self.output.chunks.len() as u16 - 1)],
+                        symbols,
+                        ))
             }
             ExprT::Builtin(name, args) => {
                 let idx = self
@@ -291,7 +291,7 @@ impl Compiler {
                         symbols = new_syms; // Update symbols.
                         Ok(compiled)
                     })
-                    .collect::<Result<Vec<Vec<OpCode>>>>()?
+                .collect::<Result<Vec<Vec<OpCode>>>>()?
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
@@ -307,6 +307,7 @@ impl Compiler {
             }
             ExprT::Constr(name, contained) => {
                 let (amount, idx) = self.get_constructor(&name, expr.line)?;
+                self.check_constr(idx, amount, contained.len() as u8, expr.line)?;
                 if amount != contained.len() as u8 {
                     error!(
                         self.file,
@@ -315,7 +316,7 @@ impl Compiler {
                         name,
                         amount,
                         contained.len()
-                    )
+                        )
                 } else {
                     let contained_len = contained.len();
                     let values = contained
@@ -326,7 +327,7 @@ impl Compiler {
                             symbols = new_syms;
                             Ok(compiled)
                         })
-                        .collect::<Result<Vec<Vec<OpCode>>>>()?
+                    .collect::<Result<Vec<Vec<OpCode>>>>()?
                         .into_iter()
                         .flatten()
                         .collect::<Vec<OpCode>>();
@@ -345,7 +346,7 @@ impl Compiler {
                         symbols = new_syms;
                         Ok(compiled)
                     })
-                    .collect::<Result<Vec<Vec<OpCode>>>>()?
+                .collect::<Result<Vec<Vec<OpCode>>>>()?
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
@@ -353,18 +354,72 @@ impl Compiler {
                 to_ret.extend(values);
                 Ok((to_ret, symbols))
             }
-            /* ExprT::Match(expression, patterns) => {
-                let patterns = patterns.into_iter()
-                    .map(|pat| {
-                        let (pat, new_syms) = self.simplify_pat(pat, symbols)?;
-                        symbols = new_syms;
-                        pat
-                    }).collect::<Vec<_>>();
+            ExprT::Match(expr, patterns) => {
+                let (mut compiled, mut symbols) = self.compile_expr(*expr, symbols, impure)?;
+                let match_content = patterns.into_iter().map(|(pat, expr)| {
+                    let (pat_id, new_symbols) = self.declare_pat(pat, symbols.clone(), impure, expr.line)?;
+                    symbols = new_symbols;
+                    let (compiled, new_syms) = self.compile_expr(expr, symbols.clone(), impure)?;
+                    symbols = new_syms;
+                    Ok((pat_id, compiled))
+                }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()?;
 
-
-                todo!();
-            } */
+                let idx = if self.output.matches.contains(&match_content) {
+                    self.output.matches.iter().position(|m| m == &match_content).unwrap()
+                } else {
+                    self.output.matches.push(match_content);
+                    self.output.matches.len() - 1
+                } as u16;
+                compiled.push(OpCode::Match(idx));
+                Ok((compiled, symbols))
+            }
             _ => todo!(),
+        }
+    }
+    fn declare_pat(&mut self, pat: ParserPattern, mut symbols: Vec<(String, bool)>, impure: bool, line: usize) -> Result<(u16, Vec<(String, bool)>)> {
+        let flattened = match pat {
+            ParserPattern::Var(s) => {
+                if s.as_str() == "_" {
+                    BytecodePattern::Elide
+                } else {
+                    let (sym_id, symbols) = self.declare(s, symbols.clone(), impure, line)?;
+                    BytecodePattern::Var(sym_id)
+                }
+            }
+            ParserPattern::Constr(constr, inside) => {
+                let (amount, constr_id)= self.get_constructor(constr, line)?;
+                self.check_constr(constr_id, amount, inside.len() as u8, line)?;
+                BytecodePattern::Constr(constr_id, inside.into_iter().map(|pat| {
+                    let (idx, new_syms) = self.declare_pat(pat, symbols.clone(), impure, line)?;
+                    symbols = new_syms;
+                    Ok(idx)
+                }).collect::<Result<Vec<u16>>>()?)
+            }
+            ParserPattern::Tuple(inside) => {
+                BytecodePattern::Tuple(inside.into_iter().map(|pat| {
+                    let (idx, new_syms) = self.declare_pat(pat, symbols.clone(), impure, line)?;
+                    symbols = new_syms;
+                    Ok(idx)
+                }).collect::<Result<Vec<u16>>>()?)
+            }
+            ParserPattern::Literal(lit) => {
+                let idx = self.register_constant(lit, line)?;
+                BytecodePattern::Literal(idx)
+            }
+        };
+
+        Ok((if self.output.patterns.contains(&flattened) {
+            self.output.patterns.iter().position(|pat| pat == &flattened).unwrap() as u16
+        } else {
+            self.output.patterns.push(flattened);
+            self.output.patterns.len() as u16 - 1
+        }, symbols))
+    }
+    fn check_constr(&self, idx: u16, expected: u8, given: u8, line: usize) -> Result<()> {
+        if given != expected {
+            error!(self.file, line => "Constructor {} takes {} values, but {} values were given.", self.constructors[idx as usize], expected, given)
+        } else {
+            Ok(())
         }
     }
     pub fn compile(&mut self) -> Result<Bytecode> {

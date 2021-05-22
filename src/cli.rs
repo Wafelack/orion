@@ -139,6 +139,25 @@ fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8) -> Result
             });
 
         }
+        if bytecode.patterns.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.PATTERNS\x1b[0m]");
+            bytecode.patterns.iter().enumerate().for_each(|(idx, pat)| {
+                println!("{:03}    {:?}", idx, pat);
+            })
+        }
+        if bytecode.matches.len() != 0 {
+            println!("[\x1b[0;33mBYTECODE.MATCHES\x1b[0m]");
+            bytecode.matches.iter().enumerate().for_each(|(idx, r#match)| {
+                println!("{:03} = ", idx);
+                r#match.into_iter().enumerate().for_each(|(idx, (pat_idx, instrs))| {
+                    println!("    {:03}  :  PAT_IDX = {}", idx, pat_idx);
+                    println!("            [\x1b[0;33mPATTERN.INSTRUCTIONS\x1b[0m]");
+                    instrs.into_iter().enumerate().for_each(|(idx, instr)| {
+                        println!("            {:03}    {:?}", idx, instr);
+                    })
+                })
+            })
+        }
         if bytecode.instructions.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.INSTRUCTIONS\x1b[0m]");
             bytecode.instructions.iter().enumerate().for_each(|(idx, instr)| println!("{:03}    {:?}", idx, instr));
@@ -243,8 +262,8 @@ pub fn cli() -> Result<()> {
             Ok(f) => f,
             Err(e) => return error!(=> "Failed to create file: {}: {}.", output, e)
         }).write_all(to_write.as_slice()) {
-           Ok(()) => {}
-           Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
+            Ok(()) => {}
+            Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
         };
         if !matches.is_present("compile-only") {
             let time = eval_dbg(&mut VM::<256>::new(Bytecode::new()), &mut vec![], bytecode, dbg_level)?;
