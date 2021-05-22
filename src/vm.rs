@@ -194,6 +194,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 vals.reverse();
                 self.stack.push(Value::Tuple(vals))
             }
+            _ => todo!(),
         }
 
         Ok(())

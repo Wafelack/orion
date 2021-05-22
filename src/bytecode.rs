@@ -1,7 +1,7 @@
-use crate::parser::{Literal, self};
+use crate::parser::Literal;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum OpCode {
     LoadConst(u16),        // (const_id)
     LoadSym(u16),          // (sym_id)
@@ -11,6 +11,7 @@ pub enum OpCode {
     Lambda(u16),           // (chunk_id)
     Constructor(u16, u16), // (constr_idx, to_eval)
     Tuple(u16),            // (amount)
+    Match(u16),            // (match_idx)
 }
 impl OpCode {
     pub fn serialize(&self) -> Vec<u8> {
@@ -53,6 +54,11 @@ impl OpCode {
                 to_ret.extend(&amount.to_be_bytes());
                 to_ret
             }
+            Self::Match(idx) => {
+                let mut to_ret = vec![8];
+                to_ret.extend(&idx.to_be_bytes());
+                to_ret
+            }
         }
     }
 }
@@ -63,23 +69,23 @@ pub struct Chunk {
     pub reference: Vec<u16>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Pattern {
-    pub pat: parser::Pattern,
-    pub to_exec: Vec<OpCode>,
+#[derive(PartialEq, Clone, Debug)]
+pub enum BytecodePattern {
+    Var(u16), // (sym_idx)
+    Constr(u16, Vec<u16>), // (constr_id, [pat_idx])
+    Tuple(Vec<u16>), // ([pat_idx])
+    Literal(u16), // (const_id)
+    Elide, // `_` variable 
 }
-#[derive(Clone, Debug)]
-pub struct Match {
-    pub expression: Vec<OpCode>,
-    pub patterns: Vec<Pattern>,
-}
+
 #[derive(Clone, Debug)]
 pub struct Bytecode {
     pub chunks: Vec<Chunk>,
-    pub matches: Vec<Match>,
+    pub matches: Vec<Vec<(u16, Vec<OpCode>)>>,
     pub symbols: Vec<String>,
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,
+    pub patterns: Vec<BytecodePattern>,
     pub constructors: Vec<u8>,
 }
 
@@ -92,6 +98,7 @@ impl Bytecode {
             instructions: vec![],
             constructors: vec![],
             matches: vec![],
+            patterns: vec![],
         }
     }
     // All numbers here are big endian
