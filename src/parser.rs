@@ -105,6 +105,14 @@ pub enum Pattern {
     Tuple(Vec<Pattern>),
     Literal(Literal),
 }
+impl Pattern {
+    pub fn is_complex(&self) -> bool {
+        match self {
+            Self::Constr(_, _) | Self::Tuple(_) => true,
+            _ => false,
+        }
+    }
+}
 
 fn first_char(s: impl ToString) -> char {
     s.to_string().chars().nth(0).unwrap()
