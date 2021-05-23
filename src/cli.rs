@@ -113,7 +113,7 @@ fn parse_dbg(file: impl ToString, code: Vec<Token>, level: u8) -> Result<Vec<Exp
     } 
     Ok(expressions)
 }
-    fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode) -> Result<(Bytecode, Vec<(String, bool)>)> {
+    pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode) -> Result<(Bytecode, Vec<(String, bool)>)> {
     if level > 0 {
         println!("{} Compiling {} Exprs...", STAR, expressions.len());
     }
