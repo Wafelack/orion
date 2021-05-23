@@ -26,6 +26,8 @@ mod parser;
 mod vm;
 mod cli;
 
+mod arithmetic;
+
 use crate::cli::cli;
 pub use errors::{OrionError, Result};
 use std::{fs, path::Path, process::exit, time::Instant};
