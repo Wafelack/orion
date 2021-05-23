@@ -85,7 +85,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             None => error!(=> "Stack underflow."),
         }
     }
-    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>) -> Result<()> {
+    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>, instructions: Vec<OpCode>) -> Result<()> {
         match opcode {
             OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
             OpCode::LoadSym(id) => {
@@ -98,8 +98,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     ctx[sym_id as usize] = Value::Initialzing;
                 }
                 (1..=instr_length).map(|i| {
-                    let instr = self.input.instructions[self.ip + i as usize];
-                    self.eval_opcode(instr,ctx)
+                    let instr = instructions[self.ip + i as usize];
+                    self.eval_opcode(instr, ctx, instructions.clone())
                 }).collect::<Result<()>>()?;
                 self.ip += instr_length as usize;
                 let popped = self.pop()?;
@@ -114,7 +114,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 args.reverse();
                 let func = self.pop()?;
                 if let Value::Lambda(chunk) = func {
-                    let chunk = &self.input.chunks[chunk as usize];
+                    let chunk = self.input.chunks[chunk as usize].clone();
                     if chunk.reference.len() != args.len() {
                         return error!(
                             => "Expected {} arguments, found {}.",
@@ -133,10 +133,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             ctx[chunk_id] = val;
                         }
                     }
-
+                    let prev_ip = self.ip;
+                    self.ip = 0; // Reset the instruction counter to fit chunk instructions
                     for instr in chunk.instructions.clone() {
-                        self.eval_opcode(instr, ctx)?; // Eval chunk body.
+                        self.eval_opcode(instr, ctx, chunk.instructions.clone())?; // Eval chunk body.
+                        self.ip += 1;
                     }
+                    self.ip = prev_ip;
 
                     *ctx = prev_ctx; // Drop modified context with replaced arguments and reuse older context.
                 } else {
@@ -158,8 +161,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 let amount = self.input.constructors[idx as usize];
                 for _ in 1..=amount {
                     self.ip += 1;
-                    let instruction = self.input.instructions[self.ip];
-                    self.eval_opcode(instruction, ctx)?;
+                    let instruction = instructions[self.ip].clone();
+                    self.eval_opcode(instruction, ctx, instructions.clone())?;
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
@@ -168,10 +171,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(Value::Constructor(idx, vals));
             }
             OpCode::Tuple(to_eval) => {
-                for _ in 1..=to_eval{
+                for _ in 0..to_eval{
                     self.ip += 1;
-                    let instruction = self.input.instructions[self.ip];
-                    self.eval_opcode(instruction, ctx)?;
+                    let instruction = instructions[self.ip].clone();
+                    println!("{:?}", instruction);
+                    self.eval_opcode(instruction, ctx, instructions.clone())?;
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
@@ -204,8 +208,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                                 }
                                 Ok(())
                             }).collect::<Result<Vec<_>>>()?;
-                            plausible.1.into_iter().map(|instr| {
-                                self.eval_opcode(instr, &mut new_ctx)
+                            plausible.1.clone().into_iter().map(|instr| {
+                                self.eval_opcode(instr, &mut new_ctx, plausible.1.clone())
                             }).collect::<Result<Vec<_>>>()?;
                         },
                         None => {},
@@ -319,9 +323,45 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         let mut ctx = ctx;
         while self.ip < self.input.instructions.len() {
             let instruction = self.input.instructions[self.ip];
-            self.eval_opcode(instruction, &mut ctx)?;
+            self.eval_opcode(instruction, &mut ctx, self.input.instructions.clone())?;
             self.ip += 1;
         }
         Ok(ctx)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::lexer::Lexer;
+    use crate::parser::Parser;
+    use crate::compiler::Compiler;
+    use crate::cli::compile_dbg;
+    use std::time::Instant;
+
+    #[test]
+    fn ackermann() -> Result<()> {
+        let tokens = Lexer::new("(def ack (λ (m n)
+        (match (, m n)
+         ((, 0 _) (+ n 1))
+         ((, _ 0) (ack (- m 1) 1))
+         (_ (ack (- m 1) (ack m (- n 1)))))))", "TEST").proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
+        let (bytecode, symbols) = Compiler::new(ast.clone(), "TEST", Bytecode::new()).compile(vec![])?;
+        let (bytecode, symbols) = compile_dbg("TEST", ast, 3, vec![], Bytecode::new())?;
+        
+        let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
+        let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
+        let mut vals = (0..1000).map(|_| {
+            let mut vm = VM::<256>::new(call_bytecode.clone());
+            let start = Instant::now();
+            vm.eval(ctx.clone())?;
+            let elapsed = start.elapsed();
+            Ok(elapsed.as_millis() as u32)
+        }).collect::<Result<Vec<u32>>>()?;
+        vals.sort();
+        let total = vals.iter().sum::<u32>() as f32;
+        println!("Total: {}ms ; Average: {}ms ; Median: {}ms ; Amplitude: {}ms", total, total / vals.len() as f32, vals[vals.len() / 2], vals[vals.len() - 1] - vals[0]);
+        Ok(())
     }
 }
