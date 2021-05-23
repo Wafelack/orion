@@ -14,6 +14,8 @@ env!("CARGO_PKG_VERSION")
 );
     // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
     let mut ctx = vec![];
+    let mut symbols = vec![];
+    let mut bytecode = Bytecode::new();
     let mut vm = VM::new(Bytecode::new());
 
     let mut rl = Editor::<()>::new();
@@ -44,19 +46,21 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 };
-                let bytecode = match compile_dbg("REPL", expressions, dbg_level) {
+                let (new_bytecode, new_syms) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone()) {
                     Ok(b) => b,
                     Err(e) => {
                         print_err(e);
                         continue;
                     }
                 };
+                bytecode = new_bytecode;
+                symbols = new_syms;
                 let elapsed = start.elapsed();
                 if dbg_level > 0 {
                     println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
                 }
 
-                match eval_dbg(&mut vm, &mut ctx, bytecode, dbg_level) {
+                match eval_dbg(&mut vm, &mut ctx, bytecode.clone(), dbg_level) {
                     Ok(t) => if dbg_level > 0 {
                         println!("{} Run in {}ms.", STAR, t);
                     },
@@ -109,11 +113,11 @@ fn parse_dbg(file: impl ToString, code: Vec<Token>, level: u8) -> Result<Vec<Exp
     } 
     Ok(expressions)
 }
-fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8) -> Result<Bytecode> {
+    fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode) -> Result<(Bytecode, Vec<(String, bool)>)> {
     if level > 0 {
         println!("{} Compiling {} Exprs...", STAR, expressions.len());
     }
-    let bytecode = Compiler::new(expressions, file).compile()?;
+    let (bytecode, symbols) = Compiler::new(expressions, file, bcode).compile(symbols)?;
     if level > 1 {
         if bytecode.constants.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.CONSTANTS\x1b[0m]");
@@ -164,7 +168,7 @@ fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8) -> Result
             println!("===========================================");
         }
     } 
-    Ok(bytecode)
+    Ok((bytecode, symbols))
 }
 fn eval_dbg(vm: &mut VM<256>, ctx: &mut Vec<Value>, bytecode: Bytecode, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
@@ -252,7 +256,7 @@ pub fn cli() -> Result<()> {
         let start = Instant::now();
         let tokens = lex_dbg(file, 1, content, dbg_level)?;
         let expressions = parse_dbg(file, tokens, dbg_level)?;
-        let bytecode = compile_dbg(file, expressions, dbg_level)?;
+        let (bytecode, _) = compile_dbg(file, expressions, dbg_level, vec![], Bytecode::new())?;
         let elapsed = start.elapsed();
         if dbg_level > 0 {
             println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
