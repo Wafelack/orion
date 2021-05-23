@@ -341,8 +341,8 @@ mod test {
 
     #[test]
     fn lambda() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("λ lambda \\", "").proc_tokens()?);
-        assert_eq!(ttypes, vec![TType::Lambda, TType::Lambda, TType::Lambda]);
+        let ttypes = get_ttypes(Lexer::new("λ \\", "").proc_tokens()?);
+        assert_eq!(ttypes, vec![TType::Lambda, TType::Lambda]);
         Ok(())
     }
 
