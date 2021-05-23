@@ -145,7 +145,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
             OpCode::Builtin(idx, argc) => {
                 let (f, f_argc) = self.builtins[idx as usize];
-                if f_argc != argc as i16 && f_argc != -1 {
+                if f_argc as i16 != argc && argc != -1 {
                     return error!(
                         => "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
                         idx, f_argc, argc

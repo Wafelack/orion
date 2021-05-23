@@ -27,6 +27,9 @@ impl Compiler {
             file: file.to_string(),
         };
         to_ret.register_builtin("+", false);
+        to_ret.register_builtin("-", false);
+        to_ret.register_builtin("*", false);
+        to_ret.register_builtin("/", false);
         to_ret.register_builtin("dbg", true);
         to_ret
     }
