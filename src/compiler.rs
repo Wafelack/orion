@@ -16,11 +16,12 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString) -> Self {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode) -> Self {
+        bcode.instructions = vec![];
         let mut to_ret = Self {
             input,
             constructors: vec![],
-            output: Bytecode::new(),
+            output: bcode,
             load_history: vec![],
             builtins: vec![],
             file: file.to_string(),
@@ -423,8 +424,7 @@ impl Compiler {
             Ok(())
         }
     }
-    pub fn compile(&mut self) -> Result<Bytecode> {
-        let mut symbols = vec![];
+    pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>)> {
         for expr in self.input.clone() {
             let (to_push, new_symbols) = self.compile_expr(expr, symbols, true)?;
             symbols = new_symbols;
@@ -432,10 +432,10 @@ impl Compiler {
         }
 
         self.output.symbols = symbols
-            .into_iter()
-            .map(|(name, _)| name)
+            .iter()
+            .map(|(name, _)| name.to_string())
             .collect::<Vec<String>>();
 
-        Ok(self.output.clone())
+        Ok((self.output.clone(), symbols))
     }
 }
