@@ -382,7 +382,8 @@ impl Compiler {
                 if s.as_str() == "_" {
                     BytecodePattern::Elide
                 } else {
-                    let (sym_id, symbols) = self.declare(s, symbols.clone(), impure, line)?;
+                    let (sym_id, new_symbols) = self.declare(s, symbols.clone(), impure, line)?;
+                    symbols = new_symbols;
                     BytecodePattern::Var(sym_id)
                 }
             }
