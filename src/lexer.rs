@@ -228,7 +228,6 @@ impl Lexer {
                 "load" => self.add_token(TType::Load),
                 "panic" => self.add_token(TType::Panic),
                 "begin" => self.add_token(TType::Begin),
-
                 _ => self.add_token(TType::Ident(raw)),
             }
         }
@@ -238,13 +237,11 @@ impl Lexer {
 
         self.register_builtin("dbg");
         self.register_builtin("putStr");
-        self.register_builtin("putStrLn");
-        self.register_builtin("write");
         self.register_builtin("getLine");
 
         self.register_builtin("+");
         self.register_builtin("-");
-        self.register_builtin("!");
+        self.register_builtin("neg");
         self.register_builtin("/");
         self.register_builtin("*");
         self.register_builtin("_cmp");
