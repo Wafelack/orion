@@ -1,5 +1,5 @@
 use crate::{    
-    bytecode::{Bytecode, Chunk, OpCode},
+    bytecode::{Bytecode, BytecodePattern, Chunk, OpCode},
     error, bug,
     parser::Literal,
     OrionError, Result,
@@ -194,10 +194,141 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 vals.reverse();
                 self.stack.push(Value::Tuple(vals))
             }
-            _ => todo!(),
+            OpCode::Match(idx) => {
+                let to_match = self.pop()?;
+                let patterns = self.input.matches[idx as usize].clone();
+                let plausible = patterns.into_iter().map(|(pat, to_exec)| {
+                    if self.is_plausible(pat, &to_match) {
+                        Some((pat, to_exec))
+                    } else {
+                        None
+                    }
+                }).filter(|p| !p.is_none()).map(|p| p.unwrap()).collect::<Vec<(u16, Vec<OpCode>)>>();
+
+                for plausible in plausible {
+                    match self.match_and_bound(&to_match, plausible.0) {
+                        Some(to_bind) => {
+                            let mut new_ctx = ctx.clone();
+                            let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
+                            to_bind.into_iter().map(|sym_id| {
+                                let val = new_stack.pop().unwrap();
+                                if sym_id as usize >= new_ctx.len() {
+                                    new_ctx.push(val);
+                                } else {
+                                    new_ctx[sym_id as usize] = val;
+                                }
+                                Ok(())
+                            }).collect::<Result<Vec<_>>>()?;
+                            plausible.1.into_iter().map(|instr| {
+                                self.eval_opcode(instr, &mut new_ctx)
+                            }).collect::<Result<Vec<_>>>()?;
+                        },
+                        None => {},
+                    }
+                }
+            }
         }
 
         Ok(())
+    }
+    fn match_and_bound(&mut self, val: &Value, pat_idx: u16) -> Option<Vec<u16>> {
+        let pat = &self.input.patterns[pat_idx as usize];
+        match pat {
+            BytecodePattern::Elide => Some(vec![]),
+            BytecodePattern::Var(idx) => {
+                self.stack.push(val.clone());
+                Some(vec![*idx])
+            }
+            BytecodePattern::Literal(idx) => {
+                let lit = &self.input.constants[*idx as usize];
+                match val {
+                    Value::Integer(lhs) => match lit {
+                        Literal::Integer(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        _ => None,
+                    }
+                    Value::Single(lhs) => match lit {
+                        Literal::Single(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        _ => None,
+                    }
+                    Value::String(lhs) => match lit {
+                        Literal::String(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        _ => None
+                    }
+                    _ => bug!("FAILED_PLAUSIBLE_UNEXPECTED_VALUE")
+                }
+            }
+            BytecodePattern::Tuple(pats) => if let Value::Tuple(vals) = val {
+                let pats = pats.clone();
+                if vals.len() == pats.len() {
+                    let mut to_ret = vec![];
+                    for i in 0..vals.len() {
+                        if !self.is_plausible(pats[i], &vals[i]) {
+                            return None;
+                        } else {
+                            match self.match_and_bound(&vals[i], pats[i]) {
+                                Some(ctx) => to_ret.extend(ctx),
+                                None => return None,
+                            }
+                        }
+                    }
+                    Some(to_ret)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+            BytecodePattern::Constr(idx, pats) => if let Value::Constructor(to_match_idx, vals) = val {
+                if to_match_idx == idx {
+                    let pats = pats.clone();
+                    let mut to_ret = vec![];
+                    for i in 0..vals.len() {
+                        if !self.is_plausible(pats[i], &vals[i]) {
+                            return None;
+                        } else {
+                            match self.match_and_bound(&vals[i], pats[i]) {
+                                Some(ctx) => to_ret.extend(ctx),
+                                None => return None,
+                            }
+                        }
+                    }
+                    Some(to_ret)
+                } else {
+                    None
+                }
+            } else {
+                None
+            },
+        }
+    }
+    fn is_plausible(&self, pat: u16, to_match: &Value) -> bool {
+        match self.input.patterns[pat as usize] {
+            BytecodePattern::Var(_) | BytecodePattern::Elide => true,
+            BytecodePattern::Constr(_, _) => if let Value::Constructor(_, _) = to_match {
+                true
+            } else {
+                false
+            }
+            BytecodePattern::Tuple(_) => if let Value::Tuple(_) = to_match {
+                true
+            } else {
+                false
+            }
+            BytecodePattern::Literal(lid) => match &self.input.constants[lid as usize] {
+                Literal::Integer(_) => match to_match {
+                    Value::Integer(_) => true,
+                    _ => false,
+                }
+                Literal::Single(_) => match to_match {
+                    Value::Single(_) => true,
+                    _ => false
+                }
+                Literal::String(_) => match to_match {
+                    Value::String(_) => true,
+                    _ => false,
+                }
+            }
+        }
     }
     pub fn eval(&mut self, ctx: Vec<Value>) -> Result<Vec<Value>> {
         let mut ctx = ctx;
