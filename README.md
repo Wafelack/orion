@@ -62,25 +62,23 @@ Roadmap
 	- [x] Enumerations
 	- [x] Variants
 	- [x] Tuples
-	- [ ] Pattern Matching
-	- [ ] Typechecking
+	- [x] Pattern Matching
 	- [ ] Builtins
-		- [x] Add
-		- [ ] Sub
-		- [ ] Mul
-		- [ ] Div
-		- [x] Dbg
+		- [x] +
+		- [ ] -
+		- [ ] *
+		- [ ] /
+		- [x] dbg
 		- [ ] putStr
-		- [ ] write
 		- [ ] getLine
-		- [ ] _Cmp
-		- [ ] Cos
-		- [ ] Sin
-		- [ ] Tan
-		- [ ] Acos
-		- [ ] Asin
-		- [ ] Atan
-		- [x] Unquote
+		- [ ] _cmp
+		- [ ] cos
+		- [ ] sin
+		- [ ] tan
+		- [ ] acos
+		- [ ] asin
+		- [ ] atan
+- [ ] Typechecking
 - [ ] Documentation
 	- [x] Core Library documentation
 	- [x] Standard Library documetation
