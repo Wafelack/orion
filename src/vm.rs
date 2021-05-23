@@ -31,12 +31,11 @@ impl Display for Value {
         }
     }
 }
-
 pub struct VM<const STACK_SIZE: usize> {
     pub input: Bytecode,
     pub stack: Vec<Value>,
     pub builtins: Vec<(
-        fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
+        fn(&mut VM<STACK_SIZE>) -> Result<Value>,
         u8,
         )>,
         pub ip: usize,
@@ -67,11 +66,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret
     }
 
-    fn dbg(&mut self, _: &mut Vec<Value>) -> Result<Value> {
+    fn dbg(&mut self) -> Result<Value> {
         println!("{:?}", self.pop()?);
         Ok(Value::Tuple(vec![]))
     }
-    fn add(&mut self, _: &mut Vec<Value>) -> Result<Value> {
+    fn add(&mut self) -> Result<Value> {
         let lhs = self.pop()?;
         let rhs = self.pop()?;
 
@@ -89,7 +88,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn register_builtin(
         &mut self,
-        func: fn(&mut VM<STACK_SIZE>, &mut Vec<Value>) -> Result<Value>,
+        func: fn(&mut VM<STACK_SIZE>) -> Result<Value>,
         argc: u8,
         ) {
         self.builtins.push((func, argc))
@@ -166,7 +165,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         idx, f_argc, argc
                         );
                 }
-                let to_push = f(self, ctx)?;
+                let to_push = f(self)?;
                 self.stack.push(to_push);
             }
             OpCode::Constructor(idx, to_eval) => {
