@@ -224,7 +224,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn match_and_bound(&mut self, val: &Value, pat_idx: u16) -> Option<Vec<u16>> {
         let pat = &self.input.patterns[pat_idx as usize];
         match pat {
-            BytecodePattern::Elide => Some(vec![]),
+            BytecodePattern::Otherwise => Some(vec![]),
             BytecodePattern::Var(idx) => {
                 self.stack.push(val.clone());
                 Some(vec![*idx])
@@ -294,7 +294,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn is_plausible(&self, pat: u16, to_match: &Value) -> bool {
         let pat = self.input.patterns[pat as usize].clone();
         match pat {
-            BytecodePattern::Var(_) | BytecodePattern::Elide => true,
+            BytecodePattern::Var(_) | BytecodePattern::Otherwise => true,
             BytecodePattern::Constr(_, _) => if let Value::Constructor(_, _) = to_match {
                 true
             } else {
