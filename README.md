@@ -55,21 +55,14 @@ You can find the standard library, the core and the builtins documentation [here
 Quick Example
 -------------
 
-Fibonnaci suite:
+Factorial function:
+
 ```clojure
-(load "core/math.orn")
-(def fibo (λ (n) 
-	(match (< n 2) 
-		(True n) 
-		(_ (+ (fibo (- n 1)) (fibo (- n 2)))))))
+(def factorial (λ (n)
+				  (match n
+				    (0 1)
+					(_ (* n (factorial (- n 1)))))))
 ```
-
-Differences Between Older Orion and Newer Orion
--------------------------------------
-
-The current Orion is purely functional, has enums, tuples, pattern matching, and a tiny builtin part.
-
-The older Orion was functional and imperative, had mutation, and an enormous builtin part.
 
 Performance Tests
 -----------------
@@ -87,7 +80,7 @@ Performance Tests
 Acknowledgments
 ---------------
 
-* Lexer, parser, interpreter and documentation: Wafelack \<wafelack@protonmail.com>
+* Lexer, parser, compiler, virtual machine and documentation: Wafelack \<wafelack@protonmail.com>
 * CI: Kreyren \<kreyren@fsfe.org>
 
 Special thanks to [@Mesabloo](https://github.com/mesabloo) and [@felko](https://github.com/felko) for support and help about implementation details.
