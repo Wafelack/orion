@@ -65,6 +65,14 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::sub, 2);
         to_ret.register_builtin(Self::mul, 2);
         to_ret.register_builtin(Self::div, 2);
+        to_ret.register_builtin(Self::neg, 1);
+        to_ret.register_builtin(Self::cos, 1);
+        to_ret.register_builtin(Self::sin, 1);
+        to_ret.register_builtin(Self::tan, 1);
+        to_ret.register_builtin(Self::acos, 1);
+        to_ret.register_builtin(Self::asin, 1);
+        to_ret.register_builtin(Self::atan, 1);
+
         to_ret.register_builtin(Self::dbg, 1);
         to_ret
     }
