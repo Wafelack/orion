@@ -123,8 +123,8 @@ impl Compiler {
             self.load_history.push(fname.clone());
             match fs::read_to_string(&fname) {
                 Ok(content) => {
-                    let tokens = Lexer::new(content, line).proc_tokens()?;
-                    let expressions = Parser::new(tokens, line).parse()?;
+                    let tokens = Lexer::new(content, &fname).proc_tokens()?;
+                    let expressions = Parser::new(tokens, fname).parse()?;
 
                     Ok((
                             expressions
@@ -359,7 +359,7 @@ impl Compiler {
                 Ok((to_ret, symbols))
             }
             ExprT::Match(expr, patterns) => {
-                let (mut compiled, mut symbols) = self.compile_expr(*expr, symbols, impure)?;
+                let (mut compiled, mut symbols) = self.compile_expr(*expr.clone(), symbols, impure)?;
                 let match_content = patterns.into_iter().map(|(pat, expr)| {
                     let (pat_id, new_symbols) = self.declare_pat(pat, symbols.clone(), impure, expr.line)?;
                     symbols = new_symbols;
@@ -367,7 +367,7 @@ impl Compiler {
                     symbols = new_syms;
                     Ok((pat_id, compiled))
                 }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()?;
-
+                
                 let idx = if self.output.matches.contains(&match_content) {
                     self.output.matches.iter().position(|m| m == &match_content).unwrap()
                 } else {
