@@ -65,9 +65,9 @@ Roadmap
 	- [x] Pattern Matching
 	- [ ] Builtins
 		- [x] +
-		- [ ] -
-		- [ ] *
-		- [ ] /
+		- [x] -
+		- [x] *
+		- [x] /
 		- [x] dbg
 		- [ ] putStr
 		- [ ] getLine
@@ -104,19 +104,17 @@ The current Orion is purely functional, has enums, tuples, pattern matching, and
 
 The older Orion was functional and imperative, had mutation, and an enormous builtin part.
 
-Performances
-------------
+Performance Tests
+-----------------
 
-Speed is not Orion's main goal, but here are some benchmarks.
+### `ack 3 3`
 
-### Ackermann péter function - m := 3 ; n := 3 - 500 runs
-
-| Language |  Total  | Average | Median | Amplitude |
-|----------|---------|---------|--------|-----------|
-|   **Nixt**   | 63145ms |  **126ms**  |  121ms |   134ms   |
-|**Older Orion** |  4398ms |   **8ms**   |   8ms  |  13ms         |
-|__**Newer Orion**__ | 38053ms |   **76.106ms**  | 75ms | 21ms  |   
-|**Python**| 258.46ms | **0.516ms** | 0.482ms | 0.541ms   |
+|       Language       | Average|Median |Amplitude|
+|----------------------|--------|-------|---------|
+|       **Nixt**       |  126ms | 121ms |  134ms  |
+|**Orion Interpreter** |76.106ms| 75ms  |   21ms  |
+|     **Orion VM**     | 4.168ms|  4ms  |   4ms   |   
+|      **CPython**     | 0.516ms|0.482ms| 0.541ms |
 
 
 Acknowledgments
