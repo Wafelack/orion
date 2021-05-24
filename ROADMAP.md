@@ -26,6 +26,7 @@ Roadmap
 	- [ ] putStr
 	- [ ] getLine
 	- [ ] \_cmp
+	- [ ] format
 	- [x] cos
 	- [x] sin
 	- [x] tan
