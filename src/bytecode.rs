@@ -75,7 +75,7 @@ pub enum BytecodePattern {
     Constr(u16, Vec<u16>), // (constr_id, [pat_idx])
     Tuple(Vec<u16>), // ([pat_idx])
     Literal(u16), // (const_id)
-    Elide, // `_` variable 
+    Otherwise, // `_` variable 
 }
 
 #[derive(Clone, Debug)]
