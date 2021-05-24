@@ -384,7 +384,7 @@ impl Compiler {
         let flattened = match pat {
             ParserPattern::Var(s) => {
                 if s.as_str() == "_" {
-                    BytecodePattern::Elide
+                    BytecodePattern::Otherwise
                 } else {
                     let (sym_id, new_symbols) = self.declare(s, symbols.clone(), impure, line)?;
                     symbols = new_symbols;
