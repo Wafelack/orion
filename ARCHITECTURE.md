@@ -1,40 +1,33 @@
 Architecture
 ============
 
-`src/main.rs`
--------------
+### `src/main.rs`
 
 Entry point of the program, contains only a call to cli() and the modules declaration.
 
-`src/cli.rs`
-------------
+### `src/cli.rs`
 
 Contains the REPL, the file runner and all things with user interaction.
 
-`src/errors.rs`
----------------
+### `src/errors.rs`
 
 The error type and the error macro.
 
-`src/lexer.rs`
---------------
+### `src/lexer.rs`
 
 Contains the `Lexer` code and the `Token` enumeration definition.
 The `Lexer` takes a `String` and returns a `Vec<Token>`.
 
-`src/parser.rs`
----------------
+### `src/parser.rs`
 
 Contains the `Parser`, a hand made recursive parser, the `Literal` enumeration definition (an enumeration for describing literal types, such as `Integer`, `Single` or `String`), the `Pattern` enumeration definition (an enumeration for describing `match` arms, with `Tuple`, `Constr`, `Var` and `Literal` variants) and the `Expr` enumearation definition.
 The `Parser` takes a `Vec<Token>` and returns a `Vec<Expr>`.
 
-`src/compiler.rs`
------------------
+### `src/compiler.rs`
 
 Contains the `Compiler`, that takes a `Vec<Expr>` and returns a `Bytecode`.
 
-`src/bytecode.rs`
------------------
+### `src/bytecode.rs`
 
 Contains the `Bytecode` struct, containing the `matches`, the `Chunk`s, the `symbols`, the `constants`,  the `BytecodePattern`s, the `OpCode`s and the `constructors`.
 
@@ -46,17 +39,14 @@ Contains the `Bytecode` struct, containing the `matches`, the `Chunk`s, the `sym
 * `OpCode`s :: `Vec<OpCode>`: The bytecode instructions.
 * `constructors` :: `Vec<u8>`: The bytecode constructors, each `u8` represents the amount of values contained in the constructor.
 
-`src/vm.rs`
------------
+### `src/vm.rs`
 
 The Orion Virtual Machine, containing the `Value` enumeration declaration and the whole virtual machine.
 
-`src/arithmetic.rs`
--------------------
+### `src/arithmetic.rs`
 
 The maths builtins.
 
-`lib/*`
--------
+### `lib/*`
 
 The Orion standard library and prelude.
