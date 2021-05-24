@@ -135,7 +135,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     }
                     let prev_ip = self.ip;
                     self.ip = 0; // Reset the instruction counter to fit chunk instructions
-                    for instr in chunk.instructions.clone() {
+                    while self.ip < chunk.instructions.len() {
+                        let instr = chunk.instructions[self.ip];
                         self.eval_opcode(instr, ctx, chunk.instructions.clone())?; // Eval chunk body.
                         self.ip += 1;
                     }
@@ -174,14 +175,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 for _ in 0..to_eval{
                     self.ip += 1;
                     let instruction = instructions[self.ip].clone();
-                    println!("{:?}", instruction);
                     self.eval_opcode(instruction, ctx, instructions.clone())?;
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Value>>>()?;
                 vals.reverse();
-                self.stack.push(Value::Tuple(vals))
+                self.stack.push(Value::Tuple(vals));
             }
             OpCode::Match(idx) => {
                 let to_match = self.pop()?;
@@ -193,8 +193,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         None
                     }
                 }).filter(|p| !p.is_none()).map(|p| p.unwrap()).collect::<Vec<(u16, Vec<OpCode>)>>();
-
-                for plausible in plausible {
+                for plausible in plausible.into_iter() {
                     match self.match_and_bound(&to_match, plausible.0) {
                         Some(to_bind) => {
                             let mut new_ctx = ctx.clone();
@@ -211,10 +210,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             plausible.1.clone().into_iter().map(|instr| {
                                 self.eval_opcode(instr, &mut new_ctx, plausible.1.clone())
                             }).collect::<Result<Vec<_>>>()?;
+                            return Ok(())
                         },
                         None => {},
                     }
                 }
+                return error!(=> "No pattern to be matched.");
             }
         }
 
@@ -291,7 +292,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         }
     }
     fn is_plausible(&self, pat: u16, to_match: &Value) -> bool {
-        match self.input.patterns[pat as usize] {
+        let pat = self.input.patterns[pat as usize].clone();
+        match pat {
             BytecodePattern::Var(_) | BytecodePattern::Elide => true,
             BytecodePattern::Constr(_, _) => if let Value::Constructor(_, _) = to_match {
                 true
@@ -340,6 +342,27 @@ mod test {
     use std::time::Instant;
 
     #[test]
+    fn factorial() -> Result<()> {
+    let tokens = Lexer::new("(def fact (\\ (n) (match n (0 1) (_ (* n (fact (- n 1)))))))", "TEST").proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
+        let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
+
+        let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
+        let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(fact 12)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
+        let mut vals = (0..500).map(|_| {
+            let mut vm = VM::<256>::new(call_bytecode.clone());
+            let start = Instant::now();
+            vm.eval(ctx.clone())?;
+            let elapsed = start.elapsed();
+            Ok(elapsed.as_micros() as u32)
+        }).collect::<Result<Vec<u32>>>()?;
+        vals.sort();
+        let total = vals.iter().sum::<u32>() as f32;
+        println!("Total: {}us ; Average: {}us  ; Median: {}us ; Amplitude: {}us", total, total / vals.len() as f32, vals[vals.len() / 2], vals[vals.len() - 1] - vals[0]);
+        Ok(())
+    }
+
+    #[test]
     fn ackermann() -> Result<()> {
         let tokens = Lexer::new("(def ack (λ (m n)
         (match (, m n)
@@ -347,9 +370,8 @@ mod test {
          ((, _ 0) (ack (- m 1) 1))
          (_ (ack (- m 1) (ack m (- n 1)))))))", "TEST").proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bytecode, symbols) = Compiler::new(ast.clone(), "TEST", Bytecode::new()).compile(vec![])?;
-        let (bytecode, symbols) = compile_dbg("TEST", ast, 3, vec![], Bytecode::new())?;
-        
+        let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
+
         let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
         let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
         let mut vals = (0..1000).map(|_| {

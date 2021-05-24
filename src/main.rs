@@ -61,7 +61,7 @@ fn print_err(e: OrionError) {
     eprintln!(
         "{}{}",
         if e.0.is_some() && e.1.is_some() {
-            format!("{}.{}: ", e.0.unwrap(), e.1.unwrap())
+            format!("{}:{}: ", e.0.unwrap(), e.1.unwrap())
         } else {
             if cfg!(windows) {
                 "Error: "
