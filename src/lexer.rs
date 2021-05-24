@@ -66,11 +66,6 @@ impl Token {
     pub fn new(ttype: TType, line: usize) -> Self {
         Self { line, ttype }
     }
-    pub fn display(&self) -> String {
-        let ttyped = self.ttype.get_type().to_ascii_lowercase().replace(" ", "_");
-
-        format!("<#token:{}{{{}}}>", ttyped, self.line)
-    }
 }
 
 pub struct Lexer {
@@ -238,13 +233,14 @@ impl Lexer {
         self.register_builtin("dbg");
         self.register_builtin("putStr");
         self.register_builtin("getLine");
+        
+        self.register_builtin("_cmp");
 
         self.register_builtin("+");
         self.register_builtin("-");
-        self.register_builtin("neg");
-        self.register_builtin("/");
         self.register_builtin("*");
-        self.register_builtin("_cmp");
+        self.register_builtin("/");
+        self.register_builtin("neg");
         self.register_builtin("cos");
         self.register_builtin("sin");
         self.register_builtin("tan");

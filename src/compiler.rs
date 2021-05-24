@@ -30,6 +30,14 @@ impl Compiler {
         to_ret.register_builtin("-", false);
         to_ret.register_builtin("*", false);
         to_ret.register_builtin("/", false);
+        to_ret.register_builtin("neg", false);
+        to_ret.register_builtin("cos", false);
+        to_ret.register_builtin("sin", false);
+        to_ret.register_builtin("tan", false);
+        to_ret.register_builtin("acos", false);
+        to_ret.register_builtin("asin", false);
+        to_ret.register_builtin("atan", false);
+
         to_ret.register_builtin("dbg", true);
         to_ret
     }

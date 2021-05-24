@@ -65,7 +65,61 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
         }
     }
+    pub fn neg(&mut self) -> Result<Value> {
+        let val = self.pop()?;
 
+        match val {
+            Value::Integer(val) => Ok(Value::Integer(-val)),
+            Value::Single(val) => Ok(Value::Single(-val)),
+            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", val),
+        }
+    }
+    pub fn cos(&mut self) -> Result<Value> {
+        let val = self.pop()?;
 
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.cos())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
+    pub fn sin(&mut self) -> Result<Value> {
+        let val = self.pop()?;
 
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.sin())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
+    pub fn tan(&mut self) -> Result<Value> {
+        let val = self.pop()?;
+
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.tan())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
+    pub fn acos(&mut self) -> Result<Value> {
+        let val = self.pop()?;
+
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.acos())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
+    pub fn asin(&mut self) -> Result<Value> {
+        let val = self.pop()?;
+
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.asin())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
+    pub fn atan(&mut self) -> Result<Value> {
+        let val = self.pop()?;
+
+        match val {
+            Value::Single(val) => Ok(Value::Single(val.atan())),
+            _ => error!(=> "Expected a Single, found a {:?}.", val),
+        }
+    }
 }
