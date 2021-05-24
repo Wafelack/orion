@@ -18,6 +18,15 @@ Orion
 
 ---
 
+Features
+--------
+
+- Lightness: Orion source code fits under 3k SLOC and its binary is under 2MB.
+- Portable: Orion code is run on a virtual machine, that avoids architecture-specific problems.
+- Purely functional: Pattern matching, immutability, side effects control.
+- Elegant: It embeds shorthands such as `'<expr>` for `(\ () <expr>)` or `{ <expr>* }` for `(begin <expr>*)`.
+
+
 Installation
 ------------
 
@@ -41,49 +50,7 @@ Build the project, copy the binary to your path, move the library wherever you w
 Documentation
 -------------
 
-You can find a small tutorial to get started with Orion [here](docs/tutorial.md).
-
 You can find the standard library, the core and the builtins documentation [here](docs/).
-
-Roadmap
--------
-
-- [x] Lexing
-- [x] Parsing
-- [ ] Compilation and Virtual Machine
-	- [x] Literals
-	- [x] Lambdas
-	- [x] Quotes
-	- [x] Variables
-	- [x] Load
-	- [x] Variables definition
-	- [x] Function calls
-	- [x] Builtins calls
-	- [x] Enumerations
-	- [x] Variants
-	- [x] Tuples
-	- [x] Pattern Matching
-	- [ ] Builtins
-		- [x] +
-		- [x] -
-		- [x] *
-		- [x] /
-		- [x] dbg
-		- [ ] putStr
-		- [ ] getLine
-		- [ ] _cmp
-		- [ ] cos
-		- [ ] sin
-		- [ ] tan
-		- [ ] acos
-		- [ ] asin
-		- [ ] atan
-- [ ] Typechecking
-- [ ] Documentation
-	- [x] Core Library documentation
-	- [x] Standard Library documetation
-	- [x] Builtins documentation
-	- [ ] Begginer guide
 
 Quick Example
 -------------

@@ -1,0 +1,44 @@
+Roadmap
+-------
+
+- [x] Lexing
+- [x] Parsing
+- [ ] Compilation and Virtual Machine
+	- [x] Literals
+	- [x] Lambdas
+	- [x] Quotes
+	- [x] Variables
+	- [x] Load
+	- [x] Variables definition
+	- [x] Function calls
+	- [x] Builtins calls
+	- [x] Enumerations
+	- [x] Variants
+	- [x] Tuples
+	- [x] Pattern Matching
+- [ ] Builtins
+	- [x] +
+	- [x] -
+	- [x] *
+	- [x] /
+	- [x] neg
+	- [x] dbg
+	- [ ] putStr
+	- [ ] getLine
+	- [ ] \_cmp
+	- [x] cos
+	- [x] sin
+	- [x] tan
+	- [x] acos
+	- [x] asin
+	- [x] atan
+- [ ] Bytecode {de}?serialzation.
+- [ ] Begin shorthand
+- [ ] Main function call on file processing.
+- [ ] Prelude loader.
+- [ ] Expression commenter.
+- [ ] Documentation
+	- [x] Core Library documentation
+	- [x] Standard Library documetation
+	- [x] Builtins documentation
+	- [ ] The Complete Orion Book
