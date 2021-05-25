@@ -25,7 +25,7 @@ use crate::{
     parser::{Expr, ExprT, Literal, Parser, Pattern as ParserPattern},
     Result,
 };
-use std::{env, fs, path::Path};
+use std::{fs, path::Path};
 pub struct Compiler {
     input: Vec<Expr>,
     output: Bytecode,
@@ -33,14 +33,16 @@ pub struct Compiler {
     builtins: Vec<(String, bool)>, // (name, impure?)
     constructors: Vec<String>,
     file: String,
+    lib: String,
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, dev: bool) -> Result<Self> {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String) -> Result<Self> {
         bcode.instructions = vec![];
         let mut to_ret = Self {
-            input: if dev || already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)] },
+            input: if already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)] },
             constructors,
+            lib,
             output: bcode,
             load_history: vec![],
             builtins: vec![],
@@ -214,10 +216,7 @@ impl Compiler {
                 }
             }
             ExprT::Load(files) => {
-                let lib_link = match env::var("ORION_LIB") {
-                    Ok(v) => v,
-                    Err(_) => return error!(self.file, expr.line => "ORION_LIB variable does not exist."),
-                };
+                let lib_link = self.lib.to_string();
 
                 Ok((
                         files
@@ -318,7 +317,7 @@ impl Compiler {
                     .builtins
                     .iter()
                     .position(|builtin| builtin.0 == name)
-                    .unwrap();
+                    .map_or(error!(=> "No such builtin: {}.", name), |i| Ok(i))?;
                 let impure_builtin = self.builtins[idx as usize].1;
                 if !impure && impure_builtin {
                     return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
