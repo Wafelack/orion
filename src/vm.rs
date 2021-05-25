@@ -19,10 +19,10 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{    
-    bytecode::{Bytecode, BytecodePattern, Chunk, OpCode},
+    bytecode::{Bytecode, BytecodePattern, OpCode},
     error, bug,
     parser::Literal,
-    OrionError, Result,
+    Result,
 };
 
 use std::fmt::{self, Display, Formatter};

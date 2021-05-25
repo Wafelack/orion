@@ -18,7 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{vm::{VM, Value}, OrionError, error, Result};
+use crate::{vm::{VM, Value}, error, Result};
 use std::io::{self, Write};
 
 impl <const STACK_SIZE: usize> VM<STACK_SIZE> {
