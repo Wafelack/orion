@@ -93,6 +93,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::asin, 1);
         to_ret.register_builtin(Self::atan, 1);
 
+        to_ret.register_builtin(Self::show, 1);
+
         to_ret.register_builtin(Self::put_str, 1);
         to_ret.register_builtin(Self::get_line, 0);
         to_ret.register_builtin(Self::dbg, 1);
