@@ -19,17 +19,6 @@
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
 (load "bool.orn")
-(enum Ordering
-      Less
-      Equal
-      Greater)
-
-(def cmp (λ (lhs rhs)
-                 (match (_cmp lhs rhs)
-                        (0 Less)
-                        (1 Equal)
-                        (2 Greater))))
-
 (def < (λ (lhs rhs)
                (= (cmp lhs rhs) Less)))
 
