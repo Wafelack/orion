@@ -22,12 +22,23 @@
 	True
 	False)
 
+(enum Ordering
+      Less
+      Equal
+      Greater)
+
+(def cmp (λ (lhs rhs)
+                 (match (_cmp lhs rhs)
+                        (0 Less)
+                        (1 Equal)
+                        (2 Greater))))
+
 (def #t True)
 (def #f False)
 
 (def = (λ (lhs rhs)
-	(match lhs
-		(rhs True)
+	(match (cmp lhs rhs)
+		(Equal True)
 		(_ False))))
 
 (def not (λ (val)
@@ -54,8 +65,3 @@
 	(match (= lhs rhs)
 		(True ())
 		(False (panic (format "Assertion failed: #v /= #v.`" lhs rhs))))))
-
-(def if (λ (cond then else)
-	(match cond
-		(True (unquote then))
-		(False (unquote else)))))
