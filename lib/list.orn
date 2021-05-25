@@ -18,8 +18,8 @@
 ;;  You should have received a copy of the GNU General Public License
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
-(load "std/maybe.orn")
-(load "core/bool.orn")
+(load "maybe.orn")
+(load "bool.orn")
 
 (enum List
       (Cons x next)

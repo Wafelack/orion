@@ -22,8 +22,8 @@
 ;; This file loads all the needed files automatically
 ;; on interpreter startup.
 
-(load "core/bool.orn") ;; Boolean type
-(load "core/math.orn") ;; Basic arithmetic
+(load "bool.orn") ;; Boolean type
+(load "math.orn") ;; Basic arithmetic
 
-(load "std/list.orn")  ;; Lists
-(load "std/maybe.orn") ;; Optional type
+(load "list.orn")  ;; Lists
+(load "maybe.orn") ;; Optional type
