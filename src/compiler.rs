@@ -23,7 +23,7 @@ use crate::{
     error,
     lexer::Lexer,
     parser::{Expr, ExprT, Literal, Parser, Pattern as ParserPattern},
-    OrionError, Result,
+    Result,
 };
 use std::{env, fs, path::Path};
 pub struct Compiler {

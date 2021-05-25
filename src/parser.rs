@@ -21,7 +21,7 @@
 use crate::{
     bug, error,
     lexer::{TType, Token},
-    OrionError, Result,
+    Result,
 };
 use std::{collections::HashMap, mem::discriminant};
 
@@ -62,35 +62,6 @@ pub enum ExprT {
     Builtin(String, Vec<Expr>),
 }
 
-impl Expr {
-    pub fn get_type(&self) -> String {
-        format!(
-            "<#expr:{}>",
-            match &self.exprt {
-                ExprT::Var(s) => format!("constant({})", s),
-                ExprT::Call(_, _) => "call".to_string(),
-                ExprT::Lambda(args, _) => format!("lambda({} args)", args.len()),
-                ExprT::Literal(l) => {
-                    match l {
-                        Literal::Integer(i) => format!("integer {}", i),
-                        Literal::Single(s) => format!("single {}", s),
-                        Literal::String(s) => format!("string \"{}\"", s),
-                    }
-                }
-                ExprT::Def(name, _, _) => format!("constant_definition({})", name),
-                ExprT::Constr(name, _) => format!("enum_constructor({})", name),
-                ExprT::Enum(name, _) => format!("enum_definition({})", name),
-                ExprT::Tuple(t) => format!("tuple{{{}}}", t.len()),
-                ExprT::Load(_) => "load_procedure".to_string(),
-                ExprT::Match(_, _) => "match_statement".to_string(),
-                ExprT::Panic(_, _) => "panic_statement".to_string(),
-                ExprT::Begin(_) => "block".to_string(),
-                ExprT::Builtin(n, _) => format!("builtin({})", n),
-            }
-        )
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
     Integer(i32),
@@ -105,15 +76,6 @@ pub enum Pattern {
     Tuple(Vec<Pattern>),
     Literal(Literal),
 }
-impl Pattern {
-    pub fn is_complex(&self) -> bool {
-        match self {
-            Self::Constr(_, _) | Self::Tuple(_) => true,
-            _ => false,
-        }
-    }
-}
-
 fn first_char(s: impl ToString) -> char {
     s.to_string().chars().nth(0).unwrap()
 }
