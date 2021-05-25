@@ -27,13 +27,13 @@ pub type Result<T> = std::result::Result<T, OrionError>;
 macro_rules! error {
     ($($file:expr, $line:expr)? => $($arg:tt)*) => {
         {
-            let file: Option<String> = None;
-            let line: Option<usize> = None;
+            let _file: Option<String> = None;
+            let _line: Option<usize> = None;
             $ (
-                let file = Some($file.to_string());
-                let line = Some($line);
+                let _file = Some($file.to_string());
+                let _line = Some($line);
               )?
-                Err(OrionError(file, line, format_args!($($arg)*).to_string()))
+                Err(OrionError(_file, _line, format_args!($($arg)*).to_string()))
 
         }
     }
