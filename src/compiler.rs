@@ -58,6 +58,8 @@ impl Compiler {
         to_ret.register_builtin("asin", false);
         to_ret.register_builtin("atan", false);
 
+        to_ret.register_builtin("putStr", true);
+        to_ret.register_builtin("getLine", true);
         to_ret.register_builtin("dbg", true);
         to_ret
     }

@@ -23,10 +23,11 @@ Roadmap
 	- [x] /
 	- [x] neg
 	- [x] dbg
-	- [ ] putStr
-	- [ ] getLine
+	- [x] putStr
+	- [x] getLine
 	- [ ] \_cmp
 	- [ ] format
+	- [ ] show
 	- [x] cos
 	- [x] sin
 	- [x] tan
