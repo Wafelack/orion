@@ -36,11 +36,11 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode) -> Self {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>) -> Self {
         bcode.instructions = vec![];
         let mut to_ret = Self {
             input,
-            constructors: vec![],
+            constructors,
             output: bcode,
             load_history: vec![],
             builtins: vec![],
@@ -62,7 +62,8 @@ impl Compiler {
 
         to_ret.register_builtin("putStr", true);
         to_ret.register_builtin("getLine", true);
-        to_ret.register_builtin("dbg", true);
+
+        to_ret.register_builtin("type", false);
         to_ret
     }
     fn register_builtin(&mut self, name: impl ToString, impure: bool) {
@@ -334,11 +335,14 @@ impl Compiler {
                 to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
             }
-            ExprT::Enum(_, constructors) => {
+            ExprT::Enum(name, constructors) => {
+                let start = self.output.constructors.len() as u16;
                 constructors
                     .into_iter()
                     .map(|(k, v)| self.register_constructor(k, v, expr.line))
                     .collect::<Result<()>>()?;
+                let end = self.output.constructors.len() as u16 - 1;
+                self.output.types.push((name, start, end));
                 Ok((vec![], symbols))
             }
             ExprT::Constr(name, contained) => {
@@ -459,7 +463,7 @@ impl Compiler {
             Ok(())
         }
     }
-    pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>)> {
+    pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
         for expr in self.input.clone() {
             let (to_push, new_symbols) = self.compile_expr(expr, symbols, true)?;
             symbols = new_symbols;
@@ -471,6 +475,6 @@ impl Compiler {
             .map(|(name, _)| name.to_string())
             .collect::<Vec<String>>();
 
-        Ok((self.output.clone(), symbols))
+        Ok((self.output.clone(), symbols, self.constructors.clone()))
     }
 }

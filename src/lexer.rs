@@ -245,6 +245,8 @@ impl Lexer {
         self.register_builtin("show");
         self.register_builtin("format");
 
+        self.register_builtin("type");
+
         self.register_builtin("+");
         self.register_builtin("-");
         self.register_builtin("*");
