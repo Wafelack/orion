@@ -60,7 +60,6 @@ pub struct VM<const STACK_SIZE: usize> {
         )>,
         pub ip: usize,
 }
-
 fn to_val(lit: &Literal) -> Value {
     match lit {
         Literal::Integer(i) => Value::Integer(*i),
@@ -68,7 +67,6 @@ fn to_val(lit: &Literal) -> Value {
         Literal::String(s) => Value::String(s.to_string()),
     }
 }
-
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn new(input: Bytecode) -> Self {
         let mut to_ret = Self {
@@ -97,12 +95,31 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         to_ret.register_builtin(Self::put_str, 1);
         to_ret.register_builtin(Self::get_line, 0);
-        to_ret.register_builtin(Self::dbg, 1);
+
+        to_ret.register_builtin(Self::r#type, 1);
         to_ret
     }
-    fn dbg(&mut self) -> Result<Value> {
-        println!("{:?}", self.pop()?);
-        Ok(Value::Tuple(vec![]))
+    fn r#type(&mut self) -> Result<Value> {
+        Ok(Value::String(self.val_type()?))
+    }
+    fn val_type(&mut self) -> Result<String> {
+        let popped = self.pop()?;
+        let to_ret = Ok(match &popped {
+            Value::Constructor(idx, _) => self.input.types[self.input.types.iter().position(|(_, start, end)| (start..=end).contains(&&idx)).unwrap()].0.clone(),
+            Value::Tuple(content) => format!("({})", content.iter().map(|v|{
+                self.stack.push(v.clone());
+                let to_ret = self.val_type()?;
+                self.pop()?;
+                Ok(to_ret)
+            }).collect::<Result<Vec<String>>>()?.join(" ")),
+            Value::String(_) => "String".to_string(),
+            Value::Single(_) => "Single".to_string(),
+            Value::Integer(_) => "Integer".to_string(),
+            Value::Lambda(_) => "Lambda".to_string(),
+            Value::Initialzing => bug!("UNEXPECTED_INITALZING"),
+        });
+        self.stack.push(popped);
+        to_ret
     }
     fn register_builtin(
         &mut self,
@@ -372,11 +389,11 @@ mod test {
     use crate::compiler::Compiler;
     use crate::cli::compile_dbg;
     use std::time::Instant;
-    
+
     #[cfg(not(debug_assertions))] // Run only in release
     #[test]
     fn factorial() -> Result<()> {
-    let tokens = Lexer::new("(def fact (\\ (n) (match n (0 1) (_ (* n (fact (- n 1)))))))", "TEST").proc_tokens()?;
+        let tokens = Lexer::new("(def fact (\\ (n) (match n (0 1) (_ (* n (fact (- n 1)))))))", "TEST").proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
         let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
 

@@ -100,6 +100,7 @@ pub enum BytecodePattern {
 
 #[derive(Clone, Debug)]
 pub struct Bytecode {
+    pub types: Vec<(String, u16, u16)>,
     pub chunks: Vec<Chunk>,
     pub matches: Vec<Vec<(u16, Vec<OpCode>)>>,
     pub symbols: Vec<String>,
@@ -112,6 +113,7 @@ pub struct Bytecode {
 impl Bytecode {
     pub fn new() -> Self {
         Self {
+            types: vec![],
             chunks: vec![],
             symbols: vec![],
             constants: vec![],
