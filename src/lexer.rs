@@ -24,6 +24,8 @@ use crate::{error, OrionError, Result};
 pub enum TType {
     LParen,
     RParen,
+    LBrace,
+    RBrace,
     Str(String),
     Number(i32),
     Float(f32),
@@ -46,6 +48,8 @@ impl TType {
         match self {
             Self::LParen => "Opening Parenthese",
             Self::RParen => "Closing Parenthese",
+            Self::LBrace => "Opening Brace",
+            Self::RBrace => "Closing Brace",
             Self::Str(_) => "String",
             Self::Number(_) => "Integer",
             Self::Float(_) => "Float",
@@ -139,6 +143,8 @@ impl Lexer {
         match c {
             '(' => self.add_token(TType::LParen),
             ')' => self.add_token(TType::RParen),
+            '{' => self.add_token(TType::LBrace),
+            '}' => self.add_token(TType::RBrace),
             ' ' | '\r' | '\t' => {}
             '\n' => self.line += 1,
             '\'' => self.add_token(TType::Quote),

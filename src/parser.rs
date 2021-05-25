@@ -276,6 +276,15 @@ impl Parser {
                 }
             }
             TType::Quote => Expr::new(ExprT::Lambda(vec![], Box::new(self.parse_expr()?))).line(root.line),
+            TType::LBrace => {
+                let mut expressions = vec![];
+
+                while !self.is_at_end() && self.peek().unwrap().ttype != TType::RBrace {
+                    expressions.push(self.parse_expr()?);
+                }
+                self.advance(TType::RBrace)?;
+                Expr::new(ExprT::Begin(expressions)).line(root.line)
+            }
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -561,9 +570,9 @@ mod test {
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Lambda(
-                vec!["x".to_string(), "y".to_string()],
-                Box::new(Expr::new(ExprT::Literal(Literal::Integer(5))).line(1))
-                )).line(1)]
+                    vec!["x".to_string(), "y".to_string()],
+                    Box::new(Expr::new(ExprT::Literal(Literal::Integer(5))).line(1))
+                    )).line(1)]
             );
 
         Ok(())
@@ -577,14 +586,14 @@ mod test {
         assert_eq!(
             ast,
             vec![
-Expr::new(ExprT::Def(
-                "foo".to_string(),
-                Box::new(Expr::new(ExprT::Literal(Literal::Integer(5)))),
-                false)),
-                Expr::new(ExprT::Def(
-                    "moo".to_string(),
-                    Box::new(Expr::new(ExprT::Var("jsp".to_string()))),
-                    true))]);
+            Expr::new(ExprT::Def(
+                    "foo".to_string(),
+                    Box::new(Expr::new(ExprT::Literal(Literal::Integer(5)))),
+                    false)),
+                    Expr::new(ExprT::Def(
+                            "moo".to_string(),
+                            Box::new(Expr::new(ExprT::Var("jsp".to_string()))),
+                            true))]);
 
         Ok(())
     }
@@ -611,9 +620,9 @@ Expr::new(ExprT::Def(
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Enum(
-                "Maybe".to_string(),
-                table! {"Just".to_string() => 1u8, "Nil".to_string() => 0u8}
-                ))]
+                    "Maybe".to_string(),
+                    table! {"Just".to_string() => 1u8, "Nil".to_string() => 0u8}
+                    ))]
             );
 
         Ok(())
@@ -627,9 +636,9 @@ Expr::new(ExprT::Def(
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Tuple(vec![
-                             Expr::new(ExprT::Var("a".to_string())),
-                             Expr::new(ExprT::Var("b".to_string())),
-                             Expr::new(ExprT::Var("c".to_string()))]))]);
+                                        Expr::new(ExprT::Var("a".to_string())),
+                                        Expr::new(ExprT::Var("b".to_string())),
+                                        Expr::new(ExprT::Var("c".to_string()))]))]);
         Ok(())
     }
 
@@ -654,10 +663,10 @@ Expr::new(ExprT::Def(
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Match(
-                Box::new(Expr::new(ExprT::Var("foo".to_string()))),
-                vec![
-                (Pattern::Var("bar".to_string()), Expr::new(ExprT::Var("x".to_string()))),
-                (Pattern::Var("_".to_string()),
+                    Box::new(Expr::new(ExprT::Var("foo".to_string()))),
+                    vec![
+                    (Pattern::Var("bar".to_string()), Expr::new(ExprT::Var("x".to_string()))),
+                    (Pattern::Var("_".to_string()),
                     Expr::new(ExprT::Literal(Literal::Integer(9))))]))]);
 
         Ok(())
@@ -671,22 +680,22 @@ Expr::new(ExprT::Def(
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Panic(
-                "TEST:1: Program panicked at: ".to_string(),
-                Box::new(Expr::new(ExprT::Var("a".to_string())))))]);
+                    "TEST:1: Program panicked at: ".to_string(),
+                    Box::new(Expr::new(ExprT::Var("a".to_string())))))]);
 
         Ok(())
     }
 
     #[test]
     fn begin() -> Result<()> {
-        let tokens = Lexer::new("(begin a b c)", 0).proc_tokens()?;
+        let tokens = Lexer::new("(begin a b c) { }", 0).proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Begin(vec![
-                             Expr::new(ExprT::Var("a".to_string())),
-                             Expr::new(ExprT::Var("b".to_string())),
-                             Expr::new(ExprT::Var("c".to_string()))]))]);
+                                        Expr::new(ExprT::Var("a".to_string())),
+                                        Expr::new(ExprT::Var("b".to_string())),
+                                        Expr::new(ExprT::Var("c".to_string()))])), Expr::new(ExprT::Begin(vec![]))]);
         Ok(())
     }
 
@@ -705,10 +714,10 @@ Expr::new(ExprT::Def(
         assert_eq!(
             ast,
             vec![Expr::new(ExprT::Builtin(
-                "format".to_string(),
-                vec![
-                Expr::new(ExprT::Literal(Literal::Integer(5))),
-                Expr::new(ExprT::Var("a".to_string()))]))]);
+                    "format".to_string(),
+                    vec![
+                    Expr::new(ExprT::Literal(Literal::Integer(5))),
+                    Expr::new(ExprT::Var("a".to_string()))]))]);
         Ok(())
     }
 }

@@ -27,7 +27,6 @@ mod vm;
 mod cli;
 
 mod arithmetic;
-mod io;
 
 use crate::cli::cli;
 pub use errors::{OrionError, Result};
