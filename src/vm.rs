@@ -368,7 +368,8 @@ mod test {
     use crate::compiler::Compiler;
     use crate::cli::compile_dbg;
     use std::time::Instant;
-
+    
+    #[cfg(not(debug_assertions))] // Run only in release
     #[test]
     fn factorial() -> Result<()> {
     let tokens = Lexer::new("(def fact (\\ (n) (match n (0 1) (_ (* n (fact (- n 1)))))))", "TEST").proc_tokens()?;
@@ -394,6 +395,7 @@ mod test {
         Ok(())
     }
 
+    #[cfg(not(debug_assertions))] // Run only in Release
     #[test]
     fn ackermann33() -> Result<()> {
         let tokens = Lexer::new("(def ack (λ (m n)
@@ -406,36 +408,6 @@ mod test {
 
         let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
         let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
-        let mut vals = (0..1000).map(|_| {
-            let mut vm = VM::<256>::new(call_bytecode.clone());
-            let start = Instant::now();
-            vm.eval(ctx.clone())?;
-            let elapsed = start.elapsed();
-            Ok(elapsed.as_millis() as u32)
-        }).collect::<Result<Vec<u32>>>()?;
-        vals.sort();
-        let total = vals.iter().sum::<u32>() as f32;
-        let average = total / vals.len() as f32;
-        let stddev = (0..vals.len()).into_iter().map(|i| {
-            (vals[i] as f32 - average).powi(2)
-        }).sum::<f32>().sqrt();
-        println!("Total: {}ms ; Average: {}ms ; Median: {}ms ; Amplitude: {}ms ; Stddev: {}us", total, average, vals[vals.len() / 2], vals[vals.len() - 1] - vals[0], stddev);
-        Ok(())
-    }
-
-
-    #[test]
-    fn ackermann36() -> Result<()> {
-        let tokens = Lexer::new("(def ack (λ (m n)
-        (match (, m n)
-         ((, 0 _) (+ n 1))
-         ((, _ 0) (ack (- m 1) 1))
-         (_ (ack (- m 1) (ack m (- n 1)))))))", "TEST").proc_tokens()?;
-        let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
-
-        let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
-        let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(ack 3 6)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
         let mut vals = (0..1000).map(|_| {
             let mut vm = VM::<256>::new(call_bytecode.clone());
             let start = Instant::now();

@@ -3,7 +3,7 @@ Roadmap
 
 - [x] Lexing
 - [x] Parsing
-- [ ] Compilation and Virtual Machine
+- [x] Compilation and Virtual Machine
 	- [x] Literals
 	- [x] Lambdas
 	- [x] Quotes
@@ -34,7 +34,7 @@ Roadmap
 	- [x] asin
 	- [x] atan
 - [ ] Bytecode {de}?serialzation.
-- [ ] Begin shorthand
+- [x] Begin shorthand
 - [ ] Main function call on file processing.
 - [ ] Prelude loader.
 - [ ] Expression commenter.
