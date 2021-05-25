@@ -36,10 +36,10 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>) -> Self {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, dev: bool) -> Result<Self> {
         bcode.instructions = vec![];
         let mut to_ret = Self {
-            input,
+            input: if dev || already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)] },
             constructors,
             output: bcode,
             load_history: vec![],
@@ -64,7 +64,11 @@ impl Compiler {
         to_ret.register_builtin("getLine", true);
 
         to_ret.register_builtin("type", false);
-        to_ret
+
+        to_ret.compile(vec![])?;
+        to_ret.input = input;
+
+        Ok(to_ret)
     }
     fn register_builtin(&mut self, name: impl ToString, impure: bool) {
         self.builtins.push((name.to_string(), impure))
