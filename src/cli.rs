@@ -21,7 +21,7 @@
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
 use std::{time::Instant, path::Path, fs, io::Write};
-use crate::{Result, print_err, error, OrionError, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
+use crate::{Result, print_err, error, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
 
 fn repl(dbg_level: u8, dev: bool) -> Result<()> {
     println!(

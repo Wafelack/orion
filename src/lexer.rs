@@ -18,7 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{error, OrionError, Result};
+use crate::{error, Result};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum TType {

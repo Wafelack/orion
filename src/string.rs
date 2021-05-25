@@ -18,7 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{vm::{VM, Value}, OrionError, error, Result};
+use crate::{vm::{VM, Value}, Result};
 
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn show(&mut self) -> Result<Value> {

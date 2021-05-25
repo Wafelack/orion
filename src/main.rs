@@ -32,7 +32,7 @@ mod string;
 
 use crate::cli::cli;
 pub use errors::{OrionError, Result};
-use std::{fs, path::Path, process::exit, time::Instant};
+use std::process::exit;
 
 #[macro_export]
 macro_rules! bug {
