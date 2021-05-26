@@ -66,6 +66,7 @@ impl Compiler {
         to_ret.register_builtin("getLine", true);
 
         to_ret.register_builtin("type", false);
+        to_ret.register_builtin("_cmp", false);
 
         to_ret.compile(vec![])?;
         to_ret.input = input;
@@ -196,7 +197,11 @@ impl Compiler {
                     symbols,
                     )),
             ExprT::Var(name) => {
-                if !symbols.contains(&(name.clone(), impure)) {
+                if name.as_str() == "$line" {
+                    self.compile_expr(Expr::new(ExprT::Literal(Literal::Integer(expr.line as i32))).line(expr.line), symbols, impure)
+                } else if name.as_str() == "$file" {
+                    self.compile_expr(Expr::new(ExprT::Literal(Literal::String(self.file.clone()))).line(expr.line), symbols, impure)
+                } else if !symbols.contains(&(name.clone(), impure)) {
                     if impure && symbols.contains(&(name.clone(), false)) {
                         let (idx, symbols) = self.declare(name, symbols, impure, expr.line)?;
                         Ok((vec![OpCode::LoadSym(idx)], symbols))
@@ -416,7 +421,6 @@ impl Compiler {
                 compiled.push(OpCode::Match(idx));
                 Ok((compiled, symbols))
             }
-            _ => todo!(),
         }
     }
     fn declare_pat(&mut self, pat: ParserPattern, mut symbols: Vec<(String, bool)>, impure: bool, line: usize) -> Result<(u16, Vec<(String, bool)>)> {
