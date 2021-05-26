@@ -97,19 +97,104 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::get_line, 0);
 
         to_ret.register_builtin(Self::r#type, 1);
+        to_ret.register_builtin(Self::cmp, 1);
         to_ret
     }
-    fn r#type(&mut self) -> Result<Value> {
-        Ok(Value::String(self.val_type()?))
+    fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
+        use std::cmp::Ordering;
+        match lhs {
+            Value::Single(lhs) => match rhs {
+                Value::Single(rhs) => {
+                    Ok(lhs.partial_cmp(&rhs).unwrap())
+                }
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
+            }
+
+            Value::Integer(lhs) => match rhs {
+                Value::Integer(rhs) => {
+                    Ok(lhs.cmp(&rhs))
+                }
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
+            }
+            Value::String(lhs) => match rhs {
+                Value::String(rhs) => {
+                    Ok(lhs.cmp(&rhs))
+                }
+                _ => error!(=> "Expected a String, found a {}.", self.val_type(&rhs)?),
+            }
+            Value::Constructor(lid, vlhs) => match &rhs {
+                Value::Constructor(rid, vrhs) => {
+                    let tlhs = self.val_type(&lhs)?;
+                    let trhs = self.val_type(&rhs)?;
+                    if tlhs != trhs {
+                        error!(=> "Expected a {}, found a {}.", tlhs, trhs)
+                    } else {
+                        if lid != rid {
+                            error!(=> "Not the same enum variants, expected 0x{:04x}, found 0x{:04x}", lid, rid)
+                        } else {
+                            let mut to_ret = Ordering::Equal;
+
+                            for idx in 0..vlhs.len() {
+                                let lhs = &vlhs[idx];
+                                let rhs = &vrhs[idx];
+                                let res = self._cmp(lhs, rhs)?;
+                                if res != Ordering::Equal {
+                                    to_ret = res;
+                                    break;
+                                }
+                            }
+                            Ok(to_ret)
+                        }
+                    }
+                }
+                _ => error!(=> "Expected a Constructor, found a {}.", self.val_type(&rhs)?),
+            }
+            Value::Tuple(vlhs) => match rhs {
+                Value::Tuple(vrhs) => {
+                    let tlhs = self.val_type(&lhs)?;
+                    let trhs = self.val_type(&rhs)?;
+                    if tlhs != trhs {
+                        error!(=> "Expected a {}, found a {}.", tlhs, trhs)
+                    } else {
+                        let mut to_ret = Ordering::Equal;
+
+                        for idx in 0..vlhs.len() {
+                            let lhs = &vlhs[idx];
+                            let rhs = &vrhs[idx];
+                            let res = self._cmp(lhs, rhs)?;
+                            if res != Ordering::Equal {
+                                to_ret = res; 
+                                break;
+                            }
+                        }
+                        Ok(to_ret)
+                    }
+                }
+                _ => error!(=> "Expected a Tuple, found a {}.", self.val_type(&rhs)?),
+            }
+            _ => error!(=> "Expected a String, found a {}.", self.val_type(&rhs)?),
+        }
     }
-    fn val_type(&mut self) -> Result<String> {
+
+    fn cmp(&mut self) -> Result<Value> {
+        use std::cmp::Ordering;
+        let rhs = self.pop()?;
+        let lhs = self.pop()?;
+        let correspondance = [Ordering::Less, Ordering::Equal, Ordering::Greater];
+        let res = self._cmp(&lhs, &rhs)?;
+        Ok(Value::Integer(correspondance.iter().position(|x| x == &res).unwrap() as i32))
+    }
+    fn r#type(&mut self) -> Result<Value> {
         let popped = self.pop()?;
-        let to_ret = Ok(match &popped {
+        let to_ret = Ok(Value::String(self.val_type(&popped)?));
+        self.stack.push(popped);
+        to_ret
+    }
+    fn val_type(&mut self, popped: &Value) -> Result<String> {
+        let to_ret = Ok(match popped {
             Value::Constructor(idx, _) => self.input.types[self.input.types.iter().position(|(_, start, end)| (start..=end).contains(&&idx)).unwrap()].0.clone(),
             Value::Tuple(content) => format!("({})", content.iter().map(|v|{
-                self.stack.push(v.clone());
-                let to_ret = self.val_type()?;
-                self.pop()?;
+                let to_ret = self.val_type(v)?;
                 Ok(to_ret)
             }).collect::<Result<Vec<String>>>()?.join(" ")),
             Value::String(_) => "String".to_string(),
@@ -118,7 +203,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             Value::Lambda(_) => "Lambda".to_string(),
             Value::Initialzing => bug!("UNEXPECTED_INITALZING"),
         });
-        self.stack.push(popped);
         to_ret
     }
     fn register_builtin(

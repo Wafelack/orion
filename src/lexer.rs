@@ -37,7 +37,6 @@ pub enum TType {
     Lambda,
     Match,
     Load,
-    Panic,
     Begin,
 
     Builtin(String),
@@ -227,7 +226,6 @@ impl Lexer {
                 "," => self.add_token(TType::Tuple),
                 "match" => self.add_token(TType::Match),
                 "load" => self.add_token(TType::Load),
-                "panic" => self.add_token(TType::Panic),
                 "begin" => self.add_token(TType::Begin),
                 _ => self.add_token(TType::Ident(raw)),
             }
@@ -240,12 +238,12 @@ impl Lexer {
         self.register_builtin("putStr");
         self.register_builtin("getLine");
         
-        self.register_builtin("_cmp");
-
         self.register_builtin("show");
         self.register_builtin("format");
 
         self.register_builtin("type");
+        self.register_builtin("_cmp");
+        self.register_builtin("panic");
 
         self.register_builtin("+");
         self.register_builtin("-");
@@ -357,13 +355,6 @@ mod test {
     fn r#match() -> Result<()> {
         let ttypes = get_ttypes(Lexer::new("match", "").proc_tokens()?);
         assert_eq!(ttypes, vec![TType::Match]);
-        Ok(())
-    }
-
-    #[test]
-    fn panic() -> Result<()> {
-        let ttypes = get_ttypes(Lexer::new("panic", "").proc_tokens()?);
-        assert_eq!(ttypes, vec![TType::Panic]);
         Ok(())
     }
 
