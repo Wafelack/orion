@@ -16,7 +16,7 @@ Roadmap
 	- [x] Variants
 	- [x] Tuples
 	- [x] Pattern Matching
-- [ ] Builtins
+- [x] Builtins
 	- [x] +
 	- [x] -
 	- [x] *
@@ -25,9 +25,9 @@ Roadmap
 	- [x] dbg
 	- [x] putStr
 	- [x] getLine
-	- [ ] \_cmp
-	- [ ] format
-	- [ ] show
+	- [x] \_cmp
+	- [x] format
+	- [x] show
 	- [x] cos
 	- [x] sin
 	- [x] tan
@@ -37,7 +37,7 @@ Roadmap
 - [ ] Bytecode {de}?serialzation.
 - [x] Begin shorthand
 - [ ] Main function call on file processing.
-- [ ] Prelude loader.
+- [x] Prelude loader.
 - [ ] Expression commenter.
 - [ ] Documentation
 	- [x] Core Library documentation
