@@ -43,7 +43,7 @@ impl Display for Value {
         match self {
             Value::Integer(i) => write!(f, "{}", i),
             Value::Single(r) => write!(f, "{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
-            Value::String(s) => write!(f, "\"{}\"", s),
+            Value::String(s) => write!(f, "{}", s),
             Value::Lambda(u) => write!(f, "\\{}", u),
             Value::Constructor(id, args) => write!(f, "#{}({})", id, args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
             Value::Tuple(args) => write!(f, "({})", args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
@@ -220,6 +220,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>, instructions: Vec<OpCode>) -> Result<()> {
         match opcode {
+            OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
+                if let Literal::String(file) = self.input.constants[file as usize].clone() {
+                    let popped = self.pop()?;
+                    eprintln!("Program panicked at '{}', {}:{}.", popped, file, line);
+                    std::process::exit(1);
+                }
+            }
             OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
             OpCode::LoadSym(id) => {
                 self.stack.push(ctx[id as usize].clone())

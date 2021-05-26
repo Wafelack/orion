@@ -32,6 +32,7 @@ pub enum OpCode {
     Constructor(u16, u16), // (constr_idx, to_eval)
     Tuple(u16),            // (amount)
     Match(u16),            // (match_idx)
+    Panic(u16, u16),       // (file_sym, line_sym)
 }
 impl OpCode {
     pub fn serialize(&self) -> Vec<u8> {
@@ -77,6 +78,12 @@ impl OpCode {
             Self::Match(idx) => {
                 let mut to_ret = vec![8];
                 to_ret.extend(&idx.to_be_bytes());
+                to_ret
+            }
+            Self::Panic(file, line) => {
+                let mut to_ret = vec![8];
+                to_ret.extend(&file.to_be_bytes());
+                to_ret.extend(&line.to_be_bytes());
                 to_ret
             }
         }
