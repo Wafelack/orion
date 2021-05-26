@@ -197,9 +197,9 @@ impl Compiler {
                     symbols,
                     )),
             ExprT::Var(name) => {
-                if name.as_str() == "$line" {
+                if name.as_str() == "__LINE__" {
                     self.compile_expr(Expr::new(ExprT::Literal(Literal::Integer(expr.line as i32))).line(expr.line), symbols, impure)
-                } else if name.as_str() == "$file" {
+                } else if name.as_str() == "__FILE__" {
                     self.compile_expr(Expr::new(ExprT::Literal(Literal::String(self.file.clone()))).line(expr.line), symbols, impure)
                 } else if !symbols.contains(&(name.clone(), impure)) {
                     if impure && symbols.contains(&(name.clone(), false)) {
@@ -318,15 +318,6 @@ impl Compiler {
                         ))
             }
             ExprT::Builtin(name, args) => {
-                let idx = self
-                    .builtins
-                    .iter()
-                    .position(|builtin| builtin.0 == name)
-                    .map_or(error!(=> "No such builtin: {}.", name), |i| Ok(i))?;
-                let impure_builtin = self.builtins[idx as usize].1;
-                if !impure && impure_builtin {
-                    return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
-                }
                 let argc = args.len();
                 let mut to_ret = args
                     .into_iter()
@@ -340,7 +331,27 @@ impl Compiler {
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
-                to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
+
+
+                if name.as_str() == "panic" {
+                    if argc != 1 {
+                        return error!(self.file, expr.line => "Intrisic panic takes 1 argument but {} arguments were supplied.", argc)
+                    } else {
+                        to_ret.push(OpCode::Panic(self.register_constant(Literal::String(self.file.clone()), expr.line)?, self.register_constant(Literal::Integer(expr.line as i32), expr.line)?));
+                        return Ok((to_ret, symbols));
+                    }
+                }
+
+                let idx = self
+                    .builtins
+                    .iter()
+                    .position(|builtin| builtin.0 == name)
+                    .map_or(error!(=> "No such builtin: {}.", name), |i| Ok(i))?;
+                let impure_builtin = self.builtins[idx as usize].1;
+                if !impure && impure_builtin {
+                    return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
+                }
+                                to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
             }
             ExprT::Enum(name, constructors) => {
