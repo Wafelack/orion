@@ -18,7 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::{vm::{VM, Value}, Result};
+use crate::{vm::{VM, Value}, error, Result};
 
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn show(&mut self) -> Result<Value> {
@@ -28,5 +28,26 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         } else {
             format!("{}", popped)
         }))
+    }
+    pub fn format(&mut self) -> Result<Value> {
+        let args = self.pop()?;
+        let formatter = self.pop()?;
+        if let Value::Tuple(args) = args {
+            if let Value::String(formatter) = formatter  {
+                let fmt = "{}";
+                let mut prev = 0;
+                let to_ret = formatter.match_indices(fmt).enumerate().map(|(idx, (pos, _))| {
+                    let to_ret = format!("{}{}", &formatter[prev..pos], &args[idx]);
+                    prev = pos + fmt.len();
+                    to_ret
+                }).collect::<Vec<String>>().join("");
+
+                Ok(Value::String(format!("{}{}", to_ret, &formatter[prev..])))
+            } else {
+                error!(=> "Expected a String, found a {}.", self.val_type(&formatter)?)
+            }
+        } else {
+            error!(=> "Expected a Tuple, found a {}.", self.val_type(&args)?)
+        }
     }
 }

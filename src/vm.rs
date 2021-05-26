@@ -56,7 +56,7 @@ pub struct VM<const STACK_SIZE: usize> {
     pub stack: Vec<Value>,
     pub builtins: Vec<(
         fn(&mut VM<STACK_SIZE>) -> Result<Value>,
-        i16,
+        u8,
         )>,
         pub ip: usize,
 }
@@ -92,6 +92,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::atan, 1);
 
         to_ret.register_builtin(Self::show, 1);
+        to_ret.register_builtin(Self::format, 2);
 
         to_ret.register_builtin(Self::put_str, 1);
         to_ret.register_builtin(Self::get_line, 0);
@@ -190,7 +191,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         self.stack.push(popped);
         to_ret
     }
-    fn val_type(&mut self, popped: &Value) -> Result<String> {
+    pub fn val_type(&mut self, popped: &Value) -> Result<String> {
         let to_ret = Ok(match popped {
             Value::Constructor(idx, _) => self.input.types[self.input.types.iter().position(|(_, start, end)| (start..=end).contains(&&idx)).unwrap()].0.clone(),
             Value::Tuple(content) => format!("({})", content.iter().map(|v|{
@@ -208,7 +209,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn register_builtin(
         &mut self,
         func: fn(&mut VM<STACK_SIZE>) -> Result<Value>,
-        argc: i16,
+        argc: u8,
         ) {
         self.builtins.push((func, argc))
     }
@@ -289,7 +290,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
             OpCode::Builtin(idx, argc) => {
                 let (f, f_argc) = self.builtins[idx as usize];
-                if f_argc != argc as i16 && f_argc != -1 {
+                if f_argc != argc as u8 {
                     return error!(
                         => "Builtin 0x{:02x} takes {} arguments, but {} arguments were supplied.",
                         idx, f_argc, argc
