@@ -57,7 +57,6 @@ pub enum ExprT {
     Tuple(Vec<Expr>),
     Load(Vec<String>),
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
-    Panic(String, Box<Expr>),
     Begin(Vec<Expr>),
     Builtin(String, Vec<Expr>),
 }
@@ -251,15 +250,6 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
-                    TType::Panic => {
-                        let to_ret = self.parse_expr()?;
-                        self.advance(TType::RParen)?;
-                        Expr::new(ExprT::Panic(
-                                format!("{}:{}: Program panicked at: ", self.file, subroot.line),
-                                Box::new(to_ret),
-                                )).line(subroot.line)
-
-                    }
                     TType::Builtin(b) => {
                         let mut args = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
@@ -630,20 +620,6 @@ mod test {
                     (Pattern::Var("bar".to_string()), Expr::new(ExprT::Var("x".to_string()))),
                     (Pattern::Var("_".to_string()),
                     Expr::new(ExprT::Literal(Literal::Integer(9))))]))]);
-
-        Ok(())
-    }
-
-    #[test]
-    fn r#panic() -> Result<()> {
-        let tokens = Lexer::new("(panic a)", 0).proc_tokens()?;
-        let ast = Parser::new(tokens, "TEST").parse()?;
-
-        assert_eq!(
-            ast,
-            vec![Expr::new(ExprT::Panic(
-                    "TEST:1: Program panicked at: ".to_string(),
-                    Box::new(Expr::new(ExprT::Var("a".to_string())))))]);
 
         Ok(())
     }
