@@ -59,9 +59,9 @@ Factorial function:
 
 ```clojure
 (def factorial (λ (n)
-				  (match n
-				    (0 1)
-					(_ (* n (factorial (- n 1)))))))
+                    (match n
+                        (0 1)
+					    (_ (* n (factorial (- n 1)))))))
 ```
 
 Performance Tests
@@ -79,9 +79,6 @@ Performance Tests
 
 Acknowledgments
 ---------------
-
-* Lexer, parser, compiler, virtual machine and documentation: Wafelack \<wafelack@protonmail.com>
-* CI: Kreyren \<kreyren@fsfe.org>
 
 Special thanks to [@Mesabloo](https://github.com/mesabloo) and [@felko](https://github.com/felko) for support and help about implementation details.
 
