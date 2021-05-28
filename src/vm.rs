@@ -157,7 +157,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         error!(=> "Expected a {}, found a {}.", tlhs, trhs)
                     } else {
                         let mut to_ret = Ordering::Equal;
-for idx in 0..vlhs.len() {
+                        for idx in 0..vlhs.len() {
                             let lhs = &vlhs[idx];
                             let rhs = &vrhs[idx];
                             let res = self._cmp(lhs, rhs)?;
@@ -216,8 +216,22 @@ for idx in 0..vlhs.len() {
             Some(v) => Ok(v),
             None => error!(=> "Stack underflow."),
         }
+
     }
-    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Rc<Value>>, instructions: &[OpCode]) -> Result<()> {
+    fn decl(&mut self, sym_id: u16, val: Rc<Value>, ctx: &mut Vec<Rc<Value>>, sym_ref: &mut Vec<u16>) {
+        let id = if !sym_ref.contains(&sym_id) {
+            sym_ref.push(sym_id);
+            sym_ref.len()
+        } else {
+            sym_ref.iter().position(|id| id == &sym_id).unwrap()
+        };
+        if id >= ctx.len() {
+            ctx.push(val);
+        } else {
+            ctx[id] = val;
+        }
+    }
+    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Rc<Value>>, sym_ref: &mut Vec<u16>, instructions: &[OpCode]) -> Result<()> {
         match opcode {
             OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
                 if let Literal::String(file) = self.input.constants[file as usize].clone() {
@@ -228,26 +242,32 @@ for idx in 0..vlhs.len() {
             }
             OpCode::LoadConst(id) => self.stack.push(Rc::new(to_val(&self.input.constants[id as usize]))),
             OpCode::LoadSym(id) => {
-                self.stack.push(ctx[id as usize].clone())
+                let local_id = if !sym_ref.contains(&id) {
+                    error!(=> "Unbound function: {}.", self.input.symbols[id as usize])
+                } else {
+                    Ok(sym_ref.iter().position(|sid| sid == &id).unwrap())                
+                }?;
+                self.stack.push(ctx[local_id as usize].clone())
             },
             OpCode::Def(sym_id, instr_length) => {
-                println!("{}", sym_id);
-                println!("Before: {:?}", ctx);
-                if sym_id as usize >= ctx.len() {
+                let id = if !sym_ref.contains(&sym_id) {
+                    sym_ref.push(sym_id);
+                    sym_ref.len() - 1
+                } else {
+                    sym_ref.iter().position(|id| id == &sym_id).unwrap()
+                };
+                if id >= ctx.len() {
                     ctx.push(Rc::new(Value::Initialzing));
                 } else {
-                    ctx[sym_id as usize] = Rc::new(Value::Initialzing);
+                    ctx[id] = Rc::new(Value::Initialzing);
                 }
-                println!("After: {:?}", ctx);
                 (0..instr_length).map(|_| {
                     self.ip += 1;
                     let instr = instructions[self.ip];
-                    self.eval_opcode(instr, ctx, instructions.clone())
+                    self.eval_opcode(instr, ctx, sym_ref, &instructions)
                 }).collect::<Result<()>>()?;
                 let popped = self.pop()?;
-                ctx[sym_id as usize] = popped;
-                println!("Assigned: {:?}", ctx);
-                println!("===");
+                ctx[id] = popped;
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Rc::new(Value::Lambda(chunk_id))),
             OpCode::Call(argc) => {
@@ -267,26 +287,24 @@ for idx in 0..vlhs.len() {
                             );
                     }
                     let prev_ctx = ctx.clone(); // Save symbol table before editing.
+                    let prev_ref = sym_ref.clone();
                     for idx in 0..chunk.reference.len() {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
-                        let chunk_id = chunk.reference[idx] as usize;
-                        if chunk_id >= ctx.len() {
-                            ctx.push(val); // Push if symbol has not been affected yet.
-                        } else {
-                            ctx[chunk_id] = val;
-                        }
+                        let sym_id = chunk.reference[idx];
+                        self.decl(sym_id, val, ctx, sym_ref);
                     }
                     let prev_ip = self.ip;
                     self.ip = 0; // Reset the instruction counter to fit chunk instructions
                     while self.ip < chunk.instructions.len() {
                         let instr = chunk.instructions[self.ip];
-                        self.eval_opcode(instr, ctx, &chunk.instructions)?; // Eval chunk body.
+                        self.eval_opcode(instr, ctx, sym_ref, &chunk.instructions)?; // Eval chunk body.
                         self.ip += 1;
                     }
                     self.ip = prev_ip;
 
                     *ctx = prev_ctx; // Drop modified context with replaced arguments and reuse older context.
+                    *sym_ref = prev_ref;
                 } else {
                     return error!(=> "Expected a Lambda, found a {:?}.", func);
                 }
@@ -307,7 +325,7 @@ for idx in 0..vlhs.len() {
                 for _ in 1..=amount {
                     self.ip += 1;
                     let instruction = instructions[self.ip].clone();
-                    self.eval_opcode(instruction, ctx, instructions.clone())?;
+                    self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
@@ -319,7 +337,7 @@ for idx in 0..vlhs.len() {
                 for _ in 0..to_eval{
                     self.ip += 1;
                     let instruction = instructions[self.ip].clone();
-                    self.eval_opcode(instruction, ctx, instructions.clone())?;
+                    self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
@@ -341,18 +359,14 @@ for idx in 0..vlhs.len() {
                     match self.match_and_bound(&to_match, plausible.0) {
                         Some(to_bind) => {
                             let mut new_ctx = ctx.clone();
+                            let mut new_ref = sym_ref.clone();
                             let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
-                            to_bind.into_iter().map(|sym_id| {
+                            to_bind.into_iter().for_each(|sym_id| {
                                 let val = new_stack.pop().unwrap();
-                                if sym_id as usize >= new_ctx.len() {
-                                    new_ctx.push(val);
-                                } else {
-                                    new_ctx[sym_id as usize] = val;
-                                }
-                                Ok(())
-                            }).collect::<Result<Vec<_>>>()?;
+                                self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
+                            });
                             plausible.1.clone().into_iter().map(|instr| {
-                                self.eval_opcode(instr, &mut new_ctx, &plausible.1)
+                                self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)
                             }).collect::<Result<Vec<_>>>()?;
                             return Ok(())
                         },
@@ -465,15 +479,14 @@ for idx in 0..vlhs.len() {
             }
         }
     }
-    pub fn eval(&mut self, ctx: Vec<Rc<Value>>) -> Result<Vec<Rc<Value>>> {
-        let mut ctx = ctx;
+    pub fn eval(&mut self, mut sym_ref: Vec<u16>, mut ctx: Vec<Rc<Value>>) -> Result<(Vec<Rc<Value>>, Vec<u16>)> {
         while self.ip < self.input.instructions.len() {
             let instruction = self.input.instructions[self.ip];
             let instrs = self.input.instructions.clone();
-            self.eval_opcode(instruction, &mut ctx, &instrs)?;
+            self.eval_opcode(instruction, &mut ctx, &mut sym_ref, &instrs)?;
             self.ip += 1;
         }
-        Ok(ctx)
+        Ok((ctx, sym_ref))
     }
 }
 
