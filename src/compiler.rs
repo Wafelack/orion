@@ -60,7 +60,6 @@ impl Compiler {
         to_ret.register_builtin("asin", false);
         to_ret.register_builtin("atan", false);
 
-        to_ret.register_builtin("show", false);
         to_ret.register_builtin("format", false);
 
         to_ret.register_builtin("putStr", true);
