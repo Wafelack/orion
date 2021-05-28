@@ -233,18 +233,23 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(ctx[id as usize].clone())
             },
             OpCode::Def(sym_id, instr_length) => {
+                println!("{}", sym_id);
+                println!("Before: {:?}", ctx);
                 if sym_id as usize >= ctx.len() {
                     ctx.push(Value::Initialzing);
-                } else {
-                    ctx[sym_id as usize] = Value::Initialzing;
                 }
-                (1..=instr_length).map(|i| {
-                    let instr = instructions[self.ip + i as usize];
+                println!("Before1: {:?}", ctx);
+                ctx[sym_id as usize] = Value::Initialzing;
+                println!("After: {:?}", ctx);
+                (0..instr_length).map(|_| {
+                    self.ip += 1;
+                    let instr = instructions[self.ip];
                     self.eval_opcode(instr, ctx, instructions.clone())
                 }).collect::<Result<()>>()?;
-                self.ip += instr_length as usize;
                 let popped = self.pop()?;
                 ctx[sym_id as usize] = popped;
+                println!("Assigned: {:?}", ctx);
+                println!("===");
             }
             OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
             OpCode::Call(argc) => {
