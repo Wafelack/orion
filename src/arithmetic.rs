@@ -29,13 +29,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match *lhs {
             Value::Integer(lhs) => match *rhs {
                 Value::Integer(rhs) => Ok(Rc::new(Value::Integer(lhs + rhs))),
-                _ => error!(=> "Expected an Integer, found a {:?}.", rhs),
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
             },
             Value::Single(lhs) => match *rhs {
                 Value::Single(rhs) => Ok(Rc::new(Value::Single(lhs + rhs))),
-                _ => error!(=> "Expected a Single, found a {:?}.", rhs),
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
             },
-            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!(=> "Expected a Single or an Integer, found a {}.", self.val_type(&*lhs)?),
         }
     }
     pub fn sub(&mut self) -> Result<Rc<Value>> {
@@ -45,13 +45,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match *lhs {
             Value::Integer(lhs) => match *rhs {
                 Value::Integer(rhs) => Ok(Rc::new(Value::Integer(lhs - rhs))),
-                _ => error!(=> "Expected an Integer, found a {:?}.", rhs),
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
             },
             Value::Single(lhs) => match *rhs {
                 Value::Single(rhs) => Ok(Rc::new(Value::Single(lhs - rhs))),
-                _ => error!(=> "Expected a Single, found a {:?}.", rhs),
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
             },
-            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!(=> "Expected a Single or an Integer, found a {}.", self.val_type(&lhs)?),
         }
     }
     pub fn mul(&mut self) -> Result<Rc<Value>> {
@@ -61,13 +61,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match *lhs {
             Value::Integer(lhs) => match *rhs {
                 Value::Integer(rhs) => Ok(Rc::new(Value::Integer(lhs * rhs))),
-                _ => error!(=> "Expected an Integer, found a {:?}.", rhs),
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
             },
             Value::Single(lhs) => match *rhs {
                 Value::Single(rhs) => Ok(Rc::new(Value::Single(lhs * rhs))),
-                _ => error!(=> "Expected a Single, found a {:?}.", rhs),
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
             },
-            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!(=> "Expected a Single or an Integer, found a {}.", self.val_type(&lhs)?),
         }
     }
     pub fn div(&mut self) -> Result<Rc<Value>> {
@@ -77,13 +77,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match *lhs {
             Value::Integer(lhs) => match *rhs {
                 Value::Integer(rhs) => Ok(Rc::new(Value::Integer(lhs / rhs))),
-                _ => error!(=> "Expected an Integer, found a {:?}.", rhs),
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
             },
             Value::Single(lhs) => match *rhs {
                 Value::Single(rhs) => Ok(Rc::new(Value::Single(lhs / rhs))),
-                _ => error!(=> "Expected a Single, found a {:?}.", rhs),
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
             },
-            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", lhs),
+            _ => error!(=> "Expected a Single or an Integer, found a {}.", self.val_type(&*lhs)?),
         }
     }
     pub fn neg(&mut self) -> Result<Rc<Value>> {
@@ -92,7 +92,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match *val {
             Value::Integer(val) => Ok(Rc::new(Value::Integer(-val))),
             Value::Single(val) => Ok(Rc::new(Value::Single(-val))),
-            _ => error!(=> "Expected a Single or an Integer, found a {:?}.", val),
+            _ => error!(=> "Expected a Single or an Integer, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn cos(&mut self) -> Result<Rc<Value>> {
@@ -100,7 +100,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.cos()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn sin(&mut self) -> Result<Rc<Value>> {
@@ -108,7 +108,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.sin()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn tan(&mut self) -> Result<Rc<Value>> {
@@ -116,7 +116,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.tan()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn acos(&mut self) -> Result<Rc<Value>> {
@@ -124,7 +124,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.acos()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn asin(&mut self) -> Result<Rc<Value>> {
@@ -132,7 +132,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.asin()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
     pub fn atan(&mut self) -> Result<Rc<Value>> {
@@ -140,7 +140,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         match *val {
             Value::Single(val) => Ok(Rc::new(Value::Single(val.atan()))),
-            _ => error!(=> "Expected a Single, found a {:?}.", val),
+            _ => error!(=> "Expected a Single, found a {}.", self.val_type(&*val)?),
         }
     }
 }
