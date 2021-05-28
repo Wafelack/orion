@@ -164,7 +164,7 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
         if bytecode.chunks.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.CHUNKS\x1b[0m]");
             bytecode.chunks.iter().enumerate().for_each(|(idx, chunk)| {
-                println!("{:03} =", idx);
+                println!("{:03} ::=", idx);
                 println!("    [\x1b[0;34mREFERENCE\x1b[0m]");
                 chunk.reference.iter().enumerate().for_each(|(idx, other_id)| println!("    {:03}    0x{:04x}", idx, other_id));
                 println!("    [\x1b[0;34mINSTRUCTIONS\x1b[0m]");
@@ -181,9 +181,9 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
         if bytecode.matches.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.MATCHES\x1b[0m]");
             bytecode.matches.iter().enumerate().for_each(|(idx, r#match)| {
-                println!("{:03} = ", idx);
+                println!("{:03} ::= ", idx);
                 r#match.into_iter().enumerate().for_each(|(idx, (pat_idx, instrs))| {
-                    println!("    {:03}  :  PAT_IDX = {}", idx, pat_idx);
+                    println!("    {:03} ::=  PAT_IDX = {}", idx, pat_idx);
                     println!("            [\x1b[0;33mPATTERN.INSTRUCTIONS\x1b[0m]");
                     instrs.into_iter().enumerate().for_each(|(idx, instr)| {
                         println!("            {:03}    {:?}", idx, instr);

@@ -439,7 +439,7 @@ impl Compiler {
         let flattened = match pat {
             ParserPattern::Var(s) => {
                 if s.as_str() == "_" {
-                    BytecodePattern::Otherwise
+                    BytecodePattern::Any
                 } else {
                     let (sym_id, new_symbols) = self.declare(s, symbols.clone(), impure, line)?;
                     symbols = new_symbols;
