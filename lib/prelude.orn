@@ -22,8 +22,8 @@
 ;; This file loads all the needed files automatically
 ;; on interpreter startup.
 
-(load "bool.orn") ;; Boolean type
+#| (load "bool.orn") ;; Boolean type
 (load "math.orn") ;; Basic arithmetic
 
 (load "list.orn")  ;; Lists
-(load "maybe.orn") ;; Optional type
+(load "maybe.orn")|# ;; Optional type
