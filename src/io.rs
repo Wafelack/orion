@@ -19,25 +19,25 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{vm::{VM, Value}, error, Result};
-use std::io::{self, Write};
+use std::{io::{self, Write}, rc::Rc};
 
 impl <const STACK_SIZE: usize> VM<STACK_SIZE> {
-    pub fn put_str(&mut self) -> Result<Value> {
+    pub fn put_str(&mut self) -> Result<Rc<Value>> {
         let to_print = self.pop()?;
 
-        match to_print {
+        match (*to_print).clone() {
             Value::String(s) => {
                 print!("{}", s);
                 io::stdout().flush().unwrap();
-                Ok(Value::Tuple(vec![]))
+                Ok(Rc::new(Value::Tuple(vec![])))
             },
             _ => error!(=> "Expected a String, found a {:?}.", to_print)
         }
     }
-    pub fn get_line(&mut self) -> Result<Value> {
+    pub fn get_line(&mut self) -> Result<Rc<Value>> {
         let mut buffer = String::new();
         match io::stdin().read_line(&mut buffer) {
-            Ok(_) => Ok(Value::String(buffer.trim().to_string())),
+            Ok(_) => Ok(Rc::new(Value::String(buffer.trim().to_string()))),
             Err(_) => error!(=> "Failed to get line from user input."),
         }
     }

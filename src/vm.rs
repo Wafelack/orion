@@ -25,7 +25,7 @@ use crate::{
     Result,
 };
 
-use std::fmt::{self, Display, Formatter};
+use std::{fmt::{self, Display, Formatter}, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -33,8 +33,8 @@ pub enum Value {
     Single(f32),
     String(String),
     Lambda(u16),
-    Constructor(u16, Vec<Value>),
-    Tuple(Vec<Value>),
+    Constructor(u16, Vec<Rc<Value>>),
+    Tuple(Vec<Rc<Value>>),
     Initialzing,
 }
 
@@ -53,9 +53,9 @@ impl Display for Value {
 }
 pub struct VM<const STACK_SIZE: usize> {
     pub input: Bytecode,
-    pub stack: Vec<Value>,
+    pub stack: Vec<Rc<Value>>,
     pub builtins: Vec<(
-        fn(&mut VM<STACK_SIZE>) -> Result<Value>,
+        fn(&mut VM<STACK_SIZE>) -> Result<Rc<Value>>,
         u8,
         )>,
         pub ip: usize,
@@ -73,7 +73,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             input,
             stack: {
                 let mut stack = Vec::with_capacity(STACK_SIZE);
-                stack.push(Value::Tuple(vec![]));
+                stack.push(Rc::new(Value::Tuple(vec![])));
                 stack
             },
             builtins: vec![],
@@ -91,7 +91,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::asin, 1);
         to_ret.register_builtin(Self::atan, 1);
 
-        to_ret.register_builtin(Self::show, 1);
         to_ret.register_builtin(Self::format, 2);
 
         to_ret.register_builtin(Self::put_str, 1);
@@ -158,8 +157,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         error!(=> "Expected a {}, found a {}.", tlhs, trhs)
                     } else {
                         let mut to_ret = Ordering::Equal;
-
-                        for idx in 0..vlhs.len() {
+for idx in 0..vlhs.len() {
                             let lhs = &vlhs[idx];
                             let rhs = &vrhs[idx];
                             let res = self._cmp(lhs, rhs)?;
@@ -177,17 +175,17 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         }
     }
 
-    fn cmp(&mut self) -> Result<Value> {
+    fn cmp(&mut self) -> Result<Rc<Value>> {
         use std::cmp::Ordering;
         let rhs = self.pop()?;
         let lhs = self.pop()?;
         let correspondance = [Ordering::Less, Ordering::Equal, Ordering::Greater];
         let res = self._cmp(&lhs, &rhs)?;
-        Ok(Value::Integer(correspondance.iter().position(|x| x == &res).unwrap() as i32))
+        Ok(Rc::new(Value::Integer(correspondance.iter().position(|x| x == &res).unwrap() as i32)))
     }
-    fn r#type(&mut self) -> Result<Value> {
+    fn r#type(&mut self) -> Result<Rc<Value>> {
         let popped = self.pop()?;
-        let to_ret = Ok(Value::String(self.val_type(&popped)?));
+        let to_ret = Ok(Rc::new(Value::String(self.val_type(&popped)?)));
         self.stack.push(popped);
         to_ret
     }
@@ -208,18 +206,18 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn register_builtin(
         &mut self,
-        func: fn(&mut VM<STACK_SIZE>) -> Result<Value>,
+        func: fn(&mut VM<STACK_SIZE>) -> Result<Rc<Value>>,
         argc: u8,
         ) {
         self.builtins.push((func, argc))
     }
-    pub fn pop(&mut self) -> Result<Value> {
+    pub fn pop(&mut self) -> Result<Rc<Value>> {
         match self.stack.pop() {
             Some(v) => Ok(v),
             None => error!(=> "Stack underflow."),
         }
     }
-    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Value>, instructions: Vec<OpCode>) -> Result<()> {
+    fn eval_opcode(&mut self, opcode: OpCode, ctx: &mut Vec<Rc<Value>>, instructions: &[OpCode]) -> Result<()> {
         match opcode {
             OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
                 if let Literal::String(file) = self.input.constants[file as usize].clone() {
@@ -228,7 +226,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     std::process::exit(1);
                 }
             }
-            OpCode::LoadConst(id) => self.stack.push(to_val(&self.input.constants[id as usize])),
+            OpCode::LoadConst(id) => self.stack.push(Rc::new(to_val(&self.input.constants[id as usize]))),
             OpCode::LoadSym(id) => {
                 self.stack.push(ctx[id as usize].clone())
             },
@@ -236,10 +234,10 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 println!("{}", sym_id);
                 println!("Before: {:?}", ctx);
                 if sym_id as usize >= ctx.len() {
-                    ctx.push(Value::Initialzing);
+                    ctx.push(Rc::new(Value::Initialzing));
+                } else {
+                    ctx[sym_id as usize] = Rc::new(Value::Initialzing);
                 }
-                println!("Before1: {:?}", ctx);
-                ctx[sym_id as usize] = Value::Initialzing;
                 println!("After: {:?}", ctx);
                 (0..instr_length).map(|_| {
                     self.ip += 1;
@@ -251,7 +249,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 println!("Assigned: {:?}", ctx);
                 println!("===");
             }
-            OpCode::Lambda(chunk_id) => self.stack.push(Value::Lambda(chunk_id)),
+            OpCode::Lambda(chunk_id) => self.stack.push(Rc::new(Value::Lambda(chunk_id))),
             OpCode::Call(argc) => {
                 let mut args = vec![];
                 for _ in 0..argc {
@@ -259,7 +257,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 args.reverse();
                 let func = self.pop()?;
-                if let Value::Lambda(chunk) = func {
+                if let Value::Lambda(chunk) = *func {
                     let chunk = self.input.chunks[chunk as usize].clone();
                     if chunk.reference.len() != args.len() {
                         return error!(
@@ -283,7 +281,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.ip = 0; // Reset the instruction counter to fit chunk instructions
                     while self.ip < chunk.instructions.len() {
                         let instr = chunk.instructions[self.ip];
-                        self.eval_opcode(instr, ctx, chunk.instructions.clone())?; // Eval chunk body.
+                        self.eval_opcode(instr, ctx, &chunk.instructions)?; // Eval chunk body.
                         self.ip += 1;
                     }
                     self.ip = prev_ip;
@@ -313,9 +311,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
-                    .collect::<Result<Vec<Value>>>()?;
+                    .collect::<Result<Vec<Rc<Value>>>>()?;
                 vals.reverse();
-                self.stack.push(Value::Constructor(idx, vals));
+                self.stack.push(Rc::new(Value::Constructor(idx, vals)));
             }
             OpCode::Tuple(to_eval) => {
                 for _ in 0..to_eval{
@@ -325,9 +323,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
-                    .collect::<Result<Vec<Value>>>()?;
+                    .collect::<Result<Vec<Rc<Value>>>>()?;
                 vals.reverse();
-                self.stack.push(Value::Tuple(vals));
+                self.stack.push(Rc::new(Value::Tuple(vals)));
             }
             OpCode::Match(idx) => {
                 let to_match = self.pop()?;
@@ -354,7 +352,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                                 Ok(())
                             }).collect::<Result<Vec<_>>>()?;
                             plausible.1.clone().into_iter().map(|instr| {
-                                self.eval_opcode(instr, &mut new_ctx, plausible.1.clone())
+                                self.eval_opcode(instr, &mut new_ctx, &plausible.1)
                             }).collect::<Result<Vec<_>>>()?;
                             return Ok(())
                         },
@@ -367,33 +365,33 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
 
         Ok(())
     }
-    fn match_and_bound(&mut self, val: &Value, pat_idx: u16) -> Option<Vec<u16>> {
+    fn match_and_bound(&mut self, val: &Rc<Value>, pat_idx: u16) -> Option<Vec<u16>> {
         let pat = &self.input.patterns[pat_idx as usize];
         match pat {
             BytecodePattern::Any => Some(vec![]),
             BytecodePattern::Var(idx) => {
-                self.stack.push(val.clone());
+                self.stack.push((*val).clone());
                 Some(vec![*idx])
             }
             BytecodePattern::Literal(idx) => {
                 let lit = &self.input.constants[*idx as usize];
-                match val {
+                match (**val).clone() {
                     Value::Integer(lhs) => match lit {
-                        Literal::Integer(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        Literal::Integer(rhs) => if lhs == *rhs { Some(vec![]) } else { None },
                         _ => None,
                     }
                     Value::Single(lhs) => match lit {
-                        Literal::Single(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        Literal::Single(rhs) => if lhs == *rhs { Some(vec![]) } else { None },
                         _ => None,
                     }
                     Value::String(lhs) => match lit {
-                        Literal::String(rhs) => if lhs == rhs { Some(vec![]) } else { None },
+                        Literal::String(rhs) => if lhs == *rhs { Some(vec![]) } else { None },
                         _ => None
                     }
                     _ => bug!("FAILED_PLAUSIBLE_UNEXPECTED_VALUE")
                 }
             }
-            BytecodePattern::Tuple(pats) => if let Value::Tuple(vals) = val {
+            BytecodePattern::Tuple(pats) => if let Value::Tuple(vals) = (**val).clone() {
                 let pats = pats.clone();
                 if vals.len() == pats.len() {
                     let mut to_ret = vec![];
@@ -414,8 +412,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             } else {
                 None
             }
-            BytecodePattern::Constr(idx, pats) => if let Value::Constructor(to_match_idx, vals) = val {
-                if to_match_idx == idx {
+            BytecodePattern::Constr(idx, pats) => if let Value::Constructor(to_match_idx, vals) = (**val).clone() {
+                if to_match_idx == *idx {
                     let pats = pats.clone();
                     let mut to_ret = vec![];
                     for i in 0..vals.len() {
@@ -467,11 +465,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
         }
     }
-    pub fn eval(&mut self, ctx: Vec<Value>) -> Result<Vec<Value>> {
+    pub fn eval(&mut self, ctx: Vec<Rc<Value>>) -> Result<Vec<Rc<Value>>> {
         let mut ctx = ctx;
         while self.ip < self.input.instructions.len() {
             let instruction = self.input.instructions[self.ip];
-            self.eval_opcode(instruction, &mut ctx, self.input.instructions.clone())?;
+            let instrs = self.input.instructions.clone();
+            self.eval_opcode(instruction, &mut ctx, &instrs)?;
             self.ip += 1;
         }
         Ok(ctx)
