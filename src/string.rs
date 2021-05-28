@@ -23,6 +23,7 @@ use std::rc::Rc;
 
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn format(&mut self) -> Result<Rc<Value>> {
+        println!("{:?}", self.stack);
         let args = self.pop()?;
         let formatter = self.pop()?;
         if let Value::Tuple(args) = (*args).clone() {
@@ -40,6 +41,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 error!(=> "Expected a String, found a {}.", self.val_type(&formatter)?)
             }
         } else {
+            println!("Format error");
             error!(=> "Expected a Tuple, found a {}.", self.val_type(&args)?)
         }
     }

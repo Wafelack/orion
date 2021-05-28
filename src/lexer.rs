@@ -238,7 +238,6 @@ impl Lexer {
         self.register_builtin("putStr");
         self.register_builtin("getLine");
         
-        self.register_builtin("show");
         self.register_builtin("format");
 
         self.register_builtin("type");
