@@ -19,21 +19,14 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{vm::{VM, Value}, error, Result};
+use std::rc::Rc;
 
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
-    pub fn show(&mut self) -> Result<Value> {
-        let popped = self.pop()?;
-        Ok(Value::String(if let Value::String(s) = popped {
-            format!("\"{}\"", s)
-        } else {
-            format!("{}", popped)
-        }))
-    }
-    pub fn format(&mut self) -> Result<Value> {
+    pub fn format(&mut self) -> Result<Rc<Value>> {
         let args = self.pop()?;
         let formatter = self.pop()?;
-        if let Value::Tuple(args) = args {
-            if let Value::String(formatter) = formatter  {
+        if let Value::Tuple(args) = (*args).clone() {
+            if let Value::String(formatter) = (*formatter).clone() {
                 let fmt = "{}";
                 let mut prev = 0;
                 let to_ret = formatter.match_indices(fmt).enumerate().map(|(idx, (pos, _))| {
@@ -42,7 +35,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     to_ret
                 }).collect::<Vec<String>>().join("");
 
-                Ok(Value::String(format!("{}{}", to_ret, &formatter[prev..])))
+                Ok(Rc::new(Value::String(format!("{}{}", to_ret, &formatter[prev..]))))
             } else {
                 error!(=> "Expected a String, found a {}.", self.val_type(&formatter)?)
             }

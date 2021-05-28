@@ -20,7 +20,7 @@
  */
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
-use std::{time::Instant, path::Path, fs, io::Write};
+use std::{rc::Rc, time::Instant, path::Path, fs, io::Write};
 use crate::{Result, print_err, error, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
 
 fn repl(dbg_level: u8, lib: String) -> Result<()> {
@@ -92,7 +92,7 @@ env!("CARGO_PKG_VERSION")
                     }
                 }
                 let top = &vm.stack[vm.stack.len() - 1];
-                if let Value::Tuple(v) = top {
+                if let Value::Tuple(v) = (**top).clone() {
                     if !v.is_empty() {
                         println!("=> {}", top);
                     }
@@ -199,9 +199,9 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
     } 
     Ok((bytecode, symbols, constructors))
 }
-fn eval_dbg(vm: &mut VM<256>, ctx: &mut Vec<Value>, bytecode: Bytecode, level: u8) -> Result<u64> {
+fn eval_dbg(vm: &mut VM<256>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
-    stack.push(Value::Tuple(vec![]));
+    stack.push(Rc::new(Value::Tuple(vec![])));
     vm.input = bytecode;
     vm.stack = stack;
     vm.ip = 0;

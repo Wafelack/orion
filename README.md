@@ -61,7 +61,7 @@ Factorial function:
 (def factorial (λ (n)
                     (match n
                         (0 1)
-					    (_ (* n (factorial (- n 1)))))))
+                        (_ (* n (factorial (- n 1)))))))
 ```
 
 Performance Tests
