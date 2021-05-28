@@ -19,8 +19,8 @@
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
 (enum Bool
-	True
-	False)
+      True
+      False)
 
 (enum Ordering
       Less
@@ -28,40 +28,40 @@
       Greater)
 
 (def cmp (λ (lhs rhs)
-                 (match (_cmp lhs rhs)
-                        (0 Less)
-                        (1 Equal)
-                        (2 Greater))))
+           (match (_cmp lhs rhs)
+                  (0 Less)
+                  (1 Equal)
+                  (2 Greater))))
 
 (def #t True)
 (def #f False)
 
 (def = (λ (lhs rhs)
-	(match (cmp lhs rhs)
-		(Equal True)
-		(_ False))))
+         (match (cmp lhs rhs)
+                (Equal True)
+                (_ False))))
 
 (def not (λ (val)
-	(match val
-		(True False)
-		(False True))))
+           (match val
+                  (True False)
+                  (False True))))
 
 (def /= (λ (lhs rhs)
-	(not (= lhs rhs))))
+          (not (= lhs rhs))))
 
 (def and (λ (lhs rhs)
-	(match lhs
-		(True (match rhs
-			(True True)
-			(False False)))
-		(False False))))
+           (match lhs
+                  (True (match rhs
+                               (True True)
+                               (False False)))
+                  (False False))))
 
 (def or (λ (lhs rhs)
-	(match lhs
-		(True True)
-		(False rhs))))
+          (match lhs
+                 (True True)
+                 (False rhs))))
 
 (def assert_eq (λ (lhs rhs)
-	(match (= lhs rhs)
-		(True ())
-		(False (panic (format "Assertion failed: #v /= #v.`" lhs rhs))))))
+                 (match (= lhs rhs)
+                        (True ())
+                        (False (panic (format "Assertion failed: {} /= {}.`" (, lhs rhs)))))))
