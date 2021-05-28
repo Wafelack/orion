@@ -31,7 +31,7 @@ impl <const STACK_SIZE: usize> VM<STACK_SIZE> {
                 io::stdout().flush().unwrap();
                 Ok(Rc::new(Value::Tuple(vec![])))
             },
-            _ => error!(=> "Expected a String, found a {:?}.", to_print)
+            _ => error!(=> "Expected a String, found a {}.", self.val_type(&*to_print)?)
         }
     }
     pub fn get_line(&mut self) -> Result<Rc<Value>> {
