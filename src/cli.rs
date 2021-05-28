@@ -34,6 +34,7 @@ env!("CARGO_PKG_VERSION")
 );
     // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
     let mut ctx = vec![];
+    let mut sym_ref = vec![];
     let mut symbols = vec![];
     let mut bytecode = Bytecode::new();
     let mut constructors = vec![];
@@ -82,7 +83,7 @@ env!("CARGO_PKG_VERSION")
                     println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
                 }
 
-                match eval_dbg(&mut vm, &mut ctx, bytecode.clone(), dbg_level) {
+                match eval_dbg(&mut vm, &mut sym_ref, &mut ctx, bytecode.clone(), dbg_level) {
                     Ok(t) => if dbg_level > 0 {
                         println!("{} Run in {}ms.", STAR, t);
                     },
@@ -199,15 +200,16 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
     } 
     Ok((bytecode, symbols, constructors))
 }
-fn eval_dbg(vm: &mut VM<256>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, level: u8) -> Result<u64> {
+fn eval_dbg(vm: &mut VM<256>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
     stack.push(Rc::new(Value::Tuple(vec![])));
     vm.input = bytecode;
     vm.stack = stack;
     vm.ip = 0;
     let start = Instant::now();
-    let new_ctx = vm.eval(ctx.clone())?;
+    let (new_ctx, new_ref) = vm.eval(sym_ref.clone(), ctx.clone())?;
     *ctx = new_ctx;
+    *sym_ref = new_ref;
     let elapsed = start.elapsed();
     if level > 1 {
         if ctx.len() != 0 {
@@ -312,7 +314,7 @@ pub fn cli() -> Result<()> {
             Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
         };
         if !matches.is_present("compile-only") {
-            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new()), &mut vec![], bytecode, dbg_level)?;
+            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new()), &mut vec![], &mut vec![], bytecode, dbg_level)?;
             if dbg_level > 0 {
                 println!("{} Run in {}ms.", STAR, time)
             }
