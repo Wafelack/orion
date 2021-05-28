@@ -334,11 +334,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(Rc::new(Value::Constructor(idx, vals)));
             }
             OpCode::Tuple(to_eval) => {
-                for _ in 0..to_eval{
+                (0..to_eval).map(|_| {
                     self.ip += 1;
-                    let instruction = instructions[self.ip].clone();
-                    self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
-                }
+                    let instr = instructions[self.ip];
+                    self.eval_opcode(instr, ctx, sym_ref, instructions)
+                }).collect::<Result<Vec<_>>>()?;
                 let mut vals = (0..to_eval)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Rc<Value>>>>()?;
@@ -365,9 +365,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                                 let val = new_stack.pop().unwrap();
                                 self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
                             });
+                            let saved = self.ip;
+                            self.ip = 0;
                             plausible.1.clone().into_iter().map(|instr| {
                                 self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)
                             }).collect::<Result<Vec<_>>>()?;
+                            self.ip = saved;
                             return Ok(())
                         },
                         None => {},
@@ -499,32 +502,6 @@ mod test {
     use crate::cli::compile_dbg;
     use std::time::Instant;
 
-    #[cfg(not(debug_assertions))] // Run only in release
-    #[test]
-    fn factorial() -> Result<()> {
-        let tokens = Lexer::new("(def fact (\\ (n) (match n (0 1) (_ (* n (fact (- n 1)))))))", "TEST").proc_tokens()?;
-        let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
-
-        let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
-        let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(fact 12)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
-        let mut vals = (0..500).map(|_| {
-            let mut vm = VM::<256>::new(call_bytecode.clone());
-            let start = Instant::now();
-            vm.eval(ctx.clone())?;
-            let elapsed = start.elapsed();
-            Ok(elapsed.as_micros() as u32)
-        }).collect::<Result<Vec<u32>>>()?;
-        vals.sort();
-        let total = vals.iter().sum::<u32>() as f32;
-        let average = total / vals.len() as f32;
-        let stddev = (0..vals.len()).into_iter().map(|i| {
-            (vals[i] as f32 - average).powi(2)
-        }).sum::<f32>().sqrt();
-        println!("Total: {}us ; Average: {}us  ; Median: {}us ; Amplitude: {}us ; Stddev: {}us", total, average, vals[vals.len() / 2], vals[vals.len() - 1] - vals[0], stddev);
-        Ok(())
-    }
-
     #[cfg(not(debug_assertions))] // Run only in Release
     #[test]
     fn ackermann33() -> Result<()> {
@@ -534,14 +511,14 @@ mod test {
          ((, _ 0) (ack (- m 1) 1))
          (_ (ack (- m 1) (ack m (- n 1)))))))", "TEST").proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bytecode, symbols) = Compiler::new(ast, "TEST", Bytecode::new()).compile(vec![])?;
+        let (bytecode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string())?.compile(vec![])?;
 
-        let ctx = VM::<256>::new(bytecode.clone()).eval(vec![])?;
-        let (call_bytecode, _) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode).compile(symbols)?;
+        let (ctx, sym_ref) = VM::<256>::new(bytecode.clone()).eval(vec![], vec![])?;
+        let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string())?.compile(symbols)?;
         let mut vals = (0..1000).map(|_| {
             let mut vm = VM::<256>::new(call_bytecode.clone());
             let start = Instant::now();
-            vm.eval(ctx.clone())?;
+            vm.eval(sym_ref.clone(), ctx.clone())?;
             let elapsed = start.elapsed();
             Ok(elapsed.as_millis() as u32)
         }).collect::<Result<Vec<u32>>>()?;
