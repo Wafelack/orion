@@ -38,7 +38,6 @@ Roadmap
 - [x] Begin shorthand
 - [x] Main function call on file processing.
 - [x] Prelude loader.
-- [ ] Expression commenter.
 - [ ] Documentation
 	- [x] Core Library documentation
 	- [x] Standard Library documetation

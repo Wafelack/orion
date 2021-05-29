@@ -92,14 +92,18 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 }
-                let top = &vm.stack[vm.stack.len() - 1];
-                if let Value::Tuple(v) = (**top).clone() {
+                let top = &vm.stack.iter().nth(match vm.stack.len() as isize - 1 {
+                    x if x < 0 => 0,
+                    x => x as usize,
+                }).and_then(|v| Some((**v).clone()));
+                if let Some(Value::Tuple(v)) = top {
                     if !v.is_empty() {
-                        println!("=> {}", top);
+                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap())))
                     }
-                } else {
-                    println!("=> {}", top);
+                } else if let Some(v) = top.clone() {
+                    println!("=> {}", vm.display_value(Rc::new(v)));
                 }
+ 
             }
             Err(ReadlineError::Interrupted) => {
                 println!(";; User break");
@@ -160,7 +164,7 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
         }
         if bytecode.constructors.len() != 0 { 
             println!("[\x1b[0;33mBYTECODE.CONSTRUCTORS\x1b[0m]");
-            bytecode.constructors.iter().enumerate().for_each(|(idx, containing)| println!("{:03}    {}", idx, containing));
+            bytecode.constructors.iter().enumerate().for_each(|(idx, containing)| println!("{:03}    {:?}", idx, containing));
         }
         if bytecode.chunks.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.CHUNKS\x1b[0m]");
