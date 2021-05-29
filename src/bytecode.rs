@@ -114,7 +114,7 @@ pub struct Bytecode {
     pub constants: Vec<Literal>,
     pub instructions: Vec<OpCode>,
     pub patterns: Vec<BytecodePattern>,
-    pub constructors: Vec<u8>,
+    pub constructors: Vec<(u8, u16)>,
 }
 
 impl Bytecode {
@@ -163,8 +163,14 @@ impl Bytecode {
         });
 
         // Constructors
-        to_ret.extend(&(self.constructors.len() as u16).to_be_bytes());
-        to_ret.extend(self.constructors.clone());
+        to_ret.extend(&(self.constructors.len() as u16 * 2 /* Id in sym table */).to_be_bytes());
+        let (mut argc, mut idx) = (vec![], vec![]);
+        for (a, i) in &self.constructors {
+            argc.push(*a);
+            idx.push(*i);
+        }
+        to_ret.extend(argc);
+        to_ret.extend(idx.into_iter().map(|u| u.to_be_bytes().to_vec()).collect::<Vec<Vec<_>>>().into_iter().flatten());
 
         // Chunks
         to_ret.extend(&(self.chunks.len() as u16).to_be_bytes());

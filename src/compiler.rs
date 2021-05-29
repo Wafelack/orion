@@ -93,7 +93,7 @@ impl Compiler {
                .unwrap() as u16)
         }
     }
-    fn register_constructor(&mut self, name: impl ToString, contained_amount: u8, line: usize) -> Result<()> {
+    fn register_constructor(&mut self, name: impl ToString, symbols: Vec<(String, bool)>, contained_amount: u8, line: usize) -> Result<Vec<(String, bool)>> {
         let name = name.to_string();
         if self.constructors.contains(&name) {
             error!(
@@ -107,9 +107,10 @@ impl Compiler {
                 .unwrap()
                 )
         } else {
-            self.constructors.push(name);
-            self.output.constructors.push(contained_amount);
-            Ok(())
+            self.constructors.push(name.clone());
+            let (idx, symbols) = self.declare(name, symbols, false, line)?;
+            self.output.constructors.push((contained_amount, idx));
+            Ok(symbols)
         }
     }
     fn get_constructor(&self, name: impl ToString, line: usize) -> Result<(u8, u16)> {
@@ -120,7 +121,7 @@ impl Compiler {
                 .iter()
                 .position(|variant| name == variant.to_string())
                 .unwrap();
-            Ok((self.output.constructors[idx], idx as u16))
+            Ok((self.output.constructors[idx].0, idx as u16))
         } else {
             error!(self.file, line => "Enum variant {} does not exist.", name)
         }
@@ -353,15 +354,18 @@ impl Compiler {
                 if !impure && impure_builtin {
                     return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
                 }
-                                to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
+                to_ret.push(OpCode::Builtin(idx as u8, argc as u8));
                 Ok((to_ret, symbols))
             }
             ExprT::Enum(name, constructors) => {
                 let start = self.output.constructors.len() as u16;
                 constructors
                     .into_iter()
-                    .map(|(k, v)| self.register_constructor(k, v, expr.line))
-                    .collect::<Result<()>>()?;
+                    .map(|(k, v)| {
+                        symbols = self.register_constructor(k, symbols.clone(), v, expr.line)?;
+                        Ok(())
+                    })
+                .collect::<Result<()>>()?;
                 let end = self.output.constructors.len() as u16 - 1;
                 self.output.types.push((name, start, end));
                 Ok((vec![], symbols))
@@ -424,7 +428,7 @@ impl Compiler {
                     symbols = new_syms;
                     Ok((pat_id, compiled))
                 }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()?;
-                
+
                 let idx = if self.output.matches.contains(&match_content) {
                     self.output.matches.iter().position(|m| m == &match_content).unwrap()
                 } else {

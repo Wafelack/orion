@@ -25,7 +25,7 @@ use crate::{
     Result,
 };
 
-use std::{fmt::{self, Display, Formatter}, rc::Rc};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -38,19 +38,6 @@ pub enum Value {
     Initialzing,
 }
 
-impl Display for Value {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Value::Integer(i) => write!(f, "{}", i),
-            Value::Single(r) => write!(f, "{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
-            Value::String(s) => write!(f, "{}", s),
-            Value::Lambda(u, ..) => write!(f, "\\{}", u),
-            Value::Constructor(id, args) => write!(f, "#{}({})", id, args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
-            Value::Tuple(args) => write!(f, "({})", args.into_iter().map(|a| format!("{}", a)).collect::<Vec<String>>().join(" ")),
-            _ => bug!("UNEXPECTED_INITIALIZING")
-        }
-    }
-}
 pub struct VM<const STACK_SIZE: usize> {
     pub input: Bytecode,
     pub stack: Vec<Rc<Value>>,
@@ -99,6 +86,17 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::r#type, 1);
         to_ret.register_builtin(Self::cmp, 1);
         to_ret
+    }
+    pub fn display_value(&self, val: Rc<Value>) -> String {
+        match &*val {
+            Value::Integer(i) => format!("{}", i),
+            Value::Single(r) => format!("{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
+            Value::String(s) => format!("{}", s),
+            Value::Lambda(u, ..) => format!("λ{}", u),
+            Value::Constructor(id, args) => format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).collect::<Vec<String>>().join(" ")),
+            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).collect::<Vec<String>>().join(" ")),
+            _ => bug!("UNEXPECTED_INITIALIZING")
+        }
     }
     fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
         use std::cmp::Ordering;
@@ -236,7 +234,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
                 if let Literal::String(file) = self.input.constants[file as usize].clone() {
                     let popped = self.pop()?;
-                    eprintln!("Program panicked at '{}', {}:{}.", popped, file, line);
+                    eprintln!("Program panicked at '{}', {}:{}.", self.display_value(popped), file, line);
                     std::process::exit(1);
                 }
             }
@@ -261,11 +259,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 } else {
                     ctx[id] = Rc::new(Value::Initialzing);
                 }
-                (0..instr_length).map(|_| {
+                let saved = self.ip;
+                while self.ip < saved + instr_length as usize {
                     self.ip += 1;
                     let instr = instructions[self.ip];
-                    self.eval_opcode(instr, ctx, sym_ref, &instructions)
-                }).collect::<Result<()>>()?;
+                    self.eval_opcode(instr, ctx, sym_ref, &instructions)?;
+                }
                 let popped = self.pop()?;
                 ctx[id] = popped;
             }
@@ -291,7 +290,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
                         let sym_id = chunk.reference[idx];
-                        println!("{:?} - {:?}", instructions[self.ip - 1], instructions.iter().nth(self.ip + 1));
                         self.decl(sym_id, val, &mut ctx, sym_ref);
                     }
                     let prev_ip = self.ip;
@@ -319,8 +317,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(to_push);
             }
             OpCode::Constructor(idx, to_eval) => {
-                let amount = self.input.constructors[idx as usize];
-                for _ in 1..=amount {
+                let (amount, _) = self.input.constructors[idx as usize];
+                let saved = self.ip;
+                while self.ip < saved + amount as usize {
                     self.ip += 1;
                     let instruction = instructions[self.ip].clone();
                     self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
@@ -332,11 +331,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(Rc::new(Value::Constructor(idx, vals)));
             }
             OpCode::Tuple(to_eval) => {
-                (0..to_eval).map(|_| {
+                let saved = self.ip;
+                while self.ip < saved + to_eval as usize {
                     self.ip += 1;
                     let instr = instructions[self.ip];
-                    self.eval_opcode(instr, ctx, sym_ref, instructions)
-                }).collect::<Result<Vec<_>>>()?;
+                    self.eval_opcode(instr, ctx, sym_ref, instructions)?;
+                };
                 let mut vals = (0..to_eval)
                 .map(|_| self.pop())
                 .collect::<Result<Vec<Rc<Value>>>>()?;
@@ -510,10 +510,10 @@ mod test {
          ((, _ 0) (ack (- m 1) 1))
          (_ (ack (- m 1) (ack m (- n 1)))))))", "TEST").proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bytecode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string())?.compile(vec![])?;
+        let (bytecode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), true)?.compile(vec![])?;
 
         let (ctx, sym_ref) = VM::<256>::new(bytecode.clone()).eval(vec![], vec![])?;
-        let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string())?.compile(symbols)?;
+        let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string(), true)?.compile(symbols)?;
         let mut vals = (0..1000).map(|_| {
             let mut vm = VM::<256>::new(call_bytecode.clone());
             let start = Instant::now();
