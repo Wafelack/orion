@@ -23,7 +23,6 @@ use std::rc::Rc;
 
 impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     pub fn format(&mut self) -> Result<Rc<Value>> {
-        println!("{:?}", self.stack);
         let args = self.pop()?;
         let formatter = self.pop()?;
         if let Value::Tuple(args) = (*args).clone() {
