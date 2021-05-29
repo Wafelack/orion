@@ -221,11 +221,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn decl(&mut self, sym_id: u16, val: Rc<Value>, ctx: &mut Vec<Rc<Value>>, sym_ref: &mut Vec<u16>) {
         let id = if !sym_ref.contains(&sym_id) {
             sym_ref.push(sym_id);
-            sym_ref.len()
+            sym_ref.len() - 1
         } else {
             sym_ref.iter().position(|id| id == &sym_id).unwrap()
         };
-        if id >= ctx.len() {
+        if id == ctx.len() {
             ctx.push(val);
         } else {
             ctx[id] = val;
@@ -256,7 +256,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 } else {
                     sym_ref.iter().position(|id| id == &sym_id).unwrap()
                 };
-                if id >= ctx.len() {
+                if id == ctx.len() {
                     ctx.push(Rc::new(Value::Initialzing));
                 } else {
                     ctx[id] = Rc::new(Value::Initialzing);
@@ -291,6 +291,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
                         let sym_id = chunk.reference[idx];
+                        println!("{:?} - {:?}", instructions[self.ip - 1], instructions.iter().nth(self.ip + 1));
                         self.decl(sym_id, val, &mut ctx, sym_ref);
                     }
                     let prev_ip = self.ip;
