@@ -36,7 +36,7 @@ Roadmap
 	- [x] atan
 - [ ] Bytecode {de}?serialzation.
 - [x] Begin shorthand
-- [ ] Main function call on file processing.
+- [x] Main function call on file processing.
 - [x] Prelude loader.
 - [ ] Expression commenter.
 - [ ] Documentation

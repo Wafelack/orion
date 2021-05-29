@@ -34,15 +34,17 @@ pub struct Compiler {
     constructors: Vec<String>,
     file: String,
     lib: String,
+    repl: bool,
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String) -> Result<Self> {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String, repl: bool) -> Result<Self> {
         bcode.instructions = vec![];
         let mut to_ret = Self {
             input: if already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)] },
             constructors,
             lib,
+            repl,
             output: bcode,
             load_history: vec![],
             builtins: vec![],
@@ -483,7 +485,7 @@ impl Compiler {
     }
     pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
         for expr in self.input.clone() {
-            let (to_push, new_symbols) = self.compile_expr(expr, symbols, true)?;
+            let (to_push, new_symbols) = self.compile_expr(expr, symbols, self.repl)?;
             symbols = new_symbols;
             self.output.instructions.extend(to_push);
         }
@@ -492,6 +494,10 @@ impl Compiler {
             .iter()
             .map(|(name, _)| name.to_string())
             .collect::<Vec<String>>();
+
+        if self.output.symbols.contains(&"main".to_string()) {
+            self.output.instructions.extend(vec![OpCode::LoadSym(self.output.symbols.iter().position(|s| s == "main").unwrap() as u16), OpCode::Call(0)]);
+        }
 
         Ok((self.output.clone(), symbols, self.constructors.clone()))
     }
