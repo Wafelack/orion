@@ -30,7 +30,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 let fmt = "{}";
                 let mut prev = 0;
                 let to_ret = formatter.match_indices(fmt).enumerate().map(|(idx, (pos, _))| {
-                    let to_ret = format!("{}{}", &formatter[prev..pos], &args[idx]);
+                    let to_ret = format!("{}{}", &formatter[prev..pos], self.display_value(args[idx].clone()));
                     prev = pos + fmt.len();
                     to_ret
                 }).collect::<Vec<String>>().join("");
