@@ -17,6 +17,8 @@
 ;;
 ;;  You should have received a copy of the GNU General Public License
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
-
+(load "string.orn")
 (def 'impure putStrLn (λ (str)
-                (putStr (format "{}\n" (, str)))))
+                        (putStr (format "{}\n" (, str)))))
+(def 'impure print (λ (x)
+                     (putStrLn (show x))))
