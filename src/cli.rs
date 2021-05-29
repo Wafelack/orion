@@ -68,7 +68,7 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 };
-                let (new_bytecode, new_syms, new_constructors) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone(), constructors.clone(), &lib, i > 1) {
+                let (new_bytecode, new_syms, new_constructors) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone(), constructors.clone(), &lib, i > 1, true) {
                     Ok(b) => b,
                     Err(e) => {
                         print_err(e);
@@ -143,11 +143,11 @@ fn parse_dbg(file: impl ToString, code: Vec<Token>, level: u8) -> Result<Vec<Exp
     } 
     Ok(expressions)
 }
-pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode, constructors: Vec<String>, lib: impl ToString, already_loaded: bool) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
+pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode, constructors: Vec<String>, lib: impl ToString, already_loaded: bool, repl: bool) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
     if level > 0 {
         println!("{} Compiling {} Exprs...", STAR, expressions.len());
     }
-    let (bytecode, symbols, constructors) = Compiler::new(expressions, file, bcode, constructors, already_loaded, lib.to_string())?.compile(symbols)?;
+    let (bytecode, symbols, constructors) = Compiler::new(expressions, file, bcode, constructors, already_loaded, lib.to_string(), repl)?.compile(symbols)?;
     if level > 1 {
         if bytecode.constants.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.CONSTANTS\x1b[0m]");
@@ -300,7 +300,7 @@ pub fn cli() -> Result<()> {
         let start = Instant::now();
         let tokens = lex_dbg(file, 1, content, dbg_level)?;
         let expressions = parse_dbg(file, tokens, dbg_level)?;
-        let (bytecode, ..) = compile_dbg(file, expressions, dbg_level, vec![], Bytecode::new(), vec![], lib, false)?;
+        let (bytecode, ..) = compile_dbg(file, expressions, dbg_level, vec![], Bytecode::new(), vec![], lib, false, false)?;
         let elapsed = start.elapsed();
         if dbg_level > 0 {
             println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
