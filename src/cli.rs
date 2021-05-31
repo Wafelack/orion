@@ -98,10 +98,10 @@ env!("CARGO_PKG_VERSION")
                 }).and_then(|v| Some((**v).clone()));
                 if let Some(Value::Tuple(v)) = top {
                     if !v.is_empty() {
-                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap())))
+                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap()), true))
                     }
                 } else if let Some(v) = top.clone() {
-                    println!("=> {}", vm.display_value(Rc::new(v)));
+                    println!("=> {}", vm.display_value(Rc::new(v), true));
                 }
  
             }

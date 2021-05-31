@@ -194,9 +194,61 @@ impl Bytecode {
         to_ret.extend(&(serialized.clone().count() as u16).to_be_bytes());
         to_ret.extend(serialized);
 
-        // Match
-        to_ret.extend(&(self.matches.len() as u16).to_be_bytes());
+        // Types
+        to_ret.extend(&(self.types.len() as u16).to_be_bytes());
+        self.types.iter().for_each(|(name, start, end)| {
+            to_ret.extend(&start.to_be_bytes());
+            to_ret.extend(&end.to_be_bytes());
+            to_ret.extend(name.chars().map(|c| c as u8));
+        });
 
+        // Patterns
+        to_ret.extend(&(self.patterns.len() as u16).to_be_bytes());
+        to_ret.extend(self.patterns.iter().map(|p| {
+            match p {
+                BytecodePattern::Var(idx) => {
+                    let mut to_ret = vec![0];
+                    to_ret.extend(&idx.to_be_bytes());
+                    to_ret
+                }
+                BytecodePattern::Constr(id, pats) => {
+                    let mut to_ret = vec![1];
+                    to_ret.extend(&id.to_be_bytes());
+                    to_ret.extend(&(pats.len() as u16).to_be_bytes());
+                    to_ret.extend(pats.into_iter().map(|p| {
+                        p.to_be_bytes().to_vec()
+                    }).flatten());
+                    to_ret
+                }
+                BytecodePattern::Tuple(pats) =>  {
+                    let mut to_ret = vec![2];
+                    to_ret.extend(&(pats.len() as u16).to_be_bytes());
+                    to_ret.extend(pats.into_iter().map(|p| {
+                        p.to_be_bytes().to_vec()
+                    }).flatten());
+                    to_ret
+                }
+                BytecodePattern::Literal(idx) => {
+                    let mut to_ret = vec![3];
+                    to_ret.extend(&idx.to_be_bytes());
+                    to_ret
+                }
+                BytecodePattern::Any => vec![4],
+            }
+        }).flatten());
+
+        // Matches
+        to_ret.extend(&(self.matches.len() as u16).to_be_bytes());
+        to_ret.extend(self.matches.iter().map(|patterns| {
+            let mut to_ret = (patterns.len() as u16).to_be_bytes().to_vec();
+            to_ret.extend(patterns.into_iter().map(|(idx, instrs)| {
+                let mut to_ret = idx.to_be_bytes().to_vec();
+                to_ret.extend(&(instrs.len() as u16).to_be_bytes());
+                to_ret.extend(instrs.into_iter().map(|instr| instr.serialize()).flatten());
+                to_ret
+            }).flatten());
+            to_ret
+        }).flatten());
         to_ret
     }
 }

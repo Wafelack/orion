@@ -87,15 +87,19 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::cmp, 1);
         to_ret
     }
-    pub fn display_value(&self, val: Rc<Value>) -> String {
+    pub fn display_value(&self, val: Rc<Value>, allow_init: bool) -> String {
         match &*val {
             Value::Integer(i) => format!("{}", i),
             Value::Single(r) => format!("{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
             Value::String(s) => format!("{}", s),
             Value::Lambda(u, ..) => format!("λ{}", u),
-            Value::Constructor(id, args) => format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).collect::<Vec<String>>().join(" ")),
-            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).collect::<Vec<String>>().join(" ")),
-            _ => bug!("UNEXPECTED_INITIALIZING")
+            Value::Constructor(id, args) => format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c))),
+            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c))),
+            _ => if allow_init {
+                "Init".to_string()
+            } else {
+                bug!("UNEXPECTED_INITIALIZING")
+            }
         }
     }
     fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
@@ -226,6 +230,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         if id == ctx.len() {
             ctx.push(val);
         } else {
+            println!("CTX: [{}]", ctx.iter().map(|v| self.display_value(v.clone(), true)).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)));
             ctx[id] = val;
         }
     }
@@ -234,7 +239,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
                 if let Literal::String(file) = self.input.constants[file as usize].clone() {
                     let popped = self.pop()?;
-                    eprintln!("Program panicked at '{}', {}:{}.", self.display_value(popped), file, line);
+                    eprintln!("Program panicked at '{}', {}:{}.", self.display_value(popped, false), file, line);
                     std::process::exit(1);
                 }
             }
@@ -338,8 +343,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                     self.eval_opcode(instr, ctx, sym_ref, instructions)?;
                 };
                 let mut vals = (0..to_eval)
-                .map(|_| self.pop())
-                .collect::<Result<Vec<Rc<Value>>>>()?;
+                    .map(|_| self.pop())
+                    .collect::<Result<Vec<Rc<Value>>>>()?;
                 vals.reverse();
                 self.stack.push(Rc::new(Value::Tuple(vals)));
             }
