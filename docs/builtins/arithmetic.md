@@ -4,74 +4,78 @@ Arithmetic
 `+`
 ---
 
-`(+) :: Integer|Single... -> Integer|Single`
+`(+) :: (Number a) => a -> a -> a`
+
 
 Adds two or more numbers.
 
 ### Example
 
 ```clojure
-(+ 5 6 7 8) ;; 26
+(+ 7 8) ;; 15
 ```
 
 `-`
 ---
 
-`(-) :: Integer|Single... -> Integer|Single`
+`(-) :: (Number a) => a -> a -> a`
 
 Substracts one or more numbers from another number.
 
 ### Example
 
 ```clojure
-(- 10 5 2) ;; 3
+(- 10 5) ;; 2
 ```
-
 
 `*`
 ---
 
-`(*) :: Integer|Single... -> Integer|Single`
+`(\*) :: (Number a) => a -> a -> a`
+
 
 Multiplies two or more numbers.
 
 ### Example
 
 ```clojure
-(* 3 4 5) ;; 60
+(* 3 5) ;; 15
 ```
 
 `/`
 ---
 
-`(/) :: Integer|Single... -> Integer|Single`
+`(\*) :: (Number a) => a -> a -> a`
+
 
 Divides one or more numbers from another number.
 
 ### Example
 
 ```clojure
-(/ 12 3 2) ;; 2
+(/ 12 3) ;; 4
 ```
 
-`!`
+`neg`
 ---
 
-`(!) :: Integer|Single -> Integer|Single`
+`(neg) :: (Number a) => a -> a`
+
 
 Returns the opposite of a number.
 
 ### Example
 
 ```clojure
-(! 99) ;; -99
-(! (- 0 1)) ;; 1
+(neg 99) ;; -99
+(neg (- 0 1)) ;; 1
 ```
 
 `_cmp`
 ------
 
-`_cmp :: Integer|Single|String -> Integer|Single|String -> Integer`
+`(\_cmp) :: forall a . a -> a -> Integer`
+
 
 Compares two Integers/Strings/Singles.
 

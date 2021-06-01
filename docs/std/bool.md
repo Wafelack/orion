@@ -4,6 +4,20 @@ Bool
 Enumerations
 ------------
 
+### Ordering
+
+Ordering enumeration, used for comparisons between Integers, Singles and Strings.
+
+```clojure
+(enum Ordering
+	Less
+	Equal
+	Greater)
+```
+
+`(def foo Less)`
+
+
 ### `Bool`
 
 A boolean type.
@@ -40,16 +54,26 @@ A `False` shorthand.
 Functions
 ---------
 
+### `cmp`
+
+`cmp :: forall a . a -> a -> Ordering`
+
+Compare two values mathematically.
+
+#### Example
+
+```clojure
+(cmp 4 5) ;; Less
+(cmp "a" "a") ;; Equal
+(cmp 3.1415 0.) ;; Greater
+```
+
+
 ### `=`
 
-`(=) :: Value -> Value -> Bool`
+`(=) :: forall a . a -> a -> Bool`
 
 Test structural equality between two values
-
-#### Arguments
-
-* `lhs :: Value`: Left hand side argument.
-* `rhs :: Value`: Right hand side argument.
 
 #### Example
 
@@ -65,10 +89,6 @@ Test structural equality between two values
 
 Get the opposite of a Bool.
 
-#### Arguments
-
-* `val :: Bool`: The value to process.
-
 #### Example
 
 ```clojure
@@ -79,14 +99,10 @@ Get the opposite of a Bool.
 
 ### `/=`
 
-`(/=) :: Value -> Value -> Value`
 
-The opposite of `=`.
+`(/=) :: forall a . a -> a -> Bool`
 
-#### Arguments
-
-* `lhs :: Value`: Left hand side argument.
-* `rhs :: Value`: Right hand side argument.
+The opposite of `(not (=))`.
 
 #### Examples
 
@@ -102,11 +118,6 @@ The opposite of `=`.
 
 Test that both arguments are True.
 
-#### Arguments
-
-* `lhs :: Bool`: Left hand side argument.
-* `rhs :: Bool`: Right hand side argument.
-
 #### Examples
 
 ```clojure
@@ -121,11 +132,6 @@ Test that both arguments are True.
 
 Test that at least one argument is True.
 
-#### Arguments
-
-* `lhs :: Bool`: Left hand side argument.
-* `rhs :: Bool`: Right hand side argument.
-
 #### Examples
 
 ```clojure
@@ -137,14 +143,9 @@ Test that at least one argument is True.
 
 ### `assert_eq`
 
-`assert_eq :: Value -> Value -> Unit`
+`assert_eq :: forall a . a -> a -> Unit`
 
 Assert equality between two values, panic if False.
-
-#### Arguments
-
-* `lhs :: Value`: Left hand side argument.
-* `rhs :: Value`: Right hand side argument.
 
 #### Examples
 
@@ -152,24 +153,3 @@ Assert equality between two values, panic if False.
 (assert_eq 4 4) ;; Unit
 (assert_eq (= 3 4) #t) ;; Panics, because (= 3 4) is false.
 ```
-
-### `if`
-
-`if :: Bool -> Quote -> Quote -> Value`
-
-Evaluate a condition and do something if it is true, and something different if it is false.
-
-#### Arguments
-
-* `cond :: Bool`    : The condition to evaluate
-* `then :: Quote`   : The quote to evaluate if `cond` is `True`.
-* `else :: Quote`   : The quote to evaluate if `cond` is `False`.
-
-#### Examples
-
-```clojure
-(if (= 3 4)
-	'#f
-	'#t) ;; True
-```
-

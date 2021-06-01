@@ -26,13 +26,13 @@ Functions
 
 ### `fill`
 
-`fill :: Value -> Integer -> List`
+`fill :: forall a . a -> Integer -> List`
 
 Fills a list with a Value.
 
 #### Arguments
 
-* `x :: Value`: The value to fill with.
+* `x :: a `: The value to fill with.
 * `n :: Integer`: The amount of values to put in the list.
 
 #### Example
@@ -43,7 +43,7 @@ Fills a list with a Value.
 
 ### `car`
 
-`car :: List -> Maybe Value`
+`car :: forall a . List -> Maybe a`
 
 Returns `Just` the first element if the list is not empty, and `Nothing` if the list is empty.
 
@@ -127,14 +127,14 @@ Returns True if `list` is `Nil`, False otherwise.
 
 ### `map`
 
-`map :: List -> (Value -> Value) -> List`
+`map :: forall a . List -> (a -> a) -> List`
 
 Processes each element of a list in a function and gets the result.
 
 #### Arguments
 
 * `list :: List`: The list to process
-* `callback :: Value -> Value`: The callback to run on each element.
+* `callback :: forall a . a -> a`: The callback to run on each element.
 
 #### Example
 

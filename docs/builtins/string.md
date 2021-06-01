@@ -5,14 +5,14 @@ String
 format
 ------
 
-`format :: String -> Value* -> String`
+`format :: forall a . String -> (a) -> String`
 
 Formats values into a string on a delimiter.
 
-* Delimiter: `#v`.
+* Delimiter: `{}`.
 
 ### Example
 
 ```clojure
-(format "Hello #v !" "there") ;; "Hello there!"
+(format "Hello {} !" "there") ;; "Hello there!"
 ```

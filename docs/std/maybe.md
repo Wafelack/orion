@@ -24,13 +24,13 @@ Functions
 
 ### `and_then`
 
-`and_then :: Maybe Value -> Lambda -> Maybe Value`
+`and_then :: forall a . Maybe a -> Lambda -> Maybe Value`
 
 Performs a lambda with the contained value of `Just`.
 
 #### Arguments
 
-* `optionnal :: Maybe Value`: The value to process.
+* `optionnal :: Maybe a`: The value to process.
 * `callback :: Lambda`: The callback to use.
 
 #### Examples
