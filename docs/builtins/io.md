@@ -4,7 +4,7 @@ IO
 putStr
 ------
 
-`putStr :: String -> Unit`
+`putStr :: String -> ()`
 
 Displays a String on the standard output.
 
@@ -17,7 +17,7 @@ Displays a String on the standard output.
 putStrLn
 --------
 
-`putStrLn :: String -> Unit`
+`putStrLn :: String -> ()`
 
 Like `putStr`, but displays a newline at the end of the string and flushes the standard output.
 
@@ -38,17 +38,4 @@ Reads a line on the standard output.
 
 ```clojure
 (def foo (getLine))
-```
-
-write
------
-
-`write :: String -> Value -> Integer`
-
-Writes a value in a file and returns the number of bytes written.
-
-### Example
-
-```clojure
-(write "/dev/stdout" "Hello, World\n") ;; 13
 ```
