@@ -92,6 +92,7 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 }
+                println!("STACK: {:?}", vm.stack);
                 let top = &vm.stack.iter().nth(match vm.stack.len() as isize - 1 {
                     x if x < 0 => 0,
                     x => x as usize,

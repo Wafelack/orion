@@ -29,8 +29,8 @@ pub enum OpCode {
     Builtin(u8, u8),       // (builtin_id, argc)
     Def(u16, u16),         // (sym_id, instructions_length)
     Lambda(u16),           // (chunk_id)
-    Constructor(u16, u16), // (constr_idx, to_eval)
-    Tuple(u16),            // (amount)
+    Constructor(u16, u16), // (constr_idx, valc)
+    Tuple(u16, u16),       // (instr_amount, amount)
     Match(u16),            // (match_idx)
     Panic(u16, u16),       // (file_sym, line_sym)
 }
@@ -64,15 +64,16 @@ impl OpCode {
                 to_ret.extend(&id.to_be_bytes());
                 to_ret
             }
-            Self::Constructor(idx, amount) => {
+            Self::Constructor(idx, contained) => {
                 let mut to_ret = vec![6];
                 to_ret.extend(&idx.to_be_bytes());
-                to_ret.extend(&amount.to_be_bytes());
+                to_ret.extend(&contained.to_be_bytes());
                 to_ret
             }
-            Self::Tuple(amount) => {
+            Self::Tuple(amount, vals) => {
                 let mut to_ret = vec![7];
                 to_ret.extend(&amount.to_be_bytes());
+                to_ret.extend(&vals.to_be_bytes());
                 to_ret
             }
             Self::Match(idx) => {
