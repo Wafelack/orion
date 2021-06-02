@@ -93,7 +93,11 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             Value::Single(r) => format!("{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
             Value::String(s) => format!("{}", s),
             Value::Lambda(u, ..) => format!("λ{}", u),
-            Value::Constructor(id, args) => format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c))),
+            Value::Constructor(id, args) => {
+                println!("Constrs: {:?}", self.input.constructors);
+                println!("Symbols: {:?}", self.input.symbols);
+                format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)))
+            }            
             Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c))),
             _ => if allow_init {
                 "Init".to_string()
@@ -322,27 +326,30 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 self.stack.push(to_push);
             }
             OpCode::Constructor(idx, to_eval) => {
+                println!("Instrs: {:?}", instructions);
                 let (amount, _) = self.input.constructors[idx as usize];
                 let saved = self.ip;
-                while self.ip < saved + amount as usize {
+                while self.ip < saved + to_eval as usize {
                     self.ip += 1;
                     let instruction = instructions[self.ip].clone();
                     self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
                 }
-                let mut vals = (0..to_eval)
+                let mut vals = (0..amount)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Rc<Value>>>>()?;
                 vals.reverse();
+                println!("IDX: {}", idx);
                 self.stack.push(Rc::new(Value::Constructor(idx, vals)));
             }
-            OpCode::Tuple(to_eval) => {
+            OpCode::Tuple(to_eval, valc) => {
+                println!("Instrs: {:?}", instructions);
                 let saved = self.ip;
                 while self.ip < saved + to_eval as usize {
                     self.ip += 1;
                     let instr = instructions[self.ip];
                     self.eval_opcode(instr, ctx, sym_ref, instructions)?;
                 };
-                let mut vals = (0..to_eval)
+                let mut vals = (0..valc)
                     .map(|_| self.pop())
                     .collect::<Result<Vec<Rc<Value>>>>()?;
                 vals.reverse();

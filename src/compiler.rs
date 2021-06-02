@@ -108,7 +108,9 @@ impl Compiler {
                 )
         } else {
             self.constructors.push(name.clone());
+            println!("Constructors: {:?}", self.constructors);
             let (idx, symbols) = self.declare(name, symbols, false, line)?;
+            println!("Symbols: {:?}", symbols);
             self.output.constructors.push((contained_amount, idx));
             Ok(symbols)
         }
@@ -168,7 +170,7 @@ impl Compiler {
                 Ok(content) => {
                     let tokens = Lexer::new(content, &fname).proc_tokens()?;
                     let expressions = Parser::new(tokens, fname).parse()?;
-
+                    println!("Constrs: {:?}", self.constructors);
                     Ok((
                             expressions
                             .into_iter()
@@ -383,7 +385,6 @@ impl Compiler {
                         contained.len()
                         )
                 } else {
-                    let contained_len = contained.len();
                     let values = contained
                         .into_iter()
                         .map(|expr| {
@@ -396,13 +397,13 @@ impl Compiler {
                         .into_iter()
                         .flatten()
                         .collect::<Vec<OpCode>>();
-                    let mut to_ret = vec![OpCode::Constructor(idx, contained_len as u16)];
+                    let mut to_ret = vec![OpCode::Constructor(idx, values.len() as u16)];
                     to_ret.extend(values);
                     Ok((to_ret, symbols))
                 }
             }
             ExprT::Tuple(vals) => {
-                let vals_len = vals.len();
+                let length = vals.len();
                 let values = vals
                     .into_iter()
                     .map(|expr| {
@@ -415,7 +416,8 @@ impl Compiler {
                     .into_iter()
                     .flatten()
                     .collect::<Vec<OpCode>>();
-                let mut to_ret = vec![OpCode::Tuple(vals_len as u16)];
+                let op_count = values.len();
+                let mut to_ret = vec![OpCode::Tuple(op_count as u16, length as u16)];
                 to_ret.extend(values);
                 Ok((to_ret, symbols))
             }
