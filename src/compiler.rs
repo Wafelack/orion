@@ -349,7 +349,7 @@ impl Compiler {
                     .builtins
                     .iter()
                     .position(|builtin| builtin.0 == name)
-                    .map_or(error!(=> "No such builtin: {}.", name), |i| Ok(i))?;
+                    .map_or(error!(self.file, expr.line => "No such builtin: {}.", name), |i| Ok(i))?;
                 let impure_builtin = self.builtins[idx as usize].1;
                 if !impure && impure_builtin {
                     return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);

@@ -192,7 +192,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     fn r#type(&mut self) -> Result<Rc<Value>> {
         let popped = self.pop()?;
         let to_ret = Ok(Rc::new(Value::String(self.val_type(&popped)?)));
-        self.stack.push(popped);
         to_ret
     }
     pub fn val_type(&mut self, popped: &Value) -> Result<String> {
@@ -522,7 +521,7 @@ mod test {
 
     // #[cfg(not(debug_assertions))] // Run only in Release
     #[test]
-    fn ackermann33() -> Result<()> {
+    fn ackermann() -> Result<()> {
         let tokens = Lexer::new("(def ack (λ (m n)
         (match (, m n)
          ((, 0 _) (+ n 1))
@@ -532,8 +531,8 @@ mod test {
         let (bytecode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), true)?.compile(vec![])?;
 
         let (ctx, sym_ref, saves) = VM::<256>::new(bytecode.clone(), vec![]).eval(vec![], vec![])?;
-        let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 3)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string(), true)?.compile(symbols)?;
-        let mut vals = (0..1000).map(|_| {
+        let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 6)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string(), true)?.compile(symbols)?;
+        let mut vals = (0..200).map(|_| {
             let mut vm = VM::<256>::new(call_bytecode.clone(), saves.clone());
             let start = Instant::now();
             vm.eval(sym_ref.clone(), ctx.clone())?;
