@@ -40,8 +40,10 @@ pub struct Compiler {
 impl Compiler {
     pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String, repl: bool) -> Result<Self> {
         bcode.instructions = vec![];
+        let mut new_input = if already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)]};
+        new_input.extend(input);
         let mut to_ret = Self {
-            input: if already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)] },
+            input: new_input,
             constructors,
             lib,
             repl,
@@ -69,9 +71,6 @@ impl Compiler {
 
         to_ret.register_builtin("type", false);
         to_ret.register_builtin("_cmp", false);
-
-        to_ret.compile(vec![])?;
-        to_ret.input = input;
 
         Ok(to_ret)
     }
@@ -108,9 +107,7 @@ impl Compiler {
                 )
         } else {
             self.constructors.push(name.clone());
-            println!("Constructors: {:?}", self.constructors);
             let (idx, symbols) = self.declare(name, symbols, false, line)?;
-            println!("Symbols: {:?}", symbols);
             self.output.constructors.push((contained_amount, idx));
             Ok(symbols)
         }
@@ -170,7 +167,6 @@ impl Compiler {
                 Ok(content) => {
                     let tokens = Lexer::new(content, &fname).proc_tokens()?;
                     let expressions = Parser::new(tokens, fname).parse()?;
-                    println!("Constrs: {:?}", self.constructors);
                     Ok((
                             expressions
                             .into_iter()
@@ -182,7 +178,7 @@ impl Compiler {
                             .collect::<Result<Vec<Vec<OpCode>>>>()?
                             .into_iter()
                             .flatten()
-                            .collect::<Vec<OpCode>>(),
+                            .collect(),
                             symbols,
                             ))
                 }
@@ -228,8 +224,7 @@ impl Compiler {
             ExprT::Load(files) => {
                 let lib_link = self.lib.to_string();
 
-                Ok((
-                        files
+                let instrs = files
                         .into_iter()
                         .map(|file| {
                             let lib_path = format!("{}/{}", lib_link, file);
@@ -248,7 +243,10 @@ impl Compiler {
                         .collect::<Result<Vec<Vec<OpCode>>>>()?
                         .into_iter()
                         .flatten()
-                        .collect::<Vec<OpCode>>(),
+                        .collect::<Vec<OpCode>>();
+
+                Ok((
+                        instrs,
                         symbols,
                         ))
             }
@@ -495,7 +493,6 @@ impl Compiler {
             symbols = new_symbols;
             self.output.instructions.extend(to_push);
         }
-
         self.output.symbols = symbols
             .iter()
             .map(|(name, _)| name.to_string())
