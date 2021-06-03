@@ -27,3 +27,6 @@
 
 (load "list.orn")  ;; Lists
 (load "maybe.orn") ;; Optional type
+
+(load "string.orn") ;; String relative things
+(load "io.orn")     ;; IO functions
