@@ -32,7 +32,7 @@ pub enum Value {
     Integer(i32),
     Single(f32),
     String(String),
-    Lambda(u16, Vec<Rc<Value>>),
+    Lambda(u16, Vec<Rc<Value>>, Vec<u16>),
     Constructor(u16, Vec<Rc<Value>>),
     Tuple(Vec<Rc<Value>>),
     Initialzing,
@@ -84,7 +84,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::get_line, 0);
 
         to_ret.register_builtin(Self::r#type, 1);
-        to_ret.register_builtin(Self::cmp, 1);
+        to_ret.register_builtin(Self::cmp, 2);
         to_ret
     }
     pub fn display_value(&self, val: Rc<Value>, allow_init: bool) -> String {
@@ -95,9 +95,14 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             Value::String(s) => format!("{}", s),
             Value::Lambda(u, ..) => format!("λ{}", u),
             Value::Constructor(id, args) => {
-                format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)))
+                let name = self.input.symbols[self.input.constructors[*id as usize].1 as usize].clone();
+                if args.len() == 0 {
+                    name
+                } else {
+                    format!( "({}{})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim())
+                }
             }            
-            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c))),
+            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), allow_init))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim()),
             _ => if allow_init {
                 "Init".to_string()
             } else {
@@ -275,7 +280,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 let popped = self.pop()?;
                 ctx[id] = popped;
             }
-            OpCode::Lambda(chunk_id) => self.stack.push(Rc::new(Value::Lambda(chunk_id, ctx.clone()))),
+            OpCode::Lambda(chunk_id) => self.stack.push(Rc::new(Value::Lambda(chunk_id, ctx.clone(), sym_ref.clone()))),
             OpCode::Call(argc) => {
                 let mut args = vec![];
                 for _ in 0..argc {
@@ -283,7 +288,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 }
                 args.reverse();
                 let func = self.pop()?;
-                if let Value::Lambda(chunk, mut ctx) = (*func).clone() {
+                if let Value::Lambda(chunk, mut ctx, mut sym_ref) = (*func).clone() {
                     let chunk = self.input.chunks[chunk as usize].clone();
                     if chunk.reference.len() != args.len() {
                         return error!(
@@ -292,22 +297,20 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             args.len()
                             );
                     }
-                    let prev_ref = sym_ref.clone();
                     for idx in 0..chunk.reference.len() {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
                         let sym_id = chunk.reference[idx];
-                        self.decl(sym_id, val, &mut ctx, sym_ref);
+                        self.decl(sym_id, val, &mut ctx, &mut sym_ref);
                     }
                     let prev_ip = self.ip;
                     self.ip = 0; // Reset the instruction counter to fit chunk instructions
                     while self.ip < chunk.instructions.len() {
                         let instr = chunk.instructions[self.ip];
-                        self.eval_opcode(instr, &mut ctx, sym_ref, &chunk.instructions)?; // Eval chunk body.
+                        self.eval_opcode(instr, &mut ctx, &mut sym_ref, &chunk.instructions)?; // Eval chunk body.
                         self.ip += 1;
                     }
                     self.ip = prev_ip;
-                    *sym_ref = prev_ref;
                 } else {
                     return error!(=> "Expected a Lambda, found a {}.", self.val_type(&*func)?);
                 }
