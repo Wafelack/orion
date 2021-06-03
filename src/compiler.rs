@@ -505,3 +505,18 @@ impl Compiler {
         Ok((self.output.clone(), symbols, self.constructors.clone()))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn def() -> Result<()> {
+        let tokens = Lexer::new("(def a 42)(def 'impure b 34)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
+        let (bcode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), false)?.compile(vec![])?;
+        assert_eq!(bcode.instructions, vec![OpCode::Def(0, 1),OpCode::LoadConst(0),  OpCode::Def(1, 1), OpCode::LoadConst(1)]);
+        assert_eq!(symbols, vec![("a".to_string(), false), ("b".to_string(), true)]);
+        Ok(())
+    }
+}
