@@ -533,7 +533,7 @@ mod test {
         let (ctx, sym_ref, saves) = VM::<256>::new(bytecode.clone(), vec![]).eval(vec![], vec![])?;
         let (call_bytecode, ..) = Compiler::new(Parser::new(Lexer::new("(ack 3 6)", "TEST").proc_tokens()?, "TEST").parse()?, "TEST", bytecode, vec![], true, "".to_string(), true)?.compile(symbols)?;
         let mut vals = (0..200).map(|_| {
-            let mut vm = VM::<256>::new(call_bytecode.clone(), saves.clone());
+            let mut vm = VM::<16000>::new(call_bytecode.clone(), saves.clone());
             let start = Instant::now();
             vm.eval(sym_ref.clone(), ctx.clone())?;
             let elapsed = start.elapsed();
