@@ -32,13 +32,13 @@ fn repl(dbg_level: u8, lib: String) -> Result<()> {
 ;; under certain conditions.",
 env!("CARGO_PKG_VERSION")
 );
-    // let mut interpreter = Interpreter::new(vec![], no_prelude, quiet)?;
     let mut ctx = vec![];
-    let mut sym_ref = vec![];
     let mut symbols = vec![];
     let mut bytecode = Bytecode::new();
     let mut constructors = vec![];
-    let mut vm = VM::new(Bytecode::new());
+    let mut sym_ref = vec![];
+    let mut saves = vec![];
+    let mut vm = VM::new(Bytecode::new(), vec![]);
 
     let mut rl = Editor::<()>::new();
     let mut i = 0;
@@ -83,7 +83,7 @@ env!("CARGO_PKG_VERSION")
                     println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
                 }
 
-                match eval_dbg(&mut vm, &mut sym_ref, &mut ctx, bytecode.clone(), dbg_level) {
+                match eval_dbg(&mut vm, &mut sym_ref, &mut ctx, bytecode.clone(), &mut saves, dbg_level) {
                     Ok(t) => if dbg_level > 0 {
                         println!("{} Run in {}ms.", STAR, t);
                     },
@@ -98,10 +98,10 @@ env!("CARGO_PKG_VERSION")
                 }).and_then(|v| Some((**v).clone()));
                 if let Some(Value::Tuple(v)) = top {
                     if !v.is_empty() {
-                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap()), true))
+                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap())))
                     }
                 } else if let Some(v) = top.clone() {
-                    println!("=> {}", vm.display_value(Rc::new(v), true));
+                    println!("=> {}", vm.display_value(Rc::new(v)));
                 }
  
             }
@@ -204,16 +204,17 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
     } 
     Ok((bytecode, symbols, constructors))
 }
-fn eval_dbg(vm: &mut VM<256>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, level: u8) -> Result<u64> {
+fn eval_dbg(vm: &mut VM<256>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, saves: &mut Vec<Vec<Rc<Value>>>, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
     stack.push(Rc::new(Value::Tuple(vec![])));
     vm.input = bytecode;
     vm.stack = stack;
     vm.ip = 0;
     let start = Instant::now();
-    let (new_ctx, new_ref) = vm.eval(sym_ref.clone(), ctx.clone())?;
+    let (new_ctx, new_ref, new_saves) = vm.eval(sym_ref.clone(), ctx.clone())?;
     *ctx = new_ctx;
     *sym_ref = new_ref;
+    *saves = new_saves;
     let elapsed = start.elapsed();
     if level > 1 {
         if ctx.len() != 0 {
@@ -318,7 +319,7 @@ pub fn cli() -> Result<()> {
             Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
         };
         if !matches.is_present("compile-only") {
-            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new()), &mut vec![], &mut vec![], bytecode, dbg_level)?;
+            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new(), vec![]), &mut vec![], &mut vec![], bytecode, &mut vec![], dbg_level)?;
             if dbg_level > 0 {
                 println!("{} Run in {}ms.", STAR, time)
             }
