@@ -82,7 +82,7 @@ impl OpCode {
                 to_ret
             }
             Self::Panic(file, line) => {
-                let mut to_ret = vec![8];
+                let mut to_ret = vec![9];
                 to_ret.extend(&file.to_be_bytes());
                 to_ret.extend(&line.to_be_bytes());
                 to_ret

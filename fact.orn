@@ -1,8 +1,0 @@
-(def fact
-  (λ (n)
-    (match n
-           (0 1)
-           (n (* n (fact (- n 1)))))))
-(def 'impure main
-  (λ ()
-    (putStr (format "{}\n" (, (fact 12))))))
