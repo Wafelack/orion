@@ -40,7 +40,6 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 error!(=> "Expected a String, found a {}.", self.val_type(&formatter)?)
             }
         } else {
-            println!("Format error");
             error!(=> "Expected a Tuple, found a {}.", self.val_type(&args)?)
         }
     }
