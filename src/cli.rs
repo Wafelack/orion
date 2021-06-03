@@ -71,6 +71,9 @@ env!("CARGO_PKG_VERSION")
                 let (new_bytecode, new_syms, new_constructors) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone(), constructors.clone(), &lib, i > 1, true) {
                     Ok(b) => b,
                     Err(e) => {
+                        if i == 1 {
+                            i = 0;
+                        }
                         print_err(e);
                         continue;
                     }
@@ -204,7 +207,7 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
     } 
     Ok((bytecode, symbols, constructors))
 }
-fn eval_dbg(vm: &mut VM<256>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, saves: &mut Vec<Vec<Rc<Value>>>, level: u8) -> Result<u64> {
+fn eval_dbg(vm: &mut VM<16000>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, saves: &mut Vec<Vec<Rc<Value>>>, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
     stack.push(Rc::new(Value::Tuple(vec![])));
     vm.input = bytecode;
@@ -319,7 +322,7 @@ pub fn cli() -> Result<()> {
             Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
         };
         if !matches.is_present("compile-only") {
-            let time = eval_dbg(&mut VM::<256>::new(Bytecode::new(), vec![]), &mut vec![], &mut vec![], bytecode, &mut vec![], dbg_level)?;
+            let time = eval_dbg(&mut VM::<16000>::new(Bytecode::new(), vec![]), &mut vec![], &mut vec![], bytecode, &mut vec![], dbg_level)?;
             if dbg_level > 0 {
                 println!("{} Run in {}ms.", STAR, time)
             }
