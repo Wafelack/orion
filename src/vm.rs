@@ -519,7 +519,7 @@ mod test {
     use crate::compiler::Compiler;
     use std::time::Instant;
 
-    // #[cfg(not(debug_assertions))] // Run only in Release
+    #[cfg(not(debug_assertions))] // Run only in Release
     #[test]
     fn ackermann() -> Result<()> {
         let tokens = Lexer::new("(def ack (λ (m n)
