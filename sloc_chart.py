@@ -16,12 +16,14 @@ while dateified < today:
     stringified = f'{date.year}-{date.month}-{date.day}'
     commit_hash = subprocess.run(['git', 'log', '--oneline', f'--after="{stringified}"'], capture_output=True).stdout.decode('utf-8').strip().split('\n')[-1].split(' ')[0]
     print(f'{stringified}:{commit_hash} => ', end='')
-    subprocess.run(['git', 'checkout', commit_hash])
+    subprocess.run(['git', 'checkout', commit_hash], capture_output=True)
     stats=subprocess.run(['tokei', '-o', 'json'], capture_output=True).stdout.decode('utf-8').strip()
-    print(json.loads(stats)['Rust']['code'])
-    subprocess.run(['git', 'switch', '-'])
+    commit_sloc = json.loads(stats)['Rust']['code']
+    print(commit_sloc)
+    # dates.append(stringified)
+    # sloc.append(commit_sloc)
+    subprocess.run(['git', 'switch', '-'], capture_output=True)
     dateified=dateified + timedelta(weeks=1)
-
 
 plt.plot(dates, sloc)
 plt.xlabel('date')
