@@ -21,18 +21,19 @@
 (enum Bool
       True
       False)
-
 (enum Ordering
       Less
       Equal
       Greater)
-
+(macro if (cond then else)
+       (match cond
+              (True then)
+              (False else)))
 (def cmp (λ (lhs rhs)
            (match (_cmp lhs rhs)
                   (0 Less)
                   (1 Equal)
                   (2 Greater))))
-
 (def #t True)
 (def #f False)
 
@@ -40,27 +41,22 @@
          (match (cmp lhs rhs)
                 (Equal True)
                 (_ False))))
-
 (def not (λ (val)
            (match val
                   (True False)
                   (False True))))
-
 (def /= (λ (lhs rhs)
           (not (= lhs rhs))))
-
 (def and (λ (lhs rhs)
            (match lhs
                   (True (match rhs
                                (True True)
                                (False False)))
                   (False False))))
-
 (def or (λ (lhs rhs)
           (match lhs
                  (True True)
                  (False rhs))))
-
 (def assert_eq (λ (lhs rhs)
                  (match (= lhs rhs)
                         (True ())
