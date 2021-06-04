@@ -35,6 +35,8 @@ Roadmap
 	- [x] asin
 	- [x] atan
 - [ ] Bytecode {de}?serialzation.
+    - [x] Serialization
+    - [ ] Deserialization
 - [x] Begin shorthand
 - [x] Main function call on file processing.
 - [x] Prelude loader.
