@@ -40,8 +40,8 @@ Roadmap
 - [x] Begin shorthand
 - [x] Main function call on file processing.
 - [x] Prelude loader.
-- [ ] Documentation
+- [x] Documentation
 	- [x] Core Library documentation
 	- [x] Standard Library documetation
 	- [x] Builtins documentation
-	- [ ] The Complete Orion Book
+	- [x] The Complete Orion Book
