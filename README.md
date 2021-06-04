@@ -44,7 +44,7 @@ $ make install PREFIX=/wherever/you/want/
 Documentation
 -------------
 
-You can find the standard library, the core and the builtins documentation [here](docs/).
+You can find a detailed tutorial, the standard library, the core and the builtins documentation [here](docs/).
 
 Quick Example
 -------------
