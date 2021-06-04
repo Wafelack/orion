@@ -40,7 +40,7 @@ $ cd orion/
 $ chmod +x configure
 $ ./configure
 $ make
-$ make install PREFIX==/wherever/you/want/
+$ make install PREFIX=/wherever/you/want/
 ```
 
 ### Windows
