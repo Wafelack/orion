@@ -4,7 +4,7 @@ String
 Functions
 ---------
 
-`show :: forall a . a -> String`
+`show :: (Any a) => a -> String`
 
 Transforms a value into its literal form.
 

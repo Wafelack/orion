@@ -6,7 +6,7 @@ Functions
 
 ### `<`
 
-`(<) :: forall a . a -> a -> Bool`
+`(<) :: (Any a) => a -> a -> Bool`
 
 Returns true if `(= (cmp lhs rhs) Less)`
 
@@ -19,7 +19,7 @@ Returns true if `(= (cmp lhs rhs) Less)`
 
 ### `>`
 
-`(>) :: forall a . a -> a -> Bool`
+`(>) :: (Any a) => a -> a -> Bool`
 
 Returns true if `(= (cmp lhs rhs) Greater)`
 
@@ -32,7 +32,7 @@ Returns true if `(= (cmp lhs rhs) Greater)`
 
 ### `>=`
 
-`(>=) :: forall a . a -> a -> Bool`
+`(>=) :: (Any a) => a -> a -> Bool`
 
 Returns true if `(or (= lhs rhs) (> lhs rhs))`.
 
@@ -45,7 +45,7 @@ Returns true if `(or (= lhs rhs) (> lhs rhs))`.
 
 ### `<=`
 
-`(<=) :: forall a . a -> a -> Bool`
+`(<=) :: (Any a) => a -> a -> Bool`
 
 Returns true if `(or (= lhs rhs) (< lhs rhs))`.
 

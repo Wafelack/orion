@@ -28,7 +28,7 @@
 (def fill (λ (n x)
             (match n
                    (0 (Cons x Nil))
-                   (_ (Cons x (- n 1))))))
+                   (_ (Cons x (fill (- n 1) x))))))
 
 (def car (λ (list)
             (match list

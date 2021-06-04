@@ -56,7 +56,7 @@ Functions
 
 ### `cmp`
 
-`cmp :: forall a . a -> a -> Ordering`
+`cmp :: (Any a) => a -> a -> Ordering`
 
 Compare two values mathematically.
 
@@ -71,7 +71,7 @@ Compare two values mathematically.
 
 ### `=`
 
-`(=) :: forall a . a -> a -> Bool`
+`(=) :: (Any a ) => a -> a -> Bool`
 
 Test structural equality between two values
 
@@ -100,7 +100,7 @@ Get the opposite of a Bool.
 ### `/=`
 
 
-`(/=) :: forall a . a -> a -> Bool`
+`(/=) :: (Any a) => a -> a -> Bool`
 
 The opposite of `(not (=))`.
 
@@ -143,7 +143,7 @@ Test that at least one argument is True.
 
 ### `assert_eq`
 
-`assert_eq :: forall a . a -> a -> Unit`
+`assert_eq :: (Any a) => a -> a -> Unit`
 
 Assert equality between two values, panic if False.
 
