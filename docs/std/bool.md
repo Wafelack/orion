@@ -1,6 +1,23 @@
 Bool
 ====
 
+Macros
+------
+
+### if
+
+Verify a condition and execute an expression.
+
+`if :: (Any a) => Bool -> a -> a -> a`
+
+#### Example
+
+```clojure
+(if (= 5 5)
+    (putStrLn "Maths are OK.")
+    (putStrLn "Something is wrong."))
+```
+
 Enumerations
 ------------
 
