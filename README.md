@@ -30,8 +30,6 @@ Features
 Installation
 ------------
 
-### MacOS, BSD and GNU/Linux
-
 You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (installed in `/bin/sh`) and Git.
 
 ```bash
@@ -42,10 +40,6 @@ $ ./configure
 $ make
 $ make install PREFIX=/wherever/you/want/
 ```
-
-### Windows
-
-Build the project, copy the binary to your path, move the library wherever you want and set `ORION_LIB` to this location.
 
 Documentation
 -------------
@@ -59,9 +53,9 @@ Factorial function:
 
 ```clojure
 (def factorial (λ (n)
-                    (match n
-                        (0 1)
-                        (_ (* n (factorial (- n 1)))))))
+    (match n
+    (0 1)
+    (_ (* n (factorial (- n 1)))))))
 ```
 
 Performance Tests
