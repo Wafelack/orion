@@ -21,7 +21,7 @@
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
 use std::{rc::Rc, time::Instant, path::Path, fs, io::Write};
-use crate::{Result, print_err, error, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::Compiler, vm::{VM, Value}};
+use crate::{Result, print_err, error, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::{Compiler, Macro}, vm::{VM, Value}};
 
 fn repl(dbg_level: u8, lib: String) -> Result<()> {
     println!(
@@ -38,6 +38,7 @@ env!("CARGO_PKG_VERSION")
     let mut constructors = vec![];
     let mut sym_ref = vec![];
     let mut saves = vec![];
+    let mut macros = vec![];
     let mut vm = VM::new(Bytecode::new(), vec![]);
 
     let mut rl = Editor::<()>::new();
@@ -68,7 +69,7 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 };
-                let (new_bytecode, new_syms, new_constructors) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone(), constructors.clone(), &lib, i > 1, true) {
+                let (new_bytecode, new_syms, new_constructors, new_macros) = match compile_dbg("REPL", expressions, dbg_level, symbols.clone(), bytecode.clone(), constructors.clone(), &lib, i > 1, true, macros.clone()) {
                     Ok(b) => b,
                     Err(e) => {
                         if i == 1 {
@@ -81,6 +82,7 @@ env!("CARGO_PKG_VERSION")
                 bytecode = new_bytecode;
                 symbols = new_syms;
                 constructors = new_constructors;
+                macros = new_macros;
                 let elapsed = start.elapsed();
                 if dbg_level > 0 {
                     println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
@@ -150,11 +152,11 @@ fn parse_dbg(file: impl ToString, code: Vec<Token>, level: u8) -> Result<Vec<Exp
     } 
     Ok(expressions)
 }
-pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode, constructors: Vec<String>, lib: impl ToString, already_loaded: bool, repl: bool) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
+pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbols: Vec<(String, bool)>, bcode: Bytecode, constructors: Vec<String>, lib: impl ToString, already_loaded: bool, repl: bool, macros: Vec<(String, Macro)>) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>, Vec<(String, Macro)>)> {
     if level > 0 {
         println!("{} Compiling {} Exprs...", STAR, expressions.len());
     }
-    let (bytecode, symbols, constructors) = Compiler::new(expressions, file, bcode, constructors, already_loaded, lib.to_string(), repl)?.compile(symbols)?;
+    let (bytecode, symbols, constructors, macros) = Compiler::new(expressions, file, bcode, constructors, already_loaded, lib.to_string(), repl, macros)?.compile(symbols)?;
     if level > 1 {
         if bytecode.constants.len() != 0 {
             println!("[\x1b[0;33mBYTECODE.CONSTANTS\x1b[0m]");
@@ -205,7 +207,7 @@ pub fn compile_dbg(file: impl ToString, expressions: Vec<Expr>, level: u8, symbo
             println!("===========================================");
         }
     } 
-    Ok((bytecode, symbols, constructors))
+    Ok((bytecode, symbols, constructors, macros))
 }
 fn eval_dbg(vm: &mut VM<16000>, sym_ref: &mut Vec<u16>, ctx: &mut Vec<Rc<Value>>, bytecode: Bytecode, saves: &mut Vec<Vec<Rc<Value>>>, level: u8) -> Result<u64> {
     let mut stack = Vec::with_capacity(256);
@@ -308,7 +310,7 @@ pub fn cli() -> Result<()> {
         let start = Instant::now();
         let tokens = lex_dbg(file, 1, content, dbg_level)?;
         let expressions = parse_dbg(file, tokens, dbg_level)?;
-        let (bytecode, ..) = compile_dbg(file, expressions, dbg_level, vec![], Bytecode::new(), vec![], lib, false, false)?;
+        let (bytecode, ..) = compile_dbg(file, expressions, dbg_level, vec![], Bytecode::new(), vec![], lib, false, false, vec![])?;
         let elapsed = start.elapsed();
         if dbg_level > 0 {
             println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());

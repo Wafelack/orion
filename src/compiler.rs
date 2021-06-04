@@ -26,6 +26,11 @@ use crate::{
     Result,
 };
 use std::{fs, path::Path};
+#[derive(Clone)]
+pub struct Macro {
+    pub args: Vec<String>,
+    pub content: Box<Expr>,
+}
 pub struct Compiler {
     input: Vec<Expr>,
     output: Bytecode,
@@ -35,10 +40,11 @@ pub struct Compiler {
     file: String,
     lib: String,
     repl: bool,
+    macros: Vec<(String, Macro)>,
 }
 
 impl Compiler {
-    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String, repl: bool) -> Result<Self> {
+    pub fn new(input: Vec<Expr>, file: impl ToString, mut bcode: Bytecode, constructors: Vec<String>, already_loaded: bool, lib: String, repl: bool, macros: Vec<(String, Macro)>) -> Result<Self> {
         bcode.instructions = vec![];
         let mut new_input = if already_loaded { vec![] } else { vec![Expr::new(ExprT::Load(vec!["prelude.orn".to_string()])).line(0)]};
         new_input.extend(input);
@@ -46,6 +52,7 @@ impl Compiler {
             input: new_input,
             constructors,
             lib,
+            macros,
             repl,
             output: bcode,
             load_history: vec![],
@@ -186,6 +193,25 @@ impl Compiler {
             }
         }
     }
+    fn r#macro(
+        &mut self,
+        idx: usize,
+        args: Vec<Expr>,
+        symbols: Vec<(String, bool)>,
+        impure: bool,
+        line: usize,
+        ) -> Result<(Vec<OpCode>, Vec<(String, bool)>)> {
+        let content = self.macros[idx].1.clone();
+        if content.args.len() != args.len() {
+            error!(self.file, line => "Expected {} arguments, found {}.", content.args.len(), args.len())
+        } else {
+            let mut expr = *content.content;
+            for (idx, arg) in args.into_iter().enumerate() {
+                expr = expr.replace(content.args[idx].clone(), arg);
+            }
+            self.compile_expr(expr, symbols, impure)
+        }
+    }
     fn compile_expr(
         &mut self,
         expr: Expr,
@@ -258,6 +284,12 @@ impl Compiler {
                 Ok((to_ret, symbols))
             }
             ExprT::Call(func, args) => {
+                if let ExprT::Var(v) = func.clone().exprt {
+                    match self.macros.iter().position(|(name, ..)| &v == name) {
+                        Some(i) => return self.r#macro(i, args, symbols, impure, expr.line),
+                        None => {}
+                    }
+                }
                 let (mut to_ret, mut symbols) = self.compile_expr(*func, symbols, impure)?; // The λ to execute.
                 let argc = args.len() as u16;
                 to_ret.extend(
@@ -438,6 +470,16 @@ impl Compiler {
                 compiled.push(OpCode::Match(idx));
                 Ok((compiled, symbols))
             }
+            ExprT::Macro(name, args, content) => {
+                let r#macro = Macro { args, content };
+                match self.macros.iter().position(|(n, _)| n == &name) {
+                    None => {
+                        self.macros.push((name, r#macro));
+                        Ok((vec![], symbols))
+                    }
+                    Some(_) => error!(self.file, expr.line => "Macro has already been defined: {}.", name)
+                }
+            }
         }
     }
     fn declare_pat(&mut self, pat: ParserPattern, mut symbols: Vec<(String, bool)>, impure: bool, line: usize) -> Result<(u16, Vec<(String, bool)>)> {
@@ -487,7 +529,7 @@ impl Compiler {
             Ok(())
         }
     }
-    pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>)> {
+    pub fn compile(&mut self, mut symbols: Vec<(String, bool)>) -> Result<(Bytecode, Vec<(String, bool)>, Vec<String>, Vec<(String, Macro)>)> {
         for expr in self.input.clone() {
             let (to_push, new_symbols) = self.compile_expr(expr, symbols, self.repl)?;
             symbols = new_symbols;
@@ -502,7 +544,7 @@ impl Compiler {
             self.output.instructions.extend(vec![OpCode::LoadSym(self.output.symbols.iter().position(|s| s == "main").unwrap() as u16), OpCode::Call(0)]);
         }
 
-        Ok((self.output.clone(), symbols, self.constructors.clone()))
+        Ok((self.output.clone(), symbols, self.constructors.clone(), self.macros.clone()))
     }
 }
 
@@ -514,7 +556,7 @@ mod test {
     fn def() -> Result<()> {
         let tokens = Lexer::new("(def a 42)(def 'impure b 34)", 0).proc_tokens()?;
         let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bcode, symbols, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), false)?.compile(vec![])?;
+        let (bcode, symbols, ..) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), false, vec![])?.compile(vec![])?;
         assert_eq!(bcode.instructions, vec![OpCode::Def(0, 1),OpCode::LoadConst(0),  OpCode::Def(1, 1), OpCode::LoadConst(1)]);
         assert_eq!(symbols, vec![("a".to_string(), false), ("b".to_string(), true)]);
         Ok(())
