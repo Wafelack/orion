@@ -18,8 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::parser::Literal;
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::{parser::Literal, error, Result};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum OpCode {
@@ -35,6 +34,25 @@ pub enum OpCode {
     Panic(u16, u16),       // (file_sym, line_sym)
 }
 impl OpCode {
+    pub fn deserialize(ptr: &mut usize, bytes: &[u8]) -> Result<Self> {
+        *ptr += 1;
+        match bytes[*ptr - 1] {
+            0 => Ok(Self::LoadConst(len(ptr, bytes)?)),
+            1 => Ok(Self::LoadSym(len(ptr, bytes)?)),
+            2 => Ok(Self::Call(len(ptr, bytes)?)),
+            3 => {
+                *ptr += 2;
+                Ok(Self::Builtin(bytes[*ptr - 2], bytes[*ptr - 1])) 
+            }
+            4 => Ok(Self::Def(len(ptr, bytes)?, len(ptr, bytes)?)),
+            5 => Ok(Self::Lambda(len(ptr, bytes)?)),
+            6 => Ok(Self::Constructor(len(ptr, bytes)?, len(ptr, bytes)?)),
+            7 => Ok(Self::Tuple(len(ptr, bytes)?, len(ptr, bytes)?)),
+            8 => Ok(Self::Match(len(ptr, bytes)?)), 
+            9 => Ok(Self::Panic(len(ptr, bytes)?, len(ptr, bytes)?)),
+            x => error!(=> "Unrecognised op code: {}.", x),
+        }
+    }
     pub fn serialize(&self) -> Vec<u8> {
         match self {
             Self::LoadConst(id) => {
@@ -91,7 +109,7 @@ impl OpCode {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Chunk {
     pub instructions: Vec<OpCode>,
     pub reference: Vec<u16>,
@@ -106,7 +124,7 @@ pub enum BytecodePattern {
     Any, // `_` variable 
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Bytecode {
     pub types: Vec<(String, u16, u16)>,
     pub chunks: Vec<Chunk>,
@@ -132,10 +150,128 @@ impl Bytecode {
         }
     }
     // All numbers here are big endian
+    pub fn deserialize(bytes: &[u8]) -> Result<Self> {
+        if &bytes[0..5] != "orion".chars().into_iter().map(|c| c as u8).collect::<Vec<u8>>() {
+            error!(=> "Invalid bytecode.")
+        } else {
+            let mut ptr = 5; // Skip timestamp
+            let sym_length = len(&mut ptr, bytes)?;
+            println!("Sym length.");
+            let mut symbols = (0..sym_length).map(|_| string(&mut ptr, bytes)).collect::<Result<Vec<String>>>()?;
+            println!("Syms.");
+            let consts_length = len(&mut ptr, bytes)?;
+            println!("Consts length.");
+            let constants = (0..consts_length).map(|_| {
+                ptr += 1;
+                if bytes[ptr - 1] == 0 {
+                    Ok(Literal::String(string(&mut ptr, bytes)?))
+                } else if bytes[ptr - 1] == 1 {
+                    Ok(Literal::Integer(int(&mut ptr, bytes)?))
+                } else if bytes[ptr - 1] == 2 {
+                    Ok(Literal::Single(single(&mut ptr, bytes)?))
+                } else {
+                    error!(=> "Invalid type identifier, expected 0, 1 or 2, found {}.", bytes[ptr - 1])
+                }
+            }).collect::<Result<Vec<Literal>>>()?;
+            println!("Consts.");
+            let contrs_length = len(&mut ptr, bytes)?;
+            println!("Constrs_length.");
+            let constructors = (0..contrs_length).map(|_| {
+                let argc = bytes[ptr];
+                ptr += 3;
+                let idx = (bytes[ptr - 2] as u16) << 8 | (bytes[ptr - 1] as u16);
+                (argc, idx)
+            }).collect::<Vec<(u8, u16)>>();
+            println!("Constrs.");
+
+            let chunks_length = len(&mut ptr, bytes)?;
+            println!("Chunks length.");
+            let chunks = (0..chunks_length).map(|_| {
+                let ref_len = len(&mut ptr, bytes)?;
+                let reference = (0..ref_len).map(|_| {
+                    len(&mut ptr, bytes)
+                }).collect::<Result<Vec<u16>>>()?;
+                let instr_len = len(&mut ptr, bytes)? as usize;
+                let instructions = (0..instr_len).map(|_| {
+                    OpCode::deserialize(&mut ptr, bytes)
+                }).collect::<Result<Vec<OpCode>>>()?;
+                Ok(Chunk {
+                    instructions,
+                    reference
+                })
+            }).collect::<Result<Vec<Chunk>>>()?;
+            println!("Chunks.");
+
+            let instrs_length = len(&mut ptr, bytes)?;
+            println!("Instrs length.");
+            let instructions = (0..instrs_length).map(|_| {
+                OpCode::deserialize(&mut ptr, bytes)
+            }).collect::<Result<Vec<OpCode>>>()?;
+            println!("Instrs.");
+
+            let types_length = len(&mut ptr, bytes)?;
+            println!("Types_length.");
+            let types = (0..types_length).map(|_| {
+                let start = len(&mut ptr, bytes)?;
+                let end = len(&mut ptr, bytes)?;
+                let t= string(&mut ptr, bytes)?;
+                Ok((t, start, end))
+            }).collect::<Result<Vec<_>>>()?;
+            println!("Types.");
+
+            let patterns_length = len(&mut ptr, bytes)?;
+            println!("Patterns_length.");
+            let patterns = (0..patterns_length).map(|_| {
+                ptr += 1;
+                match bytes[ptr - 1] {
+                    0 => Ok(BytecodePattern::Var(len(&mut ptr, bytes)?)),
+                    1 => {
+                        let id = len(&mut ptr, bytes)?;
+                        let length = len(&mut ptr, bytes)?;
+                        let pats = (0..length).map(|_| len(&mut ptr, bytes)).collect::<Result<Vec<u16>>>()?;
+                        Ok(BytecodePattern::Constr(id, pats))
+                    }
+                    2 => {
+                        let length = len(&mut ptr, bytes)?;
+                        let pats = (0..length).map(|_| len(&mut ptr, bytes)).collect::<Result<Vec<u16>>>()?;
+                        Ok(BytecodePattern::Tuple(pats))
+                    }
+                    3 => Ok(BytecodePattern::Literal(len(&mut ptr, bytes)?)),
+                    4 => Ok(BytecodePattern::Any),
+                    _ => error!(=> "Invalid pattern."),
+                }
+            }).collect::<Result<Vec<BytecodePattern>>>()?;
+            println!("Patterns.");
+            let matches_length = len(&mut ptr, bytes)?;
+            println!("Matches length.");
+            let matches = (0..matches_length).map(|_| {
+                let match_length = len(&mut ptr, bytes)?;
+                Ok((0..match_length).map(|_| {
+                    let idx = len(&mut ptr, bytes)?;
+                    let instrs_len = len(&mut ptr, bytes)?;
+                    let instrs = (0..instrs_len).map(|_| {
+                        OpCode::deserialize(&mut ptr, bytes)
+                    }).collect::<Result<Vec<OpCode>>>()?;
+                    Ok((idx, instrs))
+                }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()?)
+            }).collect::<Result<Vec<Vec<(u16, Vec<OpCode>)>>>>()?;
+            println!("Matches.");
+
+            Ok(Bytecode {
+                types,
+                chunks,
+                matches,
+                symbols,
+                constants,
+                instructions,
+                patterns,
+                constructors
+            })
+        }
+    }
     pub fn serialize(&self) -> Vec<u8> {
         let mut to_ret = "orion".chars().into_iter().map(|c| c as u8).collect::<Vec<u8>>(); // Magic value
-        to_ret.extend_from_slice(&(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32).to_be_bytes()); // Timestamp
-        
+
         // Symbols
         to_ret.extend(&(self.symbols.len() as u16).to_be_bytes()); // Length
         self.symbols.iter().for_each(|sym| {
@@ -164,7 +300,7 @@ impl Bytecode {
         });
 
         // Constructors
-        to_ret.extend(&(self.constructors.len() as u16 * 2 /* Id in sym table */).to_be_bytes());
+        to_ret.extend(&(self.constructors.len() as u16).to_be_bytes());
         let (mut argc, mut idx) = (vec![], vec![]);
         for (a, i) in &self.constructors {
             argc.push(*a);
@@ -184,7 +320,7 @@ impl Bytecode {
             let serialized = chunk.instructions.iter().map(|instr| {
                 instr.serialize()
             }).flatten();
-            to_ret.extend(&(serialized.clone().count() as u16).to_be_bytes());
+            to_ret.extend(&(chunk.instructions.len() as u16).to_be_bytes());
             to_ret.extend(serialized)
         });
 
@@ -192,7 +328,7 @@ impl Bytecode {
         let serialized = self.instructions.iter().map(|instr| {
             instr.serialize()
         }).flatten();
-        to_ret.extend(&(serialized.clone().count() as u16).to_be_bytes());
+        to_ret.extend(&(self.instructions.len() as u16).to_be_bytes());
         to_ret.extend(serialized);
 
         // Types
@@ -201,6 +337,7 @@ impl Bytecode {
             to_ret.extend(&start.to_be_bytes());
             to_ret.extend(&end.to_be_bytes());
             to_ret.extend(name.chars().map(|c| c as u8));
+            to_ret.push(0);
         });
 
         // Patterns
@@ -251,5 +388,60 @@ impl Bytecode {
             to_ret
         }).flatten());
         to_ret
+    }
+}
+
+fn string(ptr: &mut usize, bytes: &[u8]) -> Result<String> {
+    let mut to_ret = String::new();
+    while *ptr < bytes.len() && bytes[*ptr] != 0 {
+        to_ret.push(bytes[*ptr] as char);
+        *ptr += 1;
+    }
+    if bytes.iter().nth(*ptr) == Some(&0) {
+        *ptr += 1;
+        Ok(to_ret)
+    } else {
+        error!(=> "Unterminated string.")
+    }
+}
+fn single(ptr: &mut usize, bytes: &[u8]) -> Result<f32> {
+    if *ptr + 4 < bytes.len() {
+        *ptr += 4;
+        Ok(f32::from_bits((bytes[*ptr - 4] as u32) << 24 | (bytes[*ptr - 3] as u32) << 16 | (bytes[*ptr - 2] as u32) << 8 | (bytes[*ptr - 1] as u32)))
+    } else {
+        error!(=> "Unterminated single precision floating point number.")
+    }
+}
+fn int(ptr: &mut usize, bytes: &[u8]) -> Result<i32> {
+    if *ptr + 4 < bytes.len() {
+        *ptr += 4;
+        Ok(((bytes[*ptr - 4] as u32) << 24 | (bytes[*ptr - 3] as u32) << 16 | (bytes[*ptr - 2] as u32) << 8 | (bytes[*ptr - 1] as u32)) as i32)
+    } else {
+        error!(=> "Unterminated 32 bits signed integer.")
+    }
+}
+fn len(ptr: &mut usize, bytes: &[u8]) -> Result<u16> {
+    if *ptr + 2 < bytes.len() {
+        *ptr += 2;
+        Ok((bytes[*ptr - 2] as u16) << 8 | (bytes[*ptr - 1] as u16))
+    } else {
+        error!(=> "Unterminated 16 bits unsigned integer.")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{lexer::Lexer, parser::Parser, compiler::Compiler};
+
+    #[test]
+    fn serde() -> Result<()> {
+        let tokens = Lexer::new("(def a 42)(def 'impure b 34)", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
+        let (bcode, _, _) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), false)?.compile(vec![])?;
+        let ser = bcode.serialize();
+        let de = Bytecode::deserialize(&ser)?;
+        assert_eq!(bcode, de);
+        Ok(())
     }
 }

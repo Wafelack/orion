@@ -5,7 +5,7 @@ String
 format
 ------
 
-`format :: forall a . String -> (a) -> String`
+`format :: (Any a) => String -> (a) -> String`
 
 Formats values into a string on a delimiter.
 

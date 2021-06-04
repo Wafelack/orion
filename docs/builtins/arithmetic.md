@@ -74,7 +74,7 @@ Returns the opposite of a number.
 `_cmp`
 ------
 
-`(\_cmp) :: forall a . a -> a -> Integer`
+`(\_cmp) :: (Any a) => a -> a -> Integer`
 
 
 Compares two Integers/Strings/Singles.

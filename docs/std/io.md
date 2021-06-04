@@ -16,7 +16,7 @@ Equivalent to `(putStr (format "{}\n" (, x)))`.
 (putStrLn "Hello, World !")
 ```
 
-### `print :: forall a . a -> ()`
+### `print :: (Any a) => a -> ()`
 
 Equivalent to `(putStrLn (show x))`.
 

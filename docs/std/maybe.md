@@ -24,7 +24,7 @@ Functions
 
 ### `and_then`
 
-`and_then :: forall a . Maybe a -> Lambda -> Maybe Value`
+`and_then :: (Any a) => Maybe a -> Lambda -> Maybe Value`
 
 Performs a lambda with the contained value of `Just`.
 
