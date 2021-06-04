@@ -23,6 +23,7 @@ Index
     - [Naming](#naming)
     - [Formatting](#formatting)
 - [Appendix III: Shorthands](#appendix-iii-shorthands)
+
 Installing Orion
 -
 
