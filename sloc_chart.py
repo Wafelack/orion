@@ -3,6 +3,13 @@ from matplotlib import pyplot as plt
 from datetime import datetime, timedelta
 import subprocess
 import json
+import sys
+
+if len(sys.argv) != 2:
+    print(f'Usage: {sys.argv[0]} <LANG>')
+    exit(1)
+
+lang = sys.argv[1]
 
 hashes=[h.split(' ')[0] for h in subprocess.run(['git', 'log', '--oneline'], capture_output=True).stdout.decode('utf-8').strip().split('\n')]
 commit_date = subprocess.run(['git', 'show', '-s', '--oneline', '--format=%ci', hashes[-1]], capture_output=True).stdout.decode('utf-8').strip().split(' ')[0]
@@ -20,8 +27,8 @@ while dateified < today:
     stats=subprocess.run(['tokei', '-o', 'json'], capture_output=True).stdout.decode('utf-8').strip()
     jsoned = json.loads(stats)
     commit_sloc = 0
-    if 'Rust' in jsoned:
-        commit_sloc=int(json.loads(stats)['Rust']['code'])
+    if lang in jsoned:
+        commit_sloc=int(json.loads(stats)[lang]['code'])
     print(commit_sloc)
     dates.append(stringified)
     sloc.append(commit_sloc)
