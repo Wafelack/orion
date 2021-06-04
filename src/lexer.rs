@@ -26,6 +26,7 @@ pub enum TType {
     RParen,
     LBrace,
     RBrace,
+    Macro,
     Str(String),
     Number(i32),
     Float(f32),
@@ -221,6 +222,7 @@ impl Lexer {
         } else {
             match raw.as_str() {
                 "def" => self.add_token(TType::Def),
+                "macro" => self.add_token(TType::Macro),
                 "enum" => self.add_token(TType::Enum),
                 "\\" => self.add_token(TType::Lambda),
                 "," => self.add_token(TType::Tuple),

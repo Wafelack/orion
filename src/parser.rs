@@ -43,6 +43,20 @@ impl Expr {
             line,
         }
     }
+    pub fn replace(&self, from: String, to: Self) -> Self {
+        match self.exprt.clone() {
+            ExprT::Var(v) if v == from => to,
+            ExprT::Call(f, args) => Expr::new(ExprT::Call(Box::new(f.replace(from.clone(), to.clone())), args.into_iter().map(|e| e.replace(from.clone(), to.clone())).collect())),
+            ExprT::Lambda(args, content) => Expr::new(ExprT::Lambda(args, Box::new(content.replace(from, to)))),
+            ExprT::Def(name, val, impure) => Expr::new(ExprT::Def(name, Box::new(val.replace(from, to)), impure)),
+            ExprT::Constr(name, args) => Expr::new(ExprT::Constr(name, args.into_iter().map(|e| e.replace(from.clone(), to.clone())).collect())),
+            ExprT::Tuple(args) => Expr::new(ExprT::Tuple(args.into_iter().map(|e| e.replace(from.clone(), to.clone())).collect())),
+            ExprT::Match(val, pats) => Expr::new(ExprT::Match(Box::new(val.replace(from.clone(), to.clone())), pats.into_iter().map(|(p, e)| (p, e.replace(from.clone(), to.clone()))).collect())),
+            ExprT::Begin(args) => Expr::new(ExprT::Begin(args.into_iter().map(|e| e.replace(from.clone(), to.clone())).collect())),
+            ExprT::Builtin(name, args) => Expr::new(ExprT::Builtin(name, args.into_iter().map(|e| e.replace(from.clone(), to.clone())).collect())),
+            _ => self.clone(),
+        }.line(self.line)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,6 +66,7 @@ pub enum ExprT {
     Lambda(Vec<String>, Box<Expr>),
     Literal(Literal),
     Def(String, Box<Expr>, bool), // (name, value, impure?)
+    Macro(String, Vec<String>, Box<Expr>),
     Constr(String, Vec<Expr>),
     Enum(String, HashMap<String, u8>),
     Tuple(Vec<Expr>),
@@ -250,6 +265,27 @@ impl Parser {
                 let subroot = self.pop()?;
 
                 match &subroot.ttype {
+                    TType::Macro => {
+                        let name = self.advance(TType::Ident("".to_string()))?;
+                        let name = if let TType::Ident(s) = name.ttype {
+                            s
+                        } else {
+                            bug!("UNEXPECTED_NON_IDENT")
+                        };
+
+                        self.advance(TType::LParen)?;
+                        let mut args = vec![];
+                        while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
+                            match self.advance(TType::Ident("".to_string()))?.ttype {
+                                TType::Ident(s) => args.push(s),
+                                _ => bug!("UNEXPECTED_NON_IDENT")
+                            }
+                        }
+                        self.advance(TType::RParen)?;
+                        let expr = self.parse_expr()?;
+                        self.advance(TType::RParen)?;
+                        Expr::new(ExprT::Macro(name, args, Box::new(expr))).line(subroot.line)
+                    }
                     TType::Builtin(b) => {
                         let mut args = vec![];
                         while !self.is_at_end() && self.peek().unwrap().ttype != TType::RParen {
