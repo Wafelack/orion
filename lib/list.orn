@@ -29,7 +29,10 @@
             (match n
                    (0 (Cons x Nil))
                    (_ (Cons x (fill (- n 1) x))))))
-
+(def push (λ (list x)
+            (match list
+                ((Cons v next) (Cons v (push next x)))
+                (Nil (Cons x Nil)))))
 (def car (λ (list)
             (match list
                    ((Cons x Nil) (Just x))

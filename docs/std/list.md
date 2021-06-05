@@ -161,3 +161,15 @@ Folds every element into an accumulator by applying an operation, returning the 
 (def l (Cons 1 (Cons 2 (Cons 3 (Cons 4 Nil)))))
 (foldl 0 (\ (x y) (+ x y)) l) ;; 10
 ```
+
+### `push`
+
+`push :: (Any a) => List a -> a -> List a`
+
+Push an element to a list.
+
+#### Example
+
+```clojure
+(push Nil 55) ;; (Cons 55 Nil)
+```
