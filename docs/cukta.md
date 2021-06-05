@@ -232,3 +232,4 @@ Appendix III: Shorthands
 - `()` expands to `(,)`
 - `{x}` expands to `(begin x)`
 - `'x` expands to `(\ () x)`
+- `[x y z]` expands to `(Cons x (Cons y (Cons z Nil)))`
