@@ -100,10 +100,10 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 if args.len() == 0 {
                     name
                 } else {
-                    format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim())
+                    format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim())
                 }
             }            
-            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim()),
+            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim()),
         }
     }
     fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
