@@ -26,6 +26,8 @@ pub enum TType {
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
     Macro,
     Str(String),
     Number(i32),
@@ -143,6 +145,8 @@ impl Lexer {
         match c {
             '(' => self.add_token(TType::LParen),
             ')' => self.add_token(TType::RParen),
+            '[' => self.add_token(TType::LBracket),
+            ']' => self.add_token(TType::RBracket),
             '{' => self.add_token(TType::LBrace),
             '}' => self.add_token(TType::RBrace),
             ' ' | '\r' | '\t' => {}

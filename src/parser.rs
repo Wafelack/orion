@@ -261,6 +261,19 @@ impl Parser {
                 self.advance(TType::RBrace)?;
                 Expr::new(ExprT::Begin(expressions)).line(root.line)
             }
+            TType::LBracket => {
+                let mut exprs = vec![];
+                while !self.is_at_end() && self.peek().unwrap().ttype != TType::RBracket {
+                    exprs.push(self.parse_expr()?);
+                }
+                let constr = if exprs.len() >= 1 {
+                    exprs.into_iter().rev().fold(ExprT::Constr("Nil".to_string(), vec![]), |acc, e| ExprT::Constr("Cons".to_string(), vec![e, Expr::new(acc).line(root.line)]))
+                } else {
+                    ExprT::Constr("Nil".to_string(), vec![])
+                };
+                self.advance(TType::RBracket)?;
+                Expr::new(constr).line(root.line)
+            }
             TType::LParen => {
                 let subroot = self.pop()?;
 
@@ -659,7 +672,13 @@ mod test {
 
         Ok(())
     }
-
+    #[test]
+    fn brackets() -> Result<()> {
+        let tokens = Lexer::new("[1 2]", 0).proc_tokens()?;
+        let ast = Parser::new(tokens, "TEST").parse()?;
+        assert_eq!(ast, vec![Expr::new(ExprT::Constr("Cons".to_string(), vec![Expr::new(ExprT::Literal(Literal::Integer(1))), Expr::new(ExprT::Constr("Cons".to_string(), vec![Expr::new(ExprT::Literal(Literal::Integer(2))), Expr::new(ExprT::Constr("Nil".to_string(), vec![]))]))]))]);
+            Ok(())
+    }
     #[test]
     fn begin() -> Result<()> {
         let tokens = Lexer::new("(begin a b c) { }", 0).proc_tokens()?;
