@@ -37,7 +37,7 @@ echo -n "* Generating Makefile ... "
 cat > Makefile << EOF
 FILES := \$(shell find src/ -name *.rs)
 
-PREFIX ?= ${HOME}/.orion
+PREFIX ?= /usr/
 TARGET := target/release/orion
 LIB    := lib/
 
