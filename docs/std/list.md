@@ -142,3 +142,22 @@ Processes each element of a list in a function and gets the result.
 (def foo (Cons 5 (Cons 6 (Cons 7 (Cons 8 Nil)))))
 (map foo (λ (x) (* x 2))) ;; (Cons 10 (Cons 12 (Cons 14 (Cons 16 Nil))))
 ```
+
+### `foldl`
+
+`foldl :: (Any a) => a -> (a -> a -> a) -> List a -> a`
+
+Folds every element into an accumulator by applying an operation, returning the final result.
+
+#### Arguments
+
+* `acc :: (Any a) => a`: The accumulator, or starting value.
+* `f :: (Any a) => a -> a -> a`: The folding function.
+* `list :: (Any a) => List a`: The list to fold.
+
+#### Example
+
+```clojure
+(def l (Cons 1 (Cons 2 (Cons 3 (Cons 4 Nil)))))
+(foldl 0 (\ (x y) (+ x y)) l) ;; 10
+```
