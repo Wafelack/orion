@@ -88,22 +88,22 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         to_ret.register_builtin(Self::cmp, 2);
         to_ret
     }
-    pub fn display_value(&self, val: Rc<Value>) -> String {
+    pub fn display_value(&self, val: Rc<Value>, quotes: bool) -> String {
 
         match &*val {
             Value::Integer(i) => format!("{}", i),
             Value::Single(r) => format!("{}{}", r, if r.fract() == 0.0 { "." } else { "" }),
-            Value::String(s) => format!("{}", s),
+            Value::String(s) => format!("{}{}{}", if quotes { "\"" } else { "" }, s, if quotes { "\"" } else { "" }),
             Value::Lambda(u, ..) => format!("λ{}", u),
             Value::Constructor(id, args) => {
                 let name = self.input.symbols[self.input.constructors[*id as usize].1 as usize].clone();
                 if args.len() == 0 {
                     name
                 } else {
-                    format!( "({}{})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim())
+                    format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim())
                 }
             }            
-            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone()))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim()),
+            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { ", " }, c)).trim()),
         }
     }
     fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
@@ -240,7 +240,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Panic(file, line) => if let Literal::Integer(line) = self.input.constants[line as usize] {
                 if let Literal::String(file) = self.input.constants[file as usize].clone() {
                     let popped = self.pop()?;
-                    eprintln!("Program panicked at '{}', {}:{}.", self.display_value(popped), file, line);
+                    eprintln!("Program panicked at {}, {}:{}.", self.display_value(popped, true), file, line);
                     std::process::exit(1);
                 }
             }
