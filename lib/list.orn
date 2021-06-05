@@ -40,6 +40,12 @@
                   ((Cons x next) (Just next))
                   (Nil Nothing))))
 
+(def foldl (λ (acc f list)
+             (match list
+                    ((Cons x Nil) (f acc x))
+                    ((Cons x next) (foldl (f acc x) f next))
+                    (Nil acc))))
+
 (def range (λ (start end)
   (match start
          (end Nil)
