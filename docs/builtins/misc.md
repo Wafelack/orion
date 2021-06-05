@@ -1,4 +1,4 @@
-Arithmetic
+Misc
 ==========
 
 type
@@ -12,3 +12,15 @@ Example :
 ```clojure
 (type True) ;; "Bool"
 ```
+
+begin
+-----
+
+Begin allow you to put serveral expressions in a block.
+
+Example:
+```clojure
+(begin
+    (putStrLn "Hello, World !")
+    55)
+    ```
