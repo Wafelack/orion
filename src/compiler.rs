@@ -173,8 +173,10 @@ impl Compiler {
             match fs::read_to_string(&fname) {
                 Ok(content) => {
                     let tokens = Lexer::new(content, &fname).proc_tokens()?;
-                    let expressions = Parser::new(tokens, fname).parse()?;
-                    Ok((
+                    let expressions = Parser::new(tokens, &fname).parse()?;
+                    let saved = self.file.clone();
+                    self.file = fname;
+                    let to_ret = Ok((
                             expressions
                             .into_iter()
                             .map(|e| {
@@ -187,7 +189,9 @@ impl Compiler {
                             .flatten()
                             .collect(),
                             symbols,
-                            ))
+                            ));
+                    self.file = saved;
+                    to_ret
                 }
                 Err(e) => error!(self.file, line => "Failed to read file: {}: {}.", fname, e),
             }
