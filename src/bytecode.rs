@@ -19,6 +19,7 @@
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::{parser::Literal, error, Result};
+use std::fmt::{self, Formatter, Display};
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum OpCode {
@@ -32,6 +33,22 @@ pub enum OpCode {
     Tuple(u16, u16),       // (instr_amount, amount)
     Match(u16),            // (match_idx)
     Panic(u16, u16),       // (file_sym, line_sym)
+}
+impl Display for OpCode {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::LoadConst(i)      => write!(f, "CONST   {:04X}", i),
+            Self::LoadSym(i)        => write!(f, "LOAD    {:04X}", i),
+            Self::Call(i)           => write!(f, "CALL    {:04X}", i),
+            Self::Builtin(i, a)     => write!(f, "BUILTIN {:02X}   {:02X}", i, a),
+            Self::Def(i, l)         => write!(f, "DEF     {:04X} {:04X}", i, l),
+            Self::Lambda(i)         => write!(f, "FUN     {:04X}", i),
+            Self::Constructor(i, v) => write!(f, "CONSTR  {:04X} {:04X}", i, v),
+            Self::Tuple(i, a)       => write!(f, "TUP     {:04X} {:04X}", i, a),
+            Self::Match(i)          => write!(f, "MATCH   {:04X}", i),
+            Self::Panic(fi, l)      => write!(f, "PANIC   {:04X} {:04X}", fi, l),
+        }
+    }
 }
 impl OpCode {
     pub fn deserialize(ptr: &mut usize, bytes: &[u8]) -> Result<Self> {

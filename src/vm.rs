@@ -24,6 +24,7 @@ use crate::{
     parser::Literal,
     Result,
 };
+use std::io::{self, Write};
 
 use std::rc::Rc;
 
@@ -500,14 +501,60 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             }
         }
     }
-    pub fn eval(&mut self, mut sym_ref: Vec<u16>, mut ctx: Vec<Rc<Value>>) -> Result<(Vec<Rc<Value>>, Vec<u16>, Vec<Vec<Rc<Value>>>)> {
+    pub fn eval(&mut self, mut sym_ref: Vec<u16>, mut ctx: Vec<Rc<Value>>, mut step: bool) -> Result<(Vec<Rc<Value>>, Vec<u16>, Vec<Vec<Rc<Value>>>)> {
+        if step {
+            println!("Welcome to the Orion DeBugger, type `h' to get help.");
+        }
         while self.ip < self.input.instructions.len() {
             let instruction = self.input.instructions[self.ip];
             let instrs = self.input.instructions.clone();
             self.eval_opcode(instruction, &mut ctx, &mut sym_ref, &instrs)?;
+            if step {
+                step = self.dbg_step();
+            }
             self.ip += 1;
         }
         Ok((ctx, sym_ref, self.saves.clone()))
+    }
+    pub fn dbg_step(&mut self) -> bool {
+        loop {
+            print!("odb> ");
+            io::stdout().flush().unwrap();
+            let mut buffer = String::new();
+            io::stdin().read_line(&mut buffer).unwrap();
+            let help = "\
+h\tDisplay this message.
+n\tExecute next opcode.
+c\tPrint next opcode.
+q\tExit ODB.
+s\tDisplay stack.
+i\tDisplay the 15 instructions around the instruction pointer.";
+            match buffer.trim() {
+                "h" => println!("{}", help),
+                "n" => return true,
+                "q" => return false,
+                "c" => println!("{}", self.input.instructions[self.ip]),
+                "s" => println!("[{}]", self.stack.iter().skip(1).fold(self.stack.iter().nth(0).and_then(|e| Some(self.display_value(e.clone(), true))).unwrap_or("".to_string()), |acc, x| format!("{}, {}", acc, self.display_value(x.clone(), true)))),
+                "i" => {
+                    let start = if 7 > self.ip {
+                        (0, -(self.ip as i32))
+                    } else {
+                        (self.ip - 7, -7)
+                    };
+                    let end = if self.ip + 7  > self.input.instructions.len() {
+                        (self.input.instructions.len(), self.input.instructions.len() as i32 - self.ip as i32)
+                    } else {
+                        (self.ip + 7, 7 as i32)
+                    };
+                    let indices = (start.1..end.1).collect::<Vec<i32>>();
+                    self.input.instructions[start.0..end.0].iter().enumerate().for_each(|(idx, i)| {
+                        println!("{}{}    {}", if indices[idx] > -1 { " " } else { "" }, indices[idx], i);
+                    })
+                }
+                x => println!("Unrecognized command: `{}'. Type `h' for help.", x),
+            }
+
+        }
     }
 }
 
