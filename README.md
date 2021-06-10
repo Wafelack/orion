@@ -24,7 +24,7 @@ Features
 - Lightness: Orion source code fits under 3k SLOC and its binary is under 2MB.
 - Portable: Orion code is run on a virtual machine, that avoids architecture-specific problems.
 - Purely functional: Pattern matching, immutability, side effects control.
-- Elegant: It embeds shorthands such as `'<expr>` for `(\ () <expr>)` or `{ <expr>* }` for `(begin <expr>*)`.
+- Elegant: It embeds shorthands such as `'<expr>` for `(\ () <expr>)`, `[x y z]` for `(Cons x (Cons y (Cons z Nil)))` or `{ <expr>* }` for `(begin <expr>*)`.
 
 
 Installation
