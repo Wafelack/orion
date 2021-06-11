@@ -43,4 +43,21 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             error!(=> "Expected a Tuple, found a {}.", self.val_type(&args)?)
         }
     }
+    pub fn get(&mut self) -> Result<Rc<Value>> {
+        let idx = self.pop()?;
+        let string = self.pop()?;
+        if let Value::Integer(i) = (*idx).clone() {
+            if let Value::String(s) = (*string).clone() {
+                Ok(Rc::new(Value::String(if i < 0 {
+                    "".to_string()
+                } else {
+                    s.chars().nth(i as usize).and_then(|c| Some(format!("{}", c))).unwrap_or("".to_string())
+                })))
+            } else {
+                error!(=> "Expected a String, found a {}.", self.val_type(&string)?)
+            }
+        } else {
+            error!(=> "Expected an Integer, found a {}.", self.val_type(&idx)?)
+        }
+    }
 }
