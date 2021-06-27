@@ -445,20 +445,3 @@ fn len(ptr: &mut usize, bytes: &[u8]) -> Result<u16> {
         error!(=> "Unterminated 16 bits unsigned integer.")
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::{lexer::Lexer, parser::Parser, compiler::Compiler};
-
-    #[test]
-    fn serde() -> Result<()> {
-        let tokens = Lexer::new("(def a 42)(def 'impure b 34)", 0).proc_tokens()?;
-        let ast = Parser::new(tokens, "TEST").parse()?;
-        let (bcode, _, ..) = Compiler::new(ast, "TEST", Bytecode::new(), vec![], true, "".to_string(), false, vec![])?.compile(vec![])?;
-        let ser = bcode.serialize();
-        let de = Bytecode::deserialize(&ser)?;
-        assert_eq!(bcode, de);
-        Ok(())
-    }
-}
