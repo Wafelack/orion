@@ -209,9 +209,9 @@ pub fn cli() -> Result<()> {
             Err(e) => return error!(=> "Failed to read file: {}: {}.", file, e)
         };
         let start = Instant::now();
-        let tokens = Lexer::new(content, "REPL").proc_tokens()?;
-        let expressions = Parser::new(tokens, "REPL").parse()?;
-        let (bytecode, ..) = Compiler::new(expressions, "REPL", Bytecode::new(), vec![], false, lib, false, vec![])?.compile(vec![])?;
+        let tokens = Lexer::new(content, file).proc_tokens()?;
+        let expressions = Parser::new(tokens, file).parse()?;
+        let (bytecode, ..) = Compiler::new(expressions, file, Bytecode::new(), vec![], false, lib, false, vec![])?.compile(vec![])?;
         let elapsed = start.elapsed();
         if dbg_level > 0 {
             println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
