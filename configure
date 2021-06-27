@@ -7,20 +7,21 @@ SHELL_VAR=""
 FILE=""
 DONE_2=""
 
+SHELL=$(basename $SHELL)
 case $SHELL in
-	"/bin/bash"|"/usr/bin/bash")
+	"bash")
 		SHELL_PATH="PATH=\$(PREFIX)/bin:\$PATH"
 		SHELL_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
 		FILE="${HOME}/.bash_profile"
 		DONE_2="$DONE"
 		;;
-	"/bin/zsh"|"/usr/bin/zsh")
+	"zsh")
 		SHELL_PATH="PATH=\$(PREFIX)/bin:\$PATH"
 		SHELl_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
 		FILE="${HOME}/.zshrc"
 		DONE_2="$DONE"
 		;;
-	"/bin/fish"|"/usr/bin/fish")
+	"fish")
 		SHELL_PATH="set PATH \$(PREFIX)/bin \\\$\$PATH"
 		SHELL_VAR="export ORION_LIB=\$(PREFIX)/\$(LIB)/orion"
 		FILE="${HOME}/.config/fish/config.fish"
