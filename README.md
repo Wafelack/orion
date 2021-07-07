@@ -30,7 +30,7 @@ Features
 Installation
 ------------
 
-You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (installed in `/bin/sh`) and Git.
+You will need: the Rust toolchain (1.50+), a "make" program, a POSIX shell (linked in `/bin/sh`) and Git.
 
 ```bash
 $ git clone https://github.com/orion-lang/orion.git
