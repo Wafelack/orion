@@ -50,9 +50,9 @@
                     (Nil acc))))
 
 (def range (λ (start end)
-  (match start
-         (end Nil)
-         (_ (Cons start (range (+ start 1) end))))))
+  (if (= start end)
+    Nil
+    (Cons start (range (+ start 1) end)))))
 
 (def length (λ (list) 
                (match (cdr list)
