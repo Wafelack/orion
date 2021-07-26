@@ -59,10 +59,10 @@ impl Compiler {
             builtins: vec![],
             file: file.to_string(),
         };
-        to_ret.register_builtin("+", false);
-        to_ret.register_builtin("-", false);
-        to_ret.register_builtin("*", false);
-        to_ret.register_builtin("/", false);
+        to_ret.register_builtin("add", false);
+        to_ret.register_builtin("sub", false);
+        to_ret.register_builtin("mul", false);
+        to_ret.register_builtin("div", false);
         to_ret.register_builtin("neg", false);
         to_ret.register_builtin("cos", false);
         to_ret.register_builtin("sin", false);

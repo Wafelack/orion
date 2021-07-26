@@ -251,10 +251,10 @@ impl Lexer {
         self.register_builtin("_cmp");
         self.register_builtin("panic");
 
-        self.register_builtin("+");
-        self.register_builtin("-");
-        self.register_builtin("*");
-        self.register_builtin("/");
+        self.register_builtin("add");
+        self.register_builtin("sub");
+        self.register_builtin("mul");
+        self.register_builtin("div");
         self.register_builtin("neg");
         self.register_builtin("cos");
         self.register_builtin("sin");

@@ -22,7 +22,7 @@
 	(Just x)
 	Nothing)
 
-(def and_then (λ (optionnal callback)
+(def >> (λ (optionnal callback)
                 (match optionnal
                        (Nothing Nothing)
                        ((Just x) (callback x)))))
