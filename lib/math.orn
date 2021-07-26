@@ -19,6 +19,14 @@
 ;;  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
 
 (load "bool.orn")
+(def + (λ (lhs rhs)
+         (add lhs rhs)))
+(def - (λ (lhs rhs)
+         (sub lhs rhs)))
+(def * (λ (lhs rhs)
+         (mul lhs rhs)))
+(def / (λ (lhs rhs)
+         (div lhs rhs)))
 (def < (λ (lhs rhs)
                (= (cmp lhs rhs) Less)))
 

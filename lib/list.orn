@@ -38,7 +38,7 @@
                    ((Cons x Nil) (Just x))
                    ((Cons x _) (Just x))
                    (Nil Nothing))))
-(def cdn (λ (list)
+(def cdr (λ (list)
            (match list
                   ((Cons x next) (Just next))
                   (Nil Nothing))))
@@ -55,7 +55,7 @@
          (_ (Cons start (range (+ start 1) end))))))
 
 (def length (λ (list) 
-               (match (cdn list)
+               (match (cdr list)
                       (Nothing 0)
                       ((Just x) (+ 1 (length x))))))
 (def empty? (λ (list)
