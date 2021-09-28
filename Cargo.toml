@@ -1,25 +1,8 @@
 [package]
-name = "orion-lang"
-version = "1.0.0"
-authors = ["Wafelack <wafelack@protonmail.com>"]
-edition = "2018"
-repository = "https://github.com/wafelack/orion"
-readme = "https://github.com/wafelack/orion/blob/master/README.md"
-description = "LISP inspired purely functional programming language."
-documentation = "https://github.com/wafelack/orion/blob/master/DOCS.md"
-license = "GPL-3.0"
-keywords = ["lisp-like", "functional", "fp", "language"]
-
-
-[[bin]]
 name = "orion"
-path = "src/main.rs"
+version = "0.1.0"
+edition = "2018"
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustyline = "7.1.0"
-clap = "2.33.3"

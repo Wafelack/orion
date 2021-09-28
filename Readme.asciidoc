@@ -1,0 +1,17 @@
+== Orion
+
+Orion is a high-level dialect of LISP with powerful functional features.
+
+=== Building and testing
+
+Prerequisties: link:https://rustup.rs[Rust toolchain version 1.44 or later]
+
+[source,bash]
+----
+$ cargo test
+$ cargo build
+----
+
+=== License
+
+This project is licensed under the GNU General Public License version 3.0 or later (GPLv3+).
