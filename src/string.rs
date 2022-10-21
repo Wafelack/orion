@@ -51,7 +51,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 Ok(Rc::new(Value::String(if i < 0 {
                     "".to_string()
                 } else {
-                    s.chars().nth(i as usize).map(|c| format!("{}", c)).unwrap_or("".to_string())
+                    s.chars().nth(i as usize).map(|c| format!("{}", c)).unwrap_or_else(|| "".to_string())
                 })))
             } else {
                 error!(=> "Expected a String, found a {}.", self.val_type(&string)?)

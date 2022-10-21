@@ -22,11 +22,8 @@
 mod bytecode;
 mod compiler;
 mod errors;
-#[allow(clippy::approx_constant)]
 mod lexer;
-#[allow(clippy::approx_constant)]
 mod parser;
-#[allow(clippy::approx_constant)]
 mod vm;
 mod cli;
 

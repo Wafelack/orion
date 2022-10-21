@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![allow(clippy::approx_constant)]
 use crate::{
     bug, error,
     lexer::{TType, Token},
@@ -141,9 +142,7 @@ impl Parser {
         }
     }
     fn peek(&self) -> Option<Token> {
-        self.input
-            .iter()
-            .nth(self.current).cloned()
+        self.input.get(self.current).cloned()
     }
     fn is_at_end(&self) -> bool {
         self.input.len() != 1 && self.current >= self.input.len()

@@ -18,20 +18,31 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+use crate::{
+    bytecode::Bytecode,
+    compiler::Compiler,
+    error,
+    lexer::Lexer,
+    parser::Parser,
+    print_err,
+    vm::{Value, VM},
+    Result,
+};
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
-use std::{rc::Rc, time::Instant, path::Path, fs, io::Write};
-use crate::{Result, print_err, error, lexer::{Lexer}, parser::{Parser}, bytecode::Bytecode, compiler::{Compiler}, vm::{VM, Value}};
+use std::{fs, io::Write, path::Path, rc::Rc, time::Instant};
+
 
 fn repl(dbg_level: u8, lib: String) -> Result<()> {
     println!(
-        ";; Orion REPL v{}.\n
+r#";; Orion REPL v{}.
+
 ;; Copyright (C) 2021  Wafelack <wafelack@protonmail.com>
 ;; This program comes with ABSOLUTELY NO WARRANTY.
 ;; This is free software, and you are welcome to redistribute it
-;; under certain conditions.",
-env!("CARGO_PKG_VERSION")
-);
+;; under certain conditions."#,
+        env!("CARGO_PKG_VERSION")
+    );
     let mut ctx = vec![];
     let mut symbols = vec![];
     let mut bytecode = Bytecode::new();
@@ -39,7 +50,7 @@ env!("CARGO_PKG_VERSION")
     let mut sym_ref = vec![];
     let mut saves = vec![];
     let mut macros = vec![];
-    let mut vm = VM::new(Bytecode::new(), vec![]);
+    // let mut vm = VM::new(Bytecode::new(), vec![]);
 
     let mut rl = Editor::<()>::new();
     let mut i = 0;
@@ -62,15 +73,24 @@ env!("CARGO_PKG_VERSION")
                         continue;
                     }
                 };
-                    
+
                 let expressions = match Parser::new(tokens, "REPL").parse() {
-                   Ok(e) => e,
-                   Err(e) => {
-                       print_err(e);
-                       continue;
-                   }
+                    Ok(e) => e,
+                    Err(e) => {
+                        print_err(e);
+                        continue;
+                    }
                 };
-                let (new_bytecode, new_syms, new_constructors, new_macros) = match (match Compiler::new(expressions, "REPL", bytecode.clone(), constructors.clone(),  i > 1, lib.clone(), true, macros.clone()) {
+                let mut compiler = match Compiler::new(
+                    expressions,
+                    "REPL",
+                    bytecode.clone(),
+                    constructors.clone(),
+                    i > 1,
+                    lib.clone(),
+                    true,
+                    macros.clone(),
+                ) {
                     Ok(c) => c,
                     Err(e) => {
                         if i == 1 {
@@ -79,16 +99,18 @@ env!("CARGO_PKG_VERSION")
                         print_err(e);
                         continue;
                     }
-                }).compile(symbols.clone()) {
-                    Ok(b) => b,
-                    Err(e) => {
-                        if i == 1 {
-                            i = 0;
-                        } 
-                        print_err(e);
-                        continue;
-                    }
                 };
+                let (new_bytecode, new_syms, new_constructors, new_macros) =
+                    match compiler.compile(symbols.clone()) {
+                        Ok(b) => b,
+                        Err(e) => {
+                            if i == 1 {
+                                i = 0;
+                            }
+                            print_err(e);
+                            continue;
+                        }
+                    };
                 bytecode = new_bytecode;
                 symbols = new_syms;
                 constructors = new_constructors;
@@ -97,29 +119,35 @@ env!("CARGO_PKG_VERSION")
                 if dbg_level > 1 {
                     println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
                 }
-                vm = VM::<16000>::new(bytecode.clone(), saves.clone());
-                let (new_ctx, new_ref, new_saves) = match vm.eval(sym_ref.clone(), ctx.clone(), dbg_level > 2) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        print_err(e);
-                        continue;
-                    }
-                };
+                let mut vm = VM::<16000>::new(bytecode.clone(), saves.clone());
+                let (new_ctx, new_ref, new_saves) =
+                    match vm.eval(sym_ref.clone(), ctx.clone(), dbg_level > 2) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            print_err(e);
+                            continue;
+                        }
+                    };
                 ctx = new_ctx;
                 sym_ref = new_ref;
                 saves = new_saves;
-                let top = &vm.stack.iter().nth(match vm.stack.len() as isize - 1 {
-                    x if x < 0 => 0,
-                    x => x as usize,
-                }).map(|v| (**v).clone());
+                let top = &vm
+                    .stack
+                    .get(match vm.stack.len() as isize - 1 {
+                        x if x < 0 => 0,
+                        x => x as usize,
+                    })
+                    .map(|v| (**v).clone());
                 if let Some(Value::Tuple(v)) = top {
                     if !v.is_empty() {
-                        println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap()), true))
+                        println!(
+                            "=> {}",
+                            vm.display_value(Rc::new(top.clone().unwrap()), true)
+                        )
                     }
                 } else if let Some(v) = top.clone() {
                     println!("=> {}", vm.display_value(Rc::new(v), true));
                 }
- 
             }
             Err(ReadlineError::Interrupted) => {
                 println!(";; User break");
@@ -186,32 +214,47 @@ pub fn cli() -> Result<()> {
         None => match env::var("ORION_LIB") {
             Ok(v) => v,
             Err(_) => return error!(=> "No such environment variable: ORION_LIB."),
-        }
+        },
     };
     let dbg_level = match matches.value_of("debug-level") {
         Some(lvl) => match lvl.parse::<u8>() {
-            Ok(u) => if u > 3 {
-                3
-            } else {
-                u
+            Ok(u) => {
+                if u > 3 {
+                    3
+                } else {
+                    u
+                }
             }
             Err(_) => 0,
-        }
+        },
         None => 0,
     };
     if let Some(file) = matches.value_of("file") {
         let output = match matches.value_of("output") {
             Some(f) => f.to_string(),
-            None => format!("{}.orc", Path::new(file).file_stem().unwrap().to_str().unwrap()),
+            None => format!(
+                "{}.orc",
+                Path::new(file).file_stem().unwrap().to_str().unwrap()
+            ),
         };
         let content = match fs::read_to_string(file) {
             Ok(s) => s,
-            Err(e) => return error!(=> "Failed to read file: {}: {}.", file, e)
+            Err(e) => return error!(=> "Failed to read file: {}: {}.", file, e),
         };
         let start = Instant::now();
         let tokens = Lexer::new(content, file).proc_tokens()?;
         let expressions = Parser::new(tokens, file).parse()?;
-        let (bytecode, ..) = Compiler::new(expressions, file, Bytecode::new(), vec![], false, lib, false, vec![])?.compile(vec![])?;
+        let (bytecode, ..) = Compiler::new(
+            expressions,
+            file,
+            Bytecode::new(),
+            vec![],
+            false,
+            lib,
+            false,
+            vec![],
+        )?
+        .compile(vec![])?;
         let elapsed = start.elapsed();
         if dbg_level > 0 {
             println!("{} Compiled in {}ms.", STAR, elapsed.as_millis());
@@ -219,8 +262,10 @@ pub fn cli() -> Result<()> {
         let to_write = bytecode.serialize();
         match (match fs::File::create(&output) {
             Ok(f) => f,
-            Err(e) => return error!(=> "Failed to create file: {}: {}.", output, e)
-        }).write_all(to_write.as_slice()) {
+            Err(e) => return error!(=> "Failed to create file: {}: {}.", output, e),
+        })
+        .write_all(to_write.as_slice())
+        {
             Ok(()) => {}
             Err(e) => return error!(=> "Failed to write file: {}: {}.", output, e),
         };

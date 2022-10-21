@@ -290,10 +290,7 @@ impl Compiler {
             }
             ExprT::Call(func, args) => {
                 if let ExprT::Var(v) = func.clone().exprt {
-                    match self.macros.iter().position(|(name, ..)| &v == name) {
-                        Some(i) => return self.r#macro(i, args, symbols, impure, expr.line),
-                        None => {}
-                    }
+                    if let Some(i) = self.macros.iter().position(|(name, ..)| &v == name) { return self.r#macro(i, args, symbols, impure, expr.line) }
                 }
                 let (mut to_ret, mut symbols) = self.compile_expr(*func, symbols, impure)?; // The λ to execute.
                 let argc = args.len() as u16;

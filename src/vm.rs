@@ -305,10 +305,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             args.len()
                             );
                     }
-                    for idx in 0..chunk.reference.len() {
+                    for (idx, &sym_id) in chunk.reference.iter().enumerate() {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
-                        let sym_id = chunk.reference[idx];
                         self.decl(sym_id, val, &mut ctx, &mut sym_ref);
                     }
                     let prev_ip = self.ip;
@@ -340,7 +339,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 while self.ip < saved + to_eval as usize {
                     self.ip += 1;
                     let instruction = instructions[self.ip];
-                    self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
+                    self.eval_opcode(instruction, ctx, sym_ref, instructions)?;
                 }
                 let mut vals = (0..amount)
                     .map(|_| self.pop())
@@ -364,34 +363,31 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Match(idx) => {
                 let to_match = self.pop()?;
                 let patterns = self.input.matches[idx as usize].clone();
-                let plausible = patterns.into_iter().map(|(pat, to_exec)| {
+                let plausibles: Vec<_> = patterns.into_iter().filter_map(|(pat, to_exec)| {
                     if self.is_plausible(pat, &to_match) {
                         Some((pat, to_exec))
                     } else {
                         None
                     }
-                }).filter(|p| !p.is_none()).map(|p| p.unwrap()).collect::<Vec<(u16, Vec<OpCode>)>>();
-                for plausible in plausible.into_iter() {
-                    match self.match_and_bound(&to_match, plausible.0) {
-                        Some(to_bind) => {
-                            let mut new_ctx = ctx.clone();
-                            let mut new_ref = sym_ref.clone();
-                            let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
-                            to_bind.into_iter().for_each(|sym_id| {
-                                let val = new_stack.pop().unwrap();
-                                self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
-                            });
-                            let saved = self.ip;
-                            self.ip = 0;
-                            while self.ip < plausible.1.len() {
-                                let instr = plausible.1[self.ip];
-                                self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)?;
-                                self.ip += 1;
-                            }
-                            self.ip = saved;
-                            return Ok(());
-                        },
-                        None => {},
+                }).collect();
+                for plausible in plausibles {
+                    if let Some(to_bind) = self.match_and_bound(&to_match, plausible.0) {
+                        let mut new_ctx = ctx.clone();
+                        let mut new_ref = sym_ref.clone();
+                        let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
+                        to_bind.into_iter().for_each(|sym_id| {
+                            let val = new_stack.pop().unwrap();
+                            self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
+                        });
+                        let saved = self.ip;
+                        self.ip = 0;
+                        while self.ip < plausible.1.len() {
+                            let instr = plausible.1[self.ip];
+                            self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)?;
+                            self.ip += 1;
+                        }
+                        self.ip = saved;
+                        return Ok(());
                     }
                 }
                 return error!(=> "No pattern to be matched.");
@@ -472,32 +468,16 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn is_plausible(&self, pat: u16, to_match: &Value) -> bool {
         let pat = self.input.patterns[pat as usize].clone();
-        match pat {
-            BytecodePattern::Var(_) | BytecodePattern::Any => true,
-            BytecodePattern::Constr(_, _) => if let Value::Constructor(_, _) = to_match {
-                true
-            } else {
-                false
+        match (pat, to_match) {
+            (BytecodePattern::Var(_) | BytecodePattern::Any, _) => true,
+            (BytecodePattern::Constr(_, _), Value::Constructor(_, _)) => true,
+            (BytecodePattern::Tuple(_), Value::Tuple(_)) => true,
+            (BytecodePattern::Literal(lid), _) => match &self.input.constants[lid as usize] {
+                Literal::Integer(_) => matches!(to_match, Value::Integer(_)),
+                Literal::Single(_) => matches!(to_match, Value::Single(_)),
+                Literal::String(_) => matches!(to_match, Value::String(_)),
             }
-            BytecodePattern::Tuple(_) => if let Value::Tuple(_) = to_match {
-                true
-            } else {
-                false
-            }
-            BytecodePattern::Literal(lid) => match &self.input.constants[lid as usize] {
-                Literal::Integer(_) => match to_match {
-                    Value::Integer(_) => true,
-                    _ => false,
-                }
-                Literal::Single(_) => match to_match {
-                    Value::Single(_) => true,
-                    _ => false
-                }
-                Literal::String(_) => match to_match {
-                    Value::String(_) => true,
-                    _ => false,
-                }
-            }
+            _ => false
         }
     }
     pub fn eval(&mut self, mut sym_ref: Vec<u16>, mut ctx: Vec<Rc<Value>>, mut step: bool) -> Result<(Vec<Rc<Value>>, Vec<u16>, Vec<Vec<Rc<Value>>>)> {
@@ -533,7 +513,7 @@ i\tDisplay the 15 instructions around the instruction pointer.";
                 "n" => return true,
                 "q" => return false,
                 "c" => println!("{}", self.input.instructions[self.ip]),
-                "s" => println!("[{}]", self.stack.iter().skip(1).fold(self.stack.iter().nth(0).map(|e| self.display_value(e.clone(), true)).unwrap_or("".to_string()), |acc, x| format!("{}, {}", acc, self.display_value(x.clone(), true)))),
+                "s" => println!("[{}]", self.stack.iter().skip(1).fold(self.stack.get(0).map(|e| self.display_value(e.clone(), true)).unwrap_or_else(|| "".to_string()), |acc, x| format!("{}, {}", acc, self.display_value(x.clone(), true)))),
                 "i" => {
                     let start = if 7 > self.ip {
                         (0, -(self.ip as i32))

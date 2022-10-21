@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![allow(clippy::approx_constant)]
 use crate::{error, Result};
 
 #[derive(Clone, PartialEq, Debug)]

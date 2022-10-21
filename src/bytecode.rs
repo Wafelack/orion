@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![allow(clippy::approx_constant)]
 use crate::{parser::Literal, error, Result};
 use std::fmt::{self, Formatter, Display};
 
@@ -51,6 +52,7 @@ impl Display for OpCode {
     }
 }
 impl OpCode {
+    #[allow(unused)]
     pub fn deserialize(ptr: &mut usize, bytes: &[u8]) -> Result<Self> {
         *ptr += 1;
         match bytes[*ptr - 1] {
@@ -167,8 +169,9 @@ impl Bytecode {
         }
     }
     // All numbers here are big endian
+    #[allow(unused)]
     pub fn deserialize(bytes: &[u8]) -> Result<Self> {
-        if &bytes[0..5] != "orion".chars().into_iter().map(|c| c as u8).collect::<Vec<u8>>() {
+        if bytes[0..5] != "orion".chars().into_iter().map(|c| c as u8).collect::<Vec<u8>>() {
             error!(=> "Invalid bytecode.")
         } else {
             let mut ptr = 5; // Skip timestamp
@@ -414,7 +417,7 @@ fn string(ptr: &mut usize, bytes: &[u8]) -> Result<String> {
         to_ret.push(bytes[*ptr] as char);
         *ptr += 1;
     }
-    if bytes.iter().nth(*ptr) == Some(&0) {
+    if bytes.get(*ptr) == Some(&0) {
         *ptr += 1;
         Ok(to_ret)
     } else {
