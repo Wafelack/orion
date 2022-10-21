@@ -99,13 +99,13 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             Value::Lambda(u, ..) => format!("λ{}", u),
             Value::Constructor(id, args) => {
                 let name = self.input.symbols[self.input.constructors[*id as usize].1 as usize].clone();
-                if args.len() == 0 {
+                if args.is_empty() {
                     name
                 } else {
-                    format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim())
+                    format!( "({} {})", self.input.symbols[self.input.constructors[*id as usize].1 as usize], args.iter().map(|a| self.display_value(a.clone(), true)).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim())
                 }
             }            
-            Value::Tuple(args) => format!("({})", args.into_iter().map(|a| format!("{}", self.display_value(a.clone(), true))).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim()),
+            Value::Tuple(args) => format!("({})", args.iter().map(|a| self.display_value(a.clone(), true)).fold("".to_string(), |acc, c| format!("{}{}{}", acc, if acc.as_str() == "" { "" } else { " " }, c)).trim()),
         }
     }
     fn _cmp(&mut self, lhs: &Value, rhs: &Value) -> Result<std::cmp::Ordering> {
@@ -113,54 +113,52 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
         match lhs {
             Value::Single(lhs) => match rhs {
                 Value::Single(rhs) => {
-                    Ok(lhs.partial_cmp(&rhs).unwrap())
+                    Ok(lhs.partial_cmp(rhs).unwrap())
                 }
-                _ => error!(=> "Expected a Single, found a {}.", self.val_type(&rhs)?),
+                _ => error!(=> "Expected a Single, found a {}.", self.val_type(rhs)?),
             }
 
             Value::Integer(lhs) => match rhs {
                 Value::Integer(rhs) => {
-                    Ok(lhs.cmp(&rhs))
+                    Ok(lhs.cmp(rhs))
                 }
-                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(&rhs)?),
+                _ => error!(=> "Expected an Integer, found a {}.", self.val_type(rhs)?),
             }
             Value::String(lhs) => match rhs {
                 Value::String(rhs) => {
-                    Ok(lhs.cmp(&rhs))
+                    Ok(lhs.cmp(rhs))
                 }
-                _ => error!(=> "Expected a String, found a {}.", self.val_type(&rhs)?),
+                _ => error!(=> "Expected a String, found a {}.", self.val_type(rhs)?),
             }
             Value::Constructor(lid, vlhs) => match &rhs {
                 Value::Constructor(rid, vrhs) => {
-                    let tlhs = self.val_type(&lhs)?;
-                    let trhs = self.val_type(&rhs)?;
+                    let tlhs = self.val_type(lhs)?;
+                    let trhs = self.val_type(rhs)?;
                     if tlhs != trhs {
                         error!(=> "Expected a {}, found a {}.", tlhs, trhs)
+                    } else if lid != rid {
+                        error!(=> "Not the same enum variants, expected 0x{:04x}, found 0x{:04x}", lid, rid)
                     } else {
-                        if lid != rid {
-                            error!(=> "Not the same enum variants, expected 0x{:04x}, found 0x{:04x}", lid, rid)
-                        } else {
-                            let mut to_ret = Ordering::Equal;
+                        let mut to_ret = Ordering::Equal;
 
-                            for idx in 0..vlhs.len() {
-                                let lhs = &vlhs[idx];
-                                let rhs = &vrhs[idx];
-                                let res = self._cmp(lhs, rhs)?;
-                                if res != Ordering::Equal {
-                                    to_ret = res;
-                                    break;
-                                }
+                        for idx in 0..vlhs.len() {
+                            let lhs = &vlhs[idx];
+                            let rhs = &vrhs[idx];
+                            let res = self._cmp(lhs, rhs)?;
+                            if res != Ordering::Equal {
+                                to_ret = res;
+                                break;
                             }
-                            Ok(to_ret)
                         }
+                        Ok(to_ret)
                     }
                 }
-                _ => error!(=> "Expected a Constructor, found a {}.", self.val_type(&rhs)?),
+                _ => error!(=> "Expected a Constructor, found a {}.", self.val_type(rhs)?),
             }
             Value::Tuple(vlhs) => match rhs {
                 Value::Tuple(vrhs) => {
-                    let tlhs = self.val_type(&lhs)?;
-                    let trhs = self.val_type(&rhs)?;
+                    let tlhs = self.val_type(lhs)?;
+                    let trhs = self.val_type(rhs)?;
                     if tlhs != trhs {
                         error!(=> "Expected a {}, found a {}.", tlhs, trhs)
                     } else {
@@ -177,9 +175,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                         Ok(to_ret)
                     }
                 }
-                _ => error!(=> "Expected a Tuple, found a {}.", self.val_type(&rhs)?),
+                _ => error!(=> "Expected a Tuple, found a {}.", self.val_type(rhs)?),
             }
-            _ => error!(=> "Expected a String, found a {}.", self.val_type(&rhs)?),
+            _ => error!(=> "Expected a String, found a {}.", self.val_type(rhs)?),
         }
     }
 
@@ -193,12 +191,12 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn r#type(&mut self) -> Result<Rc<Value>> {
         let popped = self.pop()?;
-        let to_ret = Ok(Rc::new(Value::String(self.val_type(&popped)?)));
-        to_ret
+        
+        Ok(Rc::new(Value::String(self.val_type(&popped)?)))
     }
     pub fn val_type(&mut self, popped: &Value) -> Result<String> {
         let to_ret = Ok(match popped {
-            Value::Constructor(idx, _) => self.input.types[self.input.types.iter().position(|(_, start, end)| (start..=end).contains(&&idx)).unwrap()].0.clone(),
+            Value::Constructor(idx, _) => self.input.types[self.input.types.iter().position(|(_, start, end)| (start..=end).contains(&idx)).unwrap()].0.clone(),
             Value::Tuple(content) => format!("({})", content.iter().map(|v|{
                 let to_ret = self.val_type(v)?;
                 Ok(to_ret)
@@ -260,7 +258,7 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 while self.ip < saved + instr_length as usize {
                     self.ip += 1;
                     let instr = instructions[self.ip];
-                    self.eval_opcode(instr, ctx, sym_ref, &instructions)?;
+                    self.eval_opcode(instr, ctx, sym_ref, instructions)?;
                 }
                 let popped = self.pop()?;
                 let id = if !sym_ref.contains(&sym_id) {
@@ -307,10 +305,9 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                             args.len()
                             );
                     }
-                    for idx in 0..chunk.reference.len() {
+                    for (idx, &sym_id) in chunk.reference.iter().enumerate() {
                         // Fetch arguments and replace the symbol table.
                         let val = args[idx].clone();
-                        let sym_id = chunk.reference[idx];
                         self.decl(sym_id, val, &mut ctx, &mut sym_ref);
                     }
                     let prev_ip = self.ip;
@@ -341,8 +338,8 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
                 let saved = self.ip;
                 while self.ip < saved + to_eval as usize {
                     self.ip += 1;
-                    let instruction = instructions[self.ip].clone();
-                    self.eval_opcode(instruction, ctx, sym_ref, instructions.clone())?;
+                    let instruction = instructions[self.ip];
+                    self.eval_opcode(instruction, ctx, sym_ref, instructions)?;
                 }
                 let mut vals = (0..amount)
                     .map(|_| self.pop())
@@ -366,34 +363,31 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
             OpCode::Match(idx) => {
                 let to_match = self.pop()?;
                 let patterns = self.input.matches[idx as usize].clone();
-                let plausible = patterns.into_iter().map(|(pat, to_exec)| {
+                let plausibles: Vec<_> = patterns.into_iter().filter_map(|(pat, to_exec)| {
                     if self.is_plausible(pat, &to_match) {
                         Some((pat, to_exec))
                     } else {
                         None
                     }
-                }).filter(|p| !p.is_none()).map(|p| p.unwrap()).collect::<Vec<(u16, Vec<OpCode>)>>();
-                for plausible in plausible.into_iter() {
-                    match self.match_and_bound(&to_match, plausible.0) {
-                        Some(to_bind) => {
-                            let mut new_ctx = ctx.clone();
-                            let mut new_ref = sym_ref.clone();
-                            let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
-                            to_bind.into_iter().for_each(|sym_id| {
-                                let val = new_stack.pop().unwrap();
-                                self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
-                            });
-                            let saved = self.ip;
-                            self.ip = 0;
-                            while self.ip < plausible.1.len() {
-                                let instr = plausible.1[self.ip];
-                                self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)?;
-                                self.ip += 1;
-                            }
-                            self.ip = saved;
-                            return Ok(());
-                        },
-                        None => {},
+                }).collect();
+                for plausible in plausibles {
+                    if let Some(to_bind) = self.match_and_bound(&to_match, plausible.0) {
+                        let mut new_ctx = ctx.clone();
+                        let mut new_ref = sym_ref.clone();
+                        let mut new_stack = (0..to_bind.len()).map(|_| self.pop()).rev().collect::<Result<Vec<_>>>()?;
+                        to_bind.into_iter().for_each(|sym_id| {
+                            let val = new_stack.pop().unwrap();
+                            self.decl(sym_id, val, &mut new_ctx, &mut new_ref);    
+                        });
+                        let saved = self.ip;
+                        self.ip = 0;
+                        while self.ip < plausible.1.len() {
+                            let instr = plausible.1[self.ip];
+                            self.eval_opcode(instr, &mut new_ctx, &mut new_ref, &plausible.1)?;
+                            self.ip += 1;
+                        }
+                        self.ip = saved;
+                        return Ok(());
                     }
                 }
                 return error!(=> "No pattern to be matched.");
@@ -474,32 +468,16 @@ impl<const STACK_SIZE: usize> VM<STACK_SIZE> {
     }
     fn is_plausible(&self, pat: u16, to_match: &Value) -> bool {
         let pat = self.input.patterns[pat as usize].clone();
-        match pat {
-            BytecodePattern::Var(_) | BytecodePattern::Any => true,
-            BytecodePattern::Constr(_, _) => if let Value::Constructor(_, _) = to_match {
-                true
-            } else {
-                false
+        match (pat, to_match) {
+            (BytecodePattern::Var(_) | BytecodePattern::Any, _) => true,
+            (BytecodePattern::Constr(_, _), Value::Constructor(_, _)) => true,
+            (BytecodePattern::Tuple(_), Value::Tuple(_)) => true,
+            (BytecodePattern::Literal(lid), _) => match &self.input.constants[lid as usize] {
+                Literal::Integer(_) => matches!(to_match, Value::Integer(_)),
+                Literal::Single(_) => matches!(to_match, Value::Single(_)),
+                Literal::String(_) => matches!(to_match, Value::String(_)),
             }
-            BytecodePattern::Tuple(_) => if let Value::Tuple(_) = to_match {
-                true
-            } else {
-                false
-            }
-            BytecodePattern::Literal(lid) => match &self.input.constants[lid as usize] {
-                Literal::Integer(_) => match to_match {
-                    Value::Integer(_) => true,
-                    _ => false,
-                }
-                Literal::Single(_) => match to_match {
-                    Value::Single(_) => true,
-                    _ => false
-                }
-                Literal::String(_) => match to_match {
-                    Value::String(_) => true,
-                    _ => false,
-                }
-            }
+            _ => false
         }
     }
     pub fn eval(&mut self, mut sym_ref: Vec<u16>, mut ctx: Vec<Rc<Value>>, mut step: bool) -> Result<(Vec<Rc<Value>>, Vec<u16>, Vec<Vec<Rc<Value>>>)> {
@@ -535,7 +513,7 @@ i\tDisplay the 15 instructions around the instruction pointer.";
                 "n" => return true,
                 "q" => return false,
                 "c" => println!("{}", self.input.instructions[self.ip]),
-                "s" => println!("[{}]", self.stack.iter().skip(1).fold(self.stack.iter().nth(0).and_then(|e| Some(self.display_value(e.clone(), true))).unwrap_or("".to_string()), |acc, x| format!("{}, {}", acc, self.display_value(x.clone(), true)))),
+                "s" => println!("[{}]", self.stack.iter().skip(1).fold(self.stack.get(0).map(|e| self.display_value(e.clone(), true)).unwrap_or_else(|| "".to_string()), |acc, x| format!("{}, {}", acc, self.display_value(x.clone(), true)))),
                 "i" => {
                     let start = if 7 > self.ip {
                         (0, -(self.ip as i32))
@@ -545,7 +523,7 @@ i\tDisplay the 15 instructions around the instruction pointer.";
                     let end = if self.ip + 7  > self.input.instructions.len() {
                         (self.input.instructions.len(), self.input.instructions.len() as i32 - self.ip as i32)
                     } else {
-                        (self.ip + 7, 7 as i32)
+                        (self.ip + 7, 7_i32)
                     };
                     let indices = (start.1..end.1).collect::<Vec<i32>>();
                     self.input.instructions[start.0..end.0].iter().enumerate().for_each(|(idx, i)| {
@@ -561,11 +539,11 @@ i\tDisplay the 15 instructions around the instruction pointer.";
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::lexer::Lexer;
-    use crate::parser::Parser;
-    use crate::compiler::Compiler;
-    use std::time::Instant;
+    
+    
+    
+    
+    
 
     #[cfg(not(debug_assertions))] // Run only in Release
     #[test]

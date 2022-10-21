@@ -33,7 +33,7 @@ macro_rules! error {
                 let _file = std::option::Option::Some($file.to_string());
                 let _line = std::option::Option::Some($line);
               )?
-                std::result::Result::Err(crate::errors::OrionError(_file, _line, format_args!($($arg)*).to_string()))
+                std::result::Result::Err($crate::errors::OrionError(_file, _line, format_args!($($arg)*).to_string()))
 
         }
     }

@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![allow(clippy::approx_constant)]
 use crate::{
     bug, error,
     lexer::{TType, Token},
@@ -91,7 +92,7 @@ pub enum Pattern {
     Literal(Literal),
 }
 fn first_char(s: impl ToString) -> char {
-    s.to_string().chars().nth(0).unwrap()
+    s.to_string().chars().next().unwrap()
 }
 
 pub struct Parser {
@@ -141,10 +142,7 @@ impl Parser {
         }
     }
     fn peek(&self) -> Option<Token> {
-        self.input
-            .iter()
-            .nth(self.current)
-            .and_then(|t| Some(t.clone()))
+        self.input.get(self.current).cloned()
     }
     fn is_at_end(&self) -> bool {
         self.input.len() != 1 && self.current >= self.input.len()
@@ -266,7 +264,7 @@ impl Parser {
                 while !self.is_at_end() && self.peek().unwrap().ttype != TType::RBracket {
                     exprs.push(self.parse_expr()?);
                 }
-                let constr = if exprs.len() >= 1 {
+                let constr = if !exprs.is_empty() {
                     exprs.into_iter().rev().fold(ExprT::Constr("Nil".to_string(), vec![]), |acc, e| ExprT::Constr("Cons".to_string(), vec![e, Expr::new(acc).line(root.line)]))
                 } else {
                     ExprT::Constr("Nil".to_string(), vec![])
@@ -323,14 +321,10 @@ impl Parser {
                     }
                     TType::Def => {
                         let impure =
-                            if self.peek().and_then(|t| Some(t.ttype)) == Some(TType::Quote) {
+                            if self.peek().map(|t| t.ttype) == Some(TType::Quote) {
                                 self.advance(TType::Quote)?;
                                 let got = self.advance(TType::Ident("".to_string()))?;
-                                if got.ttype == TType::Ident("impure".to_string()) {
-                                    true
-                                } else {
-                                    false
-                                }
+                                got.ttype == TType::Ident("impure".to_string())
                             } else {
                                 false
                             };
@@ -556,7 +550,7 @@ mod test {
             vec![
             Expr::new(ExprT::Literal(Literal::String("foo".to_string()))).line(1),
             Expr::new(ExprT::Literal(Literal::Integer(42))).line(1),
-            Expr::new(ExprT::Literal(Literal::Single(3.1415926535897932))).line(1),
+            Expr::new(ExprT::Literal(Literal::Single(3.141_592_7))).line(1),
             ]
             );
 

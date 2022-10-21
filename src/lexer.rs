@@ -18,6 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![allow(clippy::approx_constant)]
 use crate::{error, Result};
 
 #[derive(Clone, PartialEq, Debug)]
@@ -87,7 +88,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(input: impl ToString, file: impl ToString) -> Self {
         Self {
-            input: input.to_string().replace("λ", "\\").to_string(),
+            input: input.to_string().replace('λ', "\\"),
             output: vec![],
             current: 0,
             line: 1,
@@ -161,11 +162,9 @@ impl Lexer {
                 } else if !self.is_at_end() && self.peek() == '|' {
                     self.advance();
                     while !self.is_at_end() {
-                        if self.peek() == '|' {
-                            if !self.is_at_end() && self.peek() == '#' {
-                                self.advance();
-                                break;
-                            }
+                        if self.peek() == '|' && !self.is_at_end() && self.peek() == '#' {
+                            self.advance();
+                            break;
                         }
                         self.advance();
                     }
@@ -179,7 +178,7 @@ impl Lexer {
                 }
             }
             _ => {
-                if c.is_digit(10) {
+                if c.is_ascii_digit() {
                     self.number();
                 } else {
                     self.identifier();
@@ -193,7 +192,7 @@ impl Lexer {
         self.builtins.push(builtin.to_string());
     }
     fn number(&mut self) {
-        while !self.is_at_end() && self.peek().is_digit(10) {
+        while !self.is_at_end() && self.peek().is_ascii_digit() {
             self.advance();
         }
 
@@ -201,7 +200,7 @@ impl Lexer {
             self.advance(); // Decimal part delimiter
         }
 
-        while !self.is_at_end() && self.peek().is_digit(10) {
+        while !self.is_at_end() && self.peek().is_ascii_digit() {
             self.advance();
         }
 
@@ -280,7 +279,7 @@ fn apply_ansi_codes(input: &str) -> String {
         .replace("\\t", "\t")
         .replace("\\0", "\0")
         .replace("\\\\", "\\")
-        .to_string()
+        
 }
 
 #[cfg(test)]
@@ -317,7 +316,7 @@ mod test {
         let ttypes = get_ttypes(Lexer::new("42 3.1415926535897932", "").proc_tokens()?);
         assert_eq!(
             ttypes,
-            vec![TType::Number(42), TType::Float(3.1415926535897932)]
+            vec![TType::Number(42), TType::Float(3.141_592_7)]
         );
         Ok(())
     }
