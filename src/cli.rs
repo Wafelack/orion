@@ -21,7 +21,7 @@
 use clap::{App, Arg};
 use rustyline::{error::ReadlineError, Editor};
 use std::{rc::Rc, time::Instant, path::Path, fs, io::Write};
-use crate::{Result, print_err, error, lexer::{Lexer, Token}, parser::{Parser, Expr}, bytecode::Bytecode, compiler::{Compiler, Macro}, vm::{VM, Value}};
+use crate::{Result, print_err, error, lexer::{Lexer}, parser::{Parser}, bytecode::Bytecode, compiler::{Compiler}, vm::{VM, Value}};
 
 fn repl(dbg_level: u8, lib: String) -> Result<()> {
     println!(
@@ -111,7 +111,7 @@ env!("CARGO_PKG_VERSION")
                 let top = &vm.stack.iter().nth(match vm.stack.len() as isize - 1 {
                     x if x < 0 => 0,
                     x => x as usize,
-                }).and_then(|v| Some((**v).clone()));
+                }).map(|v| (**v).clone());
                 if let Some(Value::Tuple(v)) = top {
                     if !v.is_empty() {
                         println!("=> {}", vm.display_value(Rc::new(top.clone().unwrap()), true))
@@ -184,7 +184,7 @@ pub fn cli() -> Result<()> {
     let lib = match matches.value_of("lib") {
         Some(l) => l.to_string(),
         None => match env::var("ORION_LIB") {
-            Ok(v) => v.to_string(),
+            Ok(v) => v,
             Err(_) => return error!(=> "No such environment variable: ORION_LIB."),
         }
     };

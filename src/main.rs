@@ -18,11 +18,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Orion.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 mod bytecode;
 mod compiler;
 mod errors;
+#[allow(clippy::approx_constant)]
 mod lexer;
+#[allow(clippy::approx_constant)]
 mod parser;
+#[allow(clippy::approx_constant)]
 mod vm;
 mod cli;
 

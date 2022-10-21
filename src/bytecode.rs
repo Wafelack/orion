@@ -21,7 +21,7 @@
 use crate::{parser::Literal, error, Result};
 use std::fmt::{self, Formatter, Display};
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum OpCode {
     LoadConst(u16),        // (const_id)
     LoadSym(u16),          // (sym_id)
@@ -126,13 +126,13 @@ impl OpCode {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Chunk {
     pub instructions: Vec<OpCode>,
     pub reference: Vec<u16>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum BytecodePattern {
     Var(u16), // (sym_idx)
     Constr(u16, Vec<u16>), // (constr_id, [pat_idx])
@@ -174,7 +174,7 @@ impl Bytecode {
             let mut ptr = 5; // Skip timestamp
             let sym_length = len(&mut ptr, bytes)?;
             println!("Sym length.");
-            let mut symbols = (0..sym_length).map(|_| string(&mut ptr, bytes)).collect::<Result<Vec<String>>>()?;
+            let symbols = (0..sym_length).map(|_| string(&mut ptr, bytes)).collect::<Result<Vec<String>>>()?;
             println!("Syms.");
             let consts_length = len(&mut ptr, bytes)?;
             println!("Consts length.");
@@ -263,14 +263,14 @@ impl Bytecode {
             println!("Matches length.");
             let matches = (0..matches_length).map(|_| {
                 let match_length = len(&mut ptr, bytes)?;
-                Ok((0..match_length).map(|_| {
+                (0..match_length).map(|_| {
                     let idx = len(&mut ptr, bytes)?;
                     let instrs_len = len(&mut ptr, bytes)?;
                     let instrs = (0..instrs_len).map(|_| {
                         OpCode::deserialize(&mut ptr, bytes)
                     }).collect::<Result<Vec<OpCode>>>()?;
                     Ok((idx, instrs))
-                }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()?)
+                }).collect::<Result<Vec<(u16, Vec<OpCode>)>>>()
             }).collect::<Result<Vec<Vec<(u16, Vec<OpCode>)>>>>()?;
             println!("Matches.");
 
@@ -334,17 +334,17 @@ impl Bytecode {
                 to_ret.extend(&link.to_be_bytes());
             });
 
-            let serialized = chunk.instructions.iter().map(|instr| {
+            let serialized = chunk.instructions.iter().flat_map(|instr| {
                 instr.serialize()
-            }).flatten();
+            });
             to_ret.extend(&(chunk.instructions.len() as u16).to_be_bytes());
             to_ret.extend(serialized)
         });
 
         // Instructions
-        let serialized = self.instructions.iter().map(|instr| {
+        let serialized = self.instructions.iter().flat_map(|instr| {
             instr.serialize()
-        }).flatten();
+        });
         to_ret.extend(&(self.instructions.len() as u16).to_be_bytes());
         to_ret.extend(serialized);
 
@@ -359,7 +359,7 @@ impl Bytecode {
 
         // Patterns
         to_ret.extend(&(self.patterns.len() as u16).to_be_bytes());
-        to_ret.extend(self.patterns.iter().map(|p| {
+        to_ret.extend(self.patterns.iter().flat_map(|p| {
             match p {
                 BytecodePattern::Var(idx) => {
                     let mut to_ret = vec![0];
@@ -370,17 +370,17 @@ impl Bytecode {
                     let mut to_ret = vec![1];
                     to_ret.extend(&id.to_be_bytes());
                     to_ret.extend(&(pats.len() as u16).to_be_bytes());
-                    to_ret.extend(pats.into_iter().map(|p| {
+                    to_ret.extend(pats.iter().flat_map(|p| {
                         p.to_be_bytes().to_vec()
-                    }).flatten());
+                    }));
                     to_ret
                 }
                 BytecodePattern::Tuple(pats) =>  {
                     let mut to_ret = vec![2];
                     to_ret.extend(&(pats.len() as u16).to_be_bytes());
-                    to_ret.extend(pats.into_iter().map(|p| {
+                    to_ret.extend(pats.iter().flat_map(|p| {
                         p.to_be_bytes().to_vec()
-                    }).flatten());
+                    }));
                     to_ret
                 }
                 BytecodePattern::Literal(idx) => {
@@ -390,20 +390,20 @@ impl Bytecode {
                 }
                 BytecodePattern::Any => vec![4],
             }
-        }).flatten());
+        }));
 
         // Matches
         to_ret.extend(&(self.matches.len() as u16).to_be_bytes());
-        to_ret.extend(self.matches.iter().map(|patterns| {
+        to_ret.extend(self.matches.iter().flat_map(|patterns| {
             let mut to_ret = (patterns.len() as u16).to_be_bytes().to_vec();
-            to_ret.extend(patterns.into_iter().map(|(idx, instrs)| {
+            to_ret.extend(patterns.iter().flat_map(|(idx, instrs)| {
                 let mut to_ret = idx.to_be_bytes().to_vec();
                 to_ret.extend(&(instrs.len() as u16).to_be_bytes());
-                to_ret.extend(instrs.into_iter().map(|instr| instr.serialize()).flatten());
+                to_ret.extend(instrs.iter().flat_map(|instr| instr.serialize()));
                 to_ret
-            }).flatten());
+            }));
             to_ret
-        }).flatten());
+        }));
         to_ret
     }
 }

@@ -110,7 +110,7 @@ impl Compiler {
                 &name,
                 self.constructors
                 .iter()
-                .position(|var| var.to_string() == name)
+                .position(|var| *var == name)
                 .unwrap()
                 )
         } else {
@@ -126,7 +126,7 @@ impl Compiler {
             let idx = self
                 .constructors
                 .iter()
-                .position(|variant| name == variant.to_string())
+                .position(|variant| name == *variant)
                 .unwrap();
             Ok((self.output.constructors[idx].0, idx as u16))
         } else {
@@ -386,7 +386,7 @@ impl Compiler {
                     .builtins
                     .iter()
                     .position(|builtin| builtin.0 == name)
-                    .map_or(error!(self.file, expr.line => "No such builtin: {}.", name), |i| Ok(i))?;
+                    .map_or(error!(self.file, expr.line => "No such builtin: {}.", name), Ok)?;
                 let impure_builtin = self.builtins[idx as usize].1;
                 if !impure && impure_builtin {
                     return error!(self.file, expr.line => "Impure builtin used out of an `impure` function: {}.", name);
@@ -397,12 +397,10 @@ impl Compiler {
             ExprT::Enum(name, constructors) => {
                 let start = self.output.constructors.len() as u16;
                 constructors
-                    .into_iter()
-                    .map(|(k, v)| {
+                    .into_iter().try_for_each(|(k, v)| {
                         symbols = self.register_constructor(k, symbols.clone(), v, expr.line)?;
                         Ok(())
-                    })
-                .collect::<Result<()>>()?;
+                    })?;
                 let end = self.output.constructors.len() as u16 - 1;
                 self.output.types.push((name, start, end));
                 Ok((vec![], symbols))
@@ -457,7 +455,7 @@ impl Compiler {
                 Ok((to_ret, symbols))
             }
             ExprT::Match(expr, patterns) => {
-                let (mut compiled, mut symbols) = self.compile_expr(*expr.clone(), symbols, impure)?;
+                let (mut compiled, mut symbols) = self.compile_expr(*expr, symbols, impure)?;
                 let match_content = patterns.into_iter().map(|(pat, expr)| {
                     let (pat_id, new_symbols) = self.declare_pat(pat, symbols.clone(), impure, expr.line)?;
                     symbols = new_symbols;
